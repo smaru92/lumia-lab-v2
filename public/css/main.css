@@ -1,0 +1,694 @@
+html {
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding-top: 50px; /* Space for fixed navbar */
+}
+
+.navbar {
+    background-color: #333;
+    overflow: hidden;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 50px; /* Fixed height for navbar */
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+}
+
+.navbar-container {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    max-width: 1200px;
+    width: 100%;
+}
+
+.nav-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-item {
+    margin: 0 10px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-links {
+    color: white;
+    text-align: center;
+    padding: 0 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-links:hover {
+    background-color: #ddd;
+    color: black;
+}
+
+.container {
+    width: 90%;
+    margin: 20px auto; /* Body padding handles space from navbar */
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.filter-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Allow filters to wrap on smaller screens */
+}
+
+select, input[type="number"] {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 5px;
+    margin-bottom: 5px; /* Add margin for wrapped items */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    /* overflow: hidden; /* Removing this to prevent clipping sticky header/shadows */
+}
+
+thead {
+    position: sticky;
+    top: 0; /* Sticks to the top of the scrollport (body's content area) */
+    background: #f8f9fa;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+    position: relative;
+    cursor: pointer;
+}
+
+th:hover {
+    background-color: #e8e8e8;
+}
+
+.sortable::after {
+    content: " ▼";
+    font-size: 12px;
+    color: #666;
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.asc::after { content: " ▲"; }
+.desc::after { content: " ▼"; }
+
+tr:nth-child(even) { background-color: #f9f9f9; }
+tr:hover { background-color: #e8f4ff; }
+
+.number {
+    text-align: right;
+    font-weight: bold;
+    color: #333;
+}
+.sub-stat {
+    font-size: 12px;
+    color: #777;
+}
+
+/* Character and Equipment Cell Styles (Adapted from detail.css) */
+.character-cell, .equipment-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+    text-align: left;
+    padding-left: 5px;
+}
+
+.icon-container {
+    position: relative; /* For absolute positioning of weapon_icon */
+    display: inline-block; /* Or flex, if preferred for centering content */
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.character-icon, .equipment-icon { /* equipment-icon styled like character-icon */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.weapon-icon { /* For character display, overlaid */
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 16px;
+    height: 16px;
+    background-color: #333;
+    border-radius: 3px;
+    padding: 1px;
+    box-sizing: border-box;
+}
+
+.character-name-weapon, .equipment-name-weapon {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.3;
+}
+
+/* Tier Badge Styles (Adapted from detail.css) */
+.tier-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px; /* detail.css uses 4px */
+    color: white;
+    font-weight: bold;
+    font-size: 0.9em;
+    text-align: center;
+    min-width: 30px;
+    line-height: 1.4;
+    margin-bottom: 2px;
+    box-sizing: border-box;
+}
+
+.tier-op { background-color: #8A2BE2; } /* BlueViolet */
+.tier-1 { background-color: #B22222; } /* Crimson Red */
+.tier-2 { background-color: #FF8C00; } /* DarkOrange */
+.tier-3 { background-color: #FFD700;} /* Gold (detail.css doesn't specify dark text, but it's good for contrast) */
+.tier-4 { background-color: #a8e16f; } /* ForestGreen (from detail.css, was #4682b4) */
+.tier-5 { background-color: #7fbfff; } /* DodgerBlue (from detail.css, was #6a5acd) */
+.tier-rip { background-color: #696969; } /* DimGray */
+.tier-unknown { background-color: #ccc; color: #333; } /* Kept from previous main.css as detail.css doesn't have it */
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1001; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 900px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    position: relative;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    right: 20px;
+    top: 10px;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tier-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: auto;
+}
+
+.tier-table th,
+.tier-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.tier-table th {
+    background-color: #f2f2f2;
+}
+
+/* First column for tier badges */
+.tier-table td:first-child {
+    width: 60px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Second column for icons */
+.tier-table td:nth-child(2) {
+    padding: 10px;
+}
+
+.tier-character-icon-container {
+    display: inline-block;
+    margin: 2px; /* Reduced margin */
+    text-align: center;
+    vertical-align: top; /* Align to top for multi-line text */
+    position: relative;
+}
+
+.tier-character-icon {
+    width: 45px; /* Increased icon size */
+    height: 45px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.tier-weapon-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px; /* Larger weapon icon */
+    height: 16px;
+    background-color: #333;
+    border-radius: 3px;
+    padding: 1px;
+    box-sizing: border-box;
+}
+
+/* Break control for desktop and mobile */
+.desktop-break {
+    display: block;
+}
+
+.mobile-only-break {
+    display: none;
+}
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+    body {
+        padding-top: 50px;
+    }
+    
+    .container {
+        width: 100%;
+        margin: 0;
+        padding: 10px;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    
+    h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 0 10px;
+    }
+    
+    .filter-container label {
+        display: block;
+        margin-bottom: 5px;
+        margin-left: 0 !important;
+    }
+    
+    select, input[type="number"] {
+        width: 100%;
+        margin-left: 0;
+        margin-bottom: 10px;
+    }
+    
+    /* Table responsive wrapper */
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        border: none;
+        margin-bottom: 20px;
+    }
+    
+    /* Fixed first three columns for mobile (랭크, 이름, 티어) */
+    tbody td:nth-child(1),
+    thead th:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: white;
+        box-shadow: 1px 0 3px rgba(0,0,0,0.1);
+        min-width: 30px;
+        max-width: 30px;
+    }
+    
+    tbody td:nth-child(2),
+    thead th:nth-child(2) {
+        position: sticky;
+        left: 30px; /* 랭크 열 너비 (모바일용 축소) */
+        z-index: 10;
+        background: white;
+        box-shadow: 1px 0 3px rgba(0,0,0,0.1);
+        min-width: 80px;
+        max-width: 80px;
+        border-right: 1px solid #ddd;
+    }
+    
+    tbody td:nth-child(3),
+    thead th:nth-child(3) {
+        position: sticky;
+        left: 108px; /* 랭크 + 이름 열 너비 (랭크 30px + 이름 80px - 간격 조정) */
+        z-index: 10;
+        background: white;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        min-width: 65px;
+        max-width: 65px;
+        border-left: 1px solid #ddd;
+    }
+    
+    thead th:nth-child(1),
+    thead th:nth-child(2),
+    thead th:nth-child(3) {
+        z-index: 11;
+        background: #f4f4f4;
+    }
+    
+    /* Ensure proper background for even rows */
+    tbody tr:nth-child(even) td:nth-child(1),
+    tbody tr:nth-child(even) td:nth-child(2),
+    tbody tr:nth-child(even) td:nth-child(3) {
+        background: #f9f9f9;
+    }
+    
+    /* Hover state for fixed columns */
+    tbody tr:hover td:nth-child(1),
+    tbody tr:hover td:nth-child(2),
+    tbody tr:hover td:nth-child(3) {
+        background: #e8f4ff;
+    }
+    
+    /* Reduce padding for mobile */
+    th, td {
+        padding: 8px 5px;
+        font-size: 0.9em;
+    }
+    
+    /* Stack character/equipment info vertically */
+    .character-cell, .equipment-cell {
+        flex-direction: column;
+        text-align: center;
+        padding: 5px;
+        gap: 5px;
+    }
+    
+    .character-name-weapon, .equipment-name-weapon {
+        text-align: center;
+        word-break: break-word;
+        white-space: normal;
+    }
+    
+    /* Smaller icons on mobile */
+    .icon-container {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .weapon-icon {
+        width: 14px;
+        height: 14px;
+    }
+    
+    /* Hide some columns on mobile for better visibility */
+    @media screen and (max-width: 480px) {
+        /* Hide less important columns on very small screens */
+        td:nth-child(10), th:nth-child(10), /* 손실확률 */
+        td:nth-child(12), th:nth-child(12), /* 이득평균점수 */
+        td:nth-child(13), th:nth-child(13) { /* 손실평균점수 */
+            display: none;
+        }
+    }
+    
+    /* Modal adjustments for mobile */
+    .modal {
+        padding-top: 20px;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 10px auto;
+        padding: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .modal-content h3 {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+        margin-top: 5px;
+    }
+    
+    .close-button {
+        font-size: 24px;
+        right: 10px;
+        top: 5px;
+    }
+    
+    .tier-table {
+        margin-top: 10px;
+    }
+    
+    .tier-table td {
+        padding: 5px;
+    }
+    
+    /* Tier table mobile layout */
+    .tier-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+    
+    /* Tier badge in modal */
+    .tier-table .tier-badge {
+        font-size: 0.8em;
+        padding: 3px 6px;
+    }
+    
+    /* First column (tier badge column) */
+    .tier-table td:first-child {
+        width: 35px;
+        min-width: 35px;
+        text-align: center;
+        vertical-align: middle;
+        padding: 5px 2px;
+    }
+    
+    /* Second column (icons container) */
+    .tier-table td:nth-child(2) {
+        padding: 8px;
+        text-align: left;
+    }
+    
+    .tier-character-icon-container {
+        margin: 3px;
+        display: inline-block;
+        position: relative;
+        vertical-align: top;
+    }
+    
+    .tier-character-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .tier-weapon-icon {
+        width: 12px;
+        height: 12px;
+    }
+    
+    /* Show mobile breaks on mobile */
+    .desktop-break {
+        display: none;
+    }
+    
+    .mobile-only-break {
+        display: block;
+    }
+    
+    /* Bottom buttons container mobile layout */
+    .bottom-container {
+        flex-direction: column !important;
+        gap: 10px;
+        align-items: stretch !important;
+    }
+    
+    .update-info {
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    
+    #openTierModal, .tier-modal-btn {
+        width: 100%;
+    }
+    
+    /* Navbar adjustments */
+    .navbar-container {
+        padding: 0 10px;
+    }
+    
+    .nav-links {
+        padding: 0 10px;
+        font-size: 0.9em;
+    }
+    
+    .nav-item {
+        margin: 0 5px;
+    }
+}
+
+/* Small phone specific adjustments */
+@media screen and (max-width: 380px) {
+    h2 {
+        font-size: 1.2em;
+    }
+    
+    th, td {
+        padding: 5px 3px;
+        font-size: 0.8em;
+    }
+    
+    .tier-badge {
+        font-size: 0.8em;
+        padding: 2px 5px;
+        min-width: 25px;
+    }
+    
+    .sub-stat {
+        font-size: 10px;
+    }
+    
+    /* Adjust sticky column positions for very small screens */
+    tbody td:nth-child(1),
+    thead th:nth-child(1) {
+        min-width: 28px;
+        max-width: 28px;
+    }
+    
+    tbody td:nth-child(2),
+    thead th:nth-child(2) {
+        left: 28px; /* 더 작은 랭크 열 너비 */
+        min-width: 75px;
+        max-width: 75px;
+        border-right: 1px solid #ddd;
+    }
+    
+    tbody td:nth-child(3),
+    thead th:nth-child(3) {
+        left: 101px; /* 더 작은 랭크 + 이름 열 너비 (28 + 75 - 간격 조정) */
+        min-width: 60px;
+        max-width: 60px;
+        border-left: 1px solid #ddd;
+    }
+    
+    /* Hide more columns on very small screens */
+    td:nth-child(8), th:nth-child(8), /* 막금구승률 */
+    td:nth-child(9), th:nth-child(9) { /* 이득확률 */
+        display: none;
+    }
+    
+    /* Modal adjustments for very small screens */
+    .modal-content {
+        width: 100%;
+        margin: 0;
+        padding: 8px;
+        border-radius: 0;
+        height: 100vh;
+        max-height: 100vh;
+    }
+    
+    .modal-content h3 {
+        font-size: 1em;
+        margin-bottom: 8px;
+    }
+    
+    .tier-table .tier-badge {
+        font-size: 0.7em;
+        padding: 2px 4px;
+        min-width: 20px;
+    }
+    
+    .tier-table td:first-child {
+        width: 30px;
+        min-width: 30px;
+        padding: 3px 1px;
+    }
+    
+    .tier-table td:nth-child(2) {
+        padding: 5px;
+    }
+    
+    .tier-character-icon-container {
+        margin: 2px;
+        display: inline-block;
+    }
+    
+    .tier-character-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .tier-weapon-icon {
+        width: 11px;
+        height: 11px;
+    }
+}
