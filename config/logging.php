@@ -127,6 +127,63 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'fetchGameResultData' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/fetchGameResultData/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultEquipmentMainSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultEquipmentMainSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultFirstEquipmentMainSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultFirstEquipmentMainSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultRankSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultRankSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultEquipmentSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultEquipmentSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultTraitSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultTraitSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+        'updateGameResultTacticalSkillSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultTacticalSkillSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];
