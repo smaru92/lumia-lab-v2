@@ -51,6 +51,7 @@ abstract class BaseSummaryService
                     'version_minor' => $versionMinor
                 ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
+                echo $minScore . "\n";
                 $minTier = $tier['tier'] . $tier['tierNumber'];
 
                 $gameResults = $this->getGameResults([
