@@ -45,7 +45,12 @@ abstract class BaseSummaryService
                 ->delete();
 
             foreach ($this->tierRange as $tier) {
-                $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber']) ?: 0;
+                $versionFilters = [
+                    'version_season' => $versionSeason,
+                    'version_major' => $versionMajor,
+                    'version_minor' => $versionMinor
+                ];
+                $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'] . $tier['tierNumber'];
 
                 $gameResults = $this->getGameResults([

@@ -16,18 +16,18 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('fetch:game-results')->everyMinute();
+        $schedule->command('fetch:game-results')->everyMinute()->withoutOverlapping()->runInBackground();
         // 메인페이지&전술스킬 데이터
-        $schedule->command('update:game-results-summary')->cron('0 * * * *')->withoutOverlapping();
-        $schedule->command('update:game-results-tactical-skill-summary')->cron('0 * * * *')->withoutOverlapping();
-        $schedule->command('update:game-results-equipment-main-summary')->cron('10 * * * *')->withoutOverlapping();
-        $schedule->command('update:game-results-first-equipment-main-summary')->cron('20 * * * *')->withoutOverlapping();
+        $schedule->command('update:game-results-summary')->cron('0 * * * *')->withoutOverlapping()->runInBackground();
+        $schedule->command('update:game-results-tactical-skill-summary')->cron('0 * * * *')->withoutOverlapping()->runInBackground();
+        $schedule->command('update:game-results-equipment-main-summary')->cron('10 * * * *')->withoutOverlapping()->runInBackground();
+        $schedule->command('update:game-results-first-equipment-main-summary')->cron('20 * * * *')->withoutOverlapping()->runInBackground();
         // 캐릭터별/순위별 데이터
-        $schedule->command('update:game-results-rank-summary')->cron('30 * * * *')->withoutOverlapping();
+        $schedule->command('update:game-results-rank-summary')->cron('30 * * * *')->withoutOverlapping()->runInBackground();
         // 캐릭터별/특성/순위별 데이터
-        $schedule->command('update:game-results-trait-summary')->cron('40 * * * *')->withoutOverlapping();
+        $schedule->command('update:game-results-trait-summary')->cron('40 * * * *')->withoutOverlapping()->runInBackground();
         // 캐릭터별/장비별/순위별 데이터
-        $schedule->command('update:game-results-equipment-summary')->cron('50 * * * *')->withoutOverlapping();
+        $schedule->command('update:game-results-equipment-summary')->cron('50 * * * *')->withoutOverlapping()->runInBackground();
     }
 
     /**

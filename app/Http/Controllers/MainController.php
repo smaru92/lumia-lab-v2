@@ -4,19 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Services\GameResultSummaryService;
 use App\Services\MainService;
+use App\Services\RankRangeService;
 use Illuminate\Http\Request;
 
 class MainController extends Controller
 {
     protected MainService $mainService;
+    protected RankRangeService $rankRangeService;
     protected int $versionSeason;
     protected int $versionMajor;
     protected int $versionMinor;
     protected string $minTier;
 
-    public function __construct(MainService $mainService)
+    public function __construct(MainService $mainService, RankRangeService $rankRangeService)
     {
         $this->mainService = $mainService;
+        $this->rankRangeService = $rankRangeService;
         $this->mainService->getLatestVersion();
         $this->versionSeason = 0;
         $this->versionMajor = 0;
@@ -27,7 +30,6 @@ class MainController extends Controller
     {
         $defaultTier = config('erDev.defaultTier');
         $defaultVersion = config('erDev.defaultVersion');
-        $topRankScore = config('erDev.topRankScore');
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
         
@@ -59,6 +61,15 @@ class MainController extends Controller
             'version_minor' => $versionMinor,
             'min_tier' => $minTier,
         ];
+        
+        // 버전별 최상위 티어 점수 동적 조회
+        $versionFilters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor
+        ];
+        $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
+        
         $lastData = $this->mainService->getGameResultSummary($filters);
         if ($lastData->first()) {
             $lastUpdate = $lastData->first()->created_at ?? null;
@@ -67,7 +78,6 @@ class MainController extends Controller
         }
 
         $versions = $this->mainService->getLatestVersionList();
-
 
         $data = [
             'lastUpdate' => $lastUpdate,
@@ -85,11 +95,9 @@ class MainController extends Controller
     {
         $defaultTier = config('erDev.defaultTier');
         $defaultVersion = config('erDev.defaultVersion');
-        $topRankScore = config('erDev.topRankScore');
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
         $version =  explode('.', $version);
-
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         [$defaultVersionSeason, $defaultVersionMajor, $defaultVersionMinor] =  array_pad(explode('.', $defaultVersion), 3, null);
@@ -97,6 +105,14 @@ class MainController extends Controller
         $versionMajor = $version[1] ?? $defaultVersionMajor;
         $versionMinor = $version[2] ?? $defaultVersionMinor;
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
+        
+        // 버전별 최상위 티어 점수 동적 조회
+        $versionFilters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor
+        ];
+        $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
         $filters = [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
