@@ -581,6 +581,7 @@ class GameResultService
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->whereNotNull('e.item_type2')
             ->whereNotIn('e.item_type1', ['Weapon'])
+            ->whereIn('e.item_grade', ['Legend', 'Mythic'])
             ->groupBy(
                 'gre.equipment_id',
             )
@@ -916,10 +917,10 @@ class GameResultService
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 1.0;
+        $A = $pickScore * 2.5;
 
         // 최종 메타 점수
-        $metaScore = ($P + $A) * (0.6 + 0.4 * $pickWeight) * 2;
+        $metaScore = ($P * 1.5 + $A) * (0.6 + 0.4 * $pickWeight) * 2;
 
         // 티어 분류
         $metaTier = match (true) {

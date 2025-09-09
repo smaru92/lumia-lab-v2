@@ -18,6 +18,6 @@ class VersionHistoryService
      */
     public function getLatestVersionList()
     {
-        return VersionHistory::orderBy('created_at', 'desc')->limit(5)->get();
+        return VersionHistory::orderBy('created_at', 'desc')->limit(3)->get();
     }
 }
