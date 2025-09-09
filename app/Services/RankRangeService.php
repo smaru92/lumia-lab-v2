@@ -68,7 +68,7 @@ class RankRangeService
         if (!empty($versionFilters)) {
             $versionResult = RankRange::select(
                 DB::raw("MIN(min_score) as min_score")
-            )->whereIn('grade1', ['Mithril', 'Demigod', 'Eternity']); // 최상위 티어들
+            )->where('grade1', 'Top'); // Top 티어
             
             if (isset($versionFilters['version_season'])) {
                 $versionResult = $versionResult->where('version_season', $versionFilters['version_season']);
@@ -91,7 +91,7 @@ class RankRangeService
         // 2. 특정 버전 데이터가 없으면 기본값(NULL 버전) 사용
         $defaultResult = RankRange::select(
             DB::raw("MIN(min_score) as min_score")
-        )->whereIn('grade1', ['Mithril', 'Demigod', 'Eternity']) // 최상위 티어들
+        )->where('grade1', 'Top') // Top 티어
             ->whereNull('version_season')
             ->whereNull('version_major')
             ->whereNull('version_minor');
