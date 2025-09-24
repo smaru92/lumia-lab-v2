@@ -256,8 +256,8 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
-                DB::raw('IFNULL(AVG(CASE WHEN gr.mmr_gain > 0 THEN gr.mmr_gain END), 0) as positive_avg_mmr_gain'),
-                DB::raw('IFNULL(AVG(CASE WHEN gr.mmr_gain < 0 THEN gr.mmr_gain END), 0) as negative_avg_mmr_gain'),
+                DB::raw('IFNULL(AVG(CASE WHEN gr.mmr_gain + gr.mmr_cost > 0 THEN gr.mmr_gain END), 0) as positive_avg_mmr_gain'),
+                DB::raw('IFNULL(AVG(CASE WHEN gr.mmr_gain + gr.mmr_cost < 0 THEN gr.mmr_gain END), 0) as negative_avg_mmr_gain'),
             )
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->groupBy('gr.character_id',
