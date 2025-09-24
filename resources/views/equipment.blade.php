@@ -180,7 +180,16 @@
                         <td>
                             @if(isset($groupedByTier[$tier]))
                                 @foreach($groupedByTier[$tier] as $item)
-                                    <div class="tier-character-icon-container" data-pick-rate="{{ $item->game_count_percent }}" data-item-grade="{{ $item->item_grade_en }}" data-item-type2="{{ $item->item_type2_en }}">
+                                    <div class="tier-character-icon-container"
+                                         data-pick-rate="{{ number_format($item->game_count_percent, 2) }}"
+                                         data-item-grade="{{ $item->item_grade_en }}"
+                                         data-item-type2="{{ $item->item_type2_en }}"
+                                         data-equipment-name="{{ $item->equipment_name }}"
+                                         data-tier="{{ $item->meta_tier }}"
+                                         data-win-rate="{{ number_format($item->top1_count_percent, 2) }}"
+                                         data-top2-rate="{{ number_format($item->top2_count_percent, 2) }}"
+                                         data-top4-rate="{{ number_format($item->top4_count_percent, 2) }}"
+                                         data-avg-score="{{ number_format($item->avg_mmr_gain, 1) }}">
                                     @php
                                         $formattedEquipmentId = $item->equipment_id;
                                         $equipmentIconPath = asset('storage/Equipment/' . $formattedEquipmentId . '.png');
@@ -191,8 +200,6 @@
                                              class="tier-character-icon"
                                              onerror="this.onerror=null; this.src='{{ $defaultEquipmentIconPath }}';">
                                     </div>
-                                    @if($loop->iteration % 10 === 0)<br class="desktop-break">@endif
-                                    @if($loop->iteration % 7 === 0 && $loop->iteration % 10 !== 0)<br class="mobile-only-break">@endif
                                 @endforeach
                             @endif
                         </td>

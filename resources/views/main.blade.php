@@ -163,7 +163,15 @@
                         <td>
                             @if(isset($groupedByTier[$tier]))
                                 @foreach($groupedByTier[$tier] as $item)
-                                    <div class="tier-character-icon-container" data-pick-rate="{{ $item->game_count_percent }}">
+                                    <div class="tier-character-icon-container"
+                                         data-pick-rate="{{ number_format($item->game_count_percent, 2) }}"
+                                         data-character-name="{{ $item->character_name }}"
+                                         data-weapon-type="{{ $item->weapon_type }}"
+                                         data-tier="{{ $item->meta_tier }}"
+                                         data-win-rate="{{ number_format($item->top1_count_percent, 2) }}"
+                                         data-top2-rate="{{ number_format($item->top2_count_percent, 2) }}"
+                                         data-top4-rate="{{ number_format($item->top4_count_percent, 2) }}"
+                                         data-avg-score="{{ number_format($item->avg_mmr_gain, 1) }}">
                                     @php
                                         $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
                                         $characterIconPath = asset('storage/Character/icon/' . $formattedCharacterId . '.png');
@@ -183,8 +191,6 @@
                                              onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                     @endif
                                     </div>
-                                    @if($loop->iteration % 12 === 0)<br class="desktop-break">@endif
-                                    @if($loop->iteration % 8 === 0 && $loop->iteration % 12 !== 0)<br class="mobile-only-break">@endif
                                 @endforeach
                             @endif
                         </td>

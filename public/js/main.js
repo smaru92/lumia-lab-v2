@@ -230,8 +230,87 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Tooltip functionality for tier modal ---
+    function initializeTierTooltips() {
+        const tierModal = document.getElementById('tierModal');
+        if (!tierModal) return;
+
+        tierModal.querySelectorAll('.tier-character-icon-container').forEach(container => {
+            // Create tooltip element if not exists
+            let tooltip = container.querySelector('.tier-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'tier-tooltip';
+
+                // Get data from container attributes
+                const characterName = container.dataset.characterName || '';
+                const weaponType = container.dataset.weaponType || '';
+                const equipmentName = container.dataset.equipmentName || '';
+                const tier = container.dataset.tier || '';
+                const winRate = container.dataset.winRate || '0';
+                const top2Rate = container.dataset.top2Rate || '0';
+                const top4Rate = container.dataset.top4Rate || '0';
+                const avgScore = container.dataset.avgScore || '0';
+                const pickRate = container.dataset.pickRate || '0';
+
+                // Build tooltip content based on page type
+                let title = '';
+                if (characterName && weaponType) {
+                    // Main page (character + weapon)
+                    title = `<strong>${characterName} ${weaponType}</strong>`;
+                } else if (equipmentName) {
+                    // Equipment pages
+                    title = `<strong>${equipmentName}</strong>`;
+                }
+
+                tooltip.innerHTML = `
+                    ${title}<br>
+                    티어: <span style="color: #ffd700;">${tier}</span><br>
+                    픽률: ${pickRate}%<br>
+                    승률: ${winRate}%<br>
+                    TOP2: ${top2Rate}%<br>
+                    TOP4: ${top4Rate}%<br>
+                    평균 점수: ${avgScore}
+                `;
+
+                container.appendChild(tooltip);
+            }
+
+            // Add dynamic positioning on hover
+            container.addEventListener('mouseenter', function(e) {
+                const tooltip = this.querySelector('.tier-tooltip');
+                if (!tooltip) return;
+
+                const rect = this.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const iconCenterY = rect.top + (rect.height / 2);
+                const screenMiddle = viewportHeight / 2;
+
+                // Simple logic: if icon is in upper half of screen, show tooltip below
+                // if icon is in lower half of screen, show tooltip above
+                if (iconCenterY < screenMiddle) {
+                    // Upper half - show tooltip below
+                    tooltip.classList.add('tooltip-below');
+                    tooltip.classList.remove('tooltip-above');
+                } else {
+                    // Lower half - show tooltip above
+                    tooltip.classList.remove('tooltip-below');
+                    tooltip.classList.add('tooltip-above');
+                }
+            });
+        });
+    }
+
+    // Initialize tooltips when modal is opened
+    openTierModalBtn?.addEventListener('click', () => {
+        setTimeout(() => {
+            initializeTierTooltips();
+        }, 100);
+    });
+
     // --- Initial Load ---
     applyAllFilters(); // Apply all filters on initial page load
+    initializeTierTooltips(); // Initialize tooltips if modal is already open
     // Set initial sort state if any header has 'active-sort' (e.g. from server-side preference or previous state)
     // For now, we assume no default sort beyond what the server provides initially.
     // If a default client-side sort is needed, it can be triggered here.
