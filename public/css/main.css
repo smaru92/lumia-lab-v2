@@ -247,6 +247,9 @@ tr:hover { background-color: #e8f4ff; }
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
     position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .close-button {
@@ -270,7 +273,8 @@ tr:hover { background-color: #e8f4ff; }
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    table-layout: auto;
+    margin-bottom: 20px;
+    table-layout: fixed;
 }
 
 .tier-table th,
@@ -294,20 +298,92 @@ tr:hover { background-color: #e8f4ff; }
 
 /* Second column for icons */
 .tier-table td:nth-child(2) {
-    padding: 10px;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    column-gap: 8px;
+    row-gap: 8px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-width: 0;
 }
 
 .tier-character-icon-container {
     display: inline-block;
-    margin: 2px; /* Reduced margin */
+    margin: 0;
     text-align: center;
     vertical-align: top; /* Align to top for multi-line text */
     position: relative;
+    cursor: pointer;
+}
+
+/* Tooltip styles for tier modal */
+.tier-tooltip {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    font-size: 12px;
+    text-align: left;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1002;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Default: tooltip above */
+.tier-tooltip.tooltip-above,
+.tier-tooltip:not(.tooltip-below) {
+    bottom: 110%;
+}
+
+/* Tooltip below when near top */
+.tier-tooltip.tooltip-below {
+    top: 110%;
+    bottom: auto;
+}
+
+.tier-character-icon-container:hover .tier-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Tooltip arrow for above position */
+.tier-tooltip.tooltip-above::after,
+.tier-tooltip:not(.tooltip-below)::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+/* Tooltip arrow for below position */
+.tier-tooltip.tooltip-below::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    top: auto;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #333 transparent;
 }
 
 .tier-character-icon {
-    width: 45px; /* Increased icon size */
-    height: 45px;
+    width: 60px; /* Increased icon size to 60px */
+    height: 60px;
     border-radius: 4px;
     object-fit: cover;
 }
@@ -316,21 +392,21 @@ tr:hover { background-color: #e8f4ff; }
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 16px; /* Larger weapon icon */
-    height: 16px;
+    width: 20px; /* Larger weapon icon proportional to 60px */
+    height: 20px;
     background-color: #333;
     border-radius: 3px;
     padding: 1px;
     box-sizing: border-box;
 }
 
-/* Break control for desktop and mobile */
+/* Break control for desktop and mobile - Using flexbox instead */
 .desktop-break {
-    display: block;
+    display: none; /* Hide all breaks with flexbox layout */
 }
 
 .mobile-only-break {
-    display: none;
+    display: none; /* Hide all breaks with flexbox layout */
 }
 
 /* Mobile Responsive Styles */
@@ -338,7 +414,7 @@ tr:hover { background-color: #e8f4ff; }
     body {
         padding-top: 50px;
     }
-    
+
     .container {
         width: 100%;
         margin: 0;
@@ -346,31 +422,31 @@ tr:hover { background-color: #e8f4ff; }
         border-radius: 0;
         box-shadow: none;
     }
-    
+
     h2 {
         font-size: 1.5em;
         margin-bottom: 15px;
     }
-    
+
     .filter-container {
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
         padding: 0 10px;
     }
-    
+
     .filter-container label {
         display: block;
         margin-bottom: 5px;
         margin-left: 0 !important;
     }
-    
+
     select, input[type="number"] {
         width: 100%;
         margin-left: 0;
         margin-bottom: 10px;
     }
-    
+
     /* Table responsive wrapper */
     table {
         display: block;
@@ -380,7 +456,7 @@ tr:hover { background-color: #e8f4ff; }
         border: none;
         margin-bottom: 20px;
     }
-    
+
     /* Fixed first three columns for mobile (랭크, 이름, 티어) */
     tbody td:nth-child(1),
     thead th:nth-child(1) {
@@ -392,7 +468,7 @@ tr:hover { background-color: #e8f4ff; }
         min-width: 30px;
         max-width: 30px;
     }
-    
+
     tbody td:nth-child(2),
     thead th:nth-child(2) {
         position: sticky;
@@ -401,10 +477,9 @@ tr:hover { background-color: #e8f4ff; }
         background: white;
         box-shadow: 1px 0 3px rgba(0,0,0,0.1);
         min-width: 80px;
-        max-width: 80px;
         border-right: 1px solid #ddd;
     }
-    
+
     tbody td:nth-child(3),
     thead th:nth-child(3) {
         position: sticky;
@@ -416,34 +491,34 @@ tr:hover { background-color: #e8f4ff; }
         max-width: 65px;
         border-left: 1px solid #ddd;
     }
-    
+
     thead th:nth-child(1),
     thead th:nth-child(2),
     thead th:nth-child(3) {
         z-index: 11;
         background: #f4f4f4;
     }
-    
+
     /* Ensure proper background for even rows */
     tbody tr:nth-child(even) td:nth-child(1),
     tbody tr:nth-child(even) td:nth-child(2),
     tbody tr:nth-child(even) td:nth-child(3) {
         background: #f9f9f9;
     }
-    
+
     /* Hover state for fixed columns */
     tbody tr:hover td:nth-child(1),
     tbody tr:hover td:nth-child(2),
     tbody tr:hover td:nth-child(3) {
         background: #e8f4ff;
     }
-    
+
     /* Reduce padding for mobile */
     th, td {
         padding: 8px 5px;
         font-size: 0.9em;
     }
-    
+
     /* Stack character/equipment info vertically */
     .character-cell, .equipment-cell {
         flex-direction: column;
@@ -451,24 +526,24 @@ tr:hover { background-color: #e8f4ff; }
         padding: 5px;
         gap: 5px;
     }
-    
+
     .character-name-weapon, .equipment-name-weapon {
         text-align: center;
         word-break: break-word;
         white-space: normal;
     }
-    
+
     /* Smaller icons on mobile */
     .icon-container {
         width: 40px;
         height: 40px;
     }
-    
+
     .weapon-icon {
         width: 14px;
         height: 14px;
     }
-    
+
     /* Hide some columns on mobile for better visibility */
     @media screen and (max-width: 480px) {
         /* Hide less important columns on very small screens */
@@ -478,12 +553,12 @@ tr:hover { background-color: #e8f4ff; }
             display: none;
         }
     }
-    
+
     /* Modal adjustments for mobile */
     .modal {
         padding-top: 20px;
     }
-    
+
     .modal-content {
         width: 98%;
         margin: 10px auto;
@@ -491,39 +566,71 @@ tr:hover { background-color: #e8f4ff; }
         max-height: 90vh;
         overflow-y: auto;
     }
-    
+
     .modal-content h3 {
         font-size: 1.2em;
         margin-bottom: 10px;
         margin-top: 5px;
     }
-    
+
+    /* Tier table mobile adjustments */
+    .tier-table {
+        font-size: 0.9em;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .tier-table td:first-child {
+        width: 50px;
+    }
+
+    .tier-table td:nth-child(2) {
+        padding: 8px;
+        gap: 4px;
+        min-width: 0;
+        justify-content: flex-start;
+    }
+
+    .tier-character-icon-container {
+        margin: 0;
+    }
+
+    .tier-character-icon {
+        width: 50px;
+        height: 50px;
+    }
+
+    .tier-weapon-icon {
+        width: 15px;
+        height: 15px;
+    }
+
     .close-button {
         font-size: 24px;
         right: 10px;
         top: 5px;
     }
-    
+
     .tier-table {
         margin-top: 10px;
     }
-    
+
     .tier-table td {
         padding: 5px;
     }
-    
+
     /* Tier table mobile layout */
     .tier-table {
         width: 100%;
         table-layout: fixed;
     }
-    
+
     /* Tier badge in modal */
     .tier-table .tier-badge {
         font-size: 0.8em;
         padding: 3px 6px;
     }
-    
+
     /* First column (tier badge column) */
     .tier-table td:first-child {
         width: 35px;
@@ -532,65 +639,68 @@ tr:hover { background-color: #e8f4ff; }
         vertical-align: middle;
         padding: 5px 2px;
     }
-    
+
     /* Second column (icons container) */
     .tier-table td:nth-child(2) {
         padding: 8px;
-        text-align: left;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+        gap: 4px;
+        align-items: flex-start;
+        justify-content: flex-start;
+        min-width: 0;
     }
-    
+
     .tier-character-icon-container {
-        margin: 3px;
+        margin: 0;
         display: inline-block;
         position: relative;
         vertical-align: top;
     }
-    
+
     .tier-character-icon {
-        width: 36px;
-        height: 36px;
+        width: 50px;
+        height: 50px;
     }
-    
+
     .tier-weapon-icon {
-        width: 12px;
-        height: 12px;
+        width: 15px;
+        height: 15px;
     }
-    
-    /* Show mobile breaks on mobile */
-    .desktop-break {
+
+    /* No breaks needed with flexbox layout */
+    .desktop-break,
+    .mobile-only-break {
         display: none;
     }
-    
-    .mobile-only-break {
-        display: block;
-    }
-    
+
     /* Bottom buttons container mobile layout */
     .bottom-container {
         flex-direction: column !important;
         gap: 10px;
         align-items: stretch !important;
     }
-    
+
     .update-info {
         text-align: center;
         margin-bottom: 5px;
     }
-    
+
     #openTierModal, .tier-modal-btn {
         width: 100%;
     }
-    
+
     /* Navbar adjustments */
     .navbar-container {
         padding: 0 10px;
     }
-    
+
     .nav-links {
         padding: 0 10px;
         font-size: 0.9em;
     }
-    
+
     .nav-item {
         margin: 0 5px;
     }
@@ -601,37 +711,117 @@ tr:hover { background-color: #e8f4ff; }
     h2 {
         font-size: 1.2em;
     }
-    
+
     th, td {
         padding: 5px 3px;
         font-size: 0.8em;
     }
-    
+
     .tier-badge {
         font-size: 0.8em;
         padding: 2px 5px;
         min-width: 25px;
     }
-    
+
     .sub-stat {
         font-size: 10px;
     }
-    
+
+    /* Modal adjustments for very small phones */
+    .modal {
+        padding-top: 0;
+    }
+
+    .modal-content {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        padding: 5px;
+        border-radius: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .close-button {
+        font-size: 20px;
+        right: 5px;
+        top: 5px;
+    }
+
+    /* Tier table very small screen adjustments */
+    .tier-table {
+        font-size: 0.75em;
+        margin-top: 10px;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .tier-table th,
+    .tier-table td {
+        padding: 4px;
+    }
+
+    .tier-table td:first-child {
+        width: 35px;
+        padding: 2px;
+    }
+
+    .tier-table td:nth-child(2) {
+        padding: 4px;
+        gap: 3px;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+        justify-content: flex-start;
+        min-width: 0;
+    }
+
+    .tier-character-icon-container {
+        margin: 0;
+    }
+
+    .tier-character-icon {
+        width: 45px;
+        height: 45px;
+    }
+
+    .tier-weapon-icon {
+        width: 10px;
+        height: 10px;
+    }
+
+    /* Tooltip adjustments for very small screens */
+    .tier-tooltip {
+        font-size: 10px;
+        padding: 5px;
+        max-width: 150px;
+        bottom: auto;
+        top: 110%;
+    }
+
+    .tier-tooltip::after {
+        top: auto;
+        bottom: 100%;
+        border-color: transparent transparent #333 transparent;
+    }
+
     /* Adjust sticky column positions for very small screens */
     tbody td:nth-child(1),
     thead th:nth-child(1) {
         min-width: 28px;
         max-width: 28px;
     }
-    
+
     tbody td:nth-child(2),
     thead th:nth-child(2) {
         left: 28px; /* 더 작은 랭크 열 너비 */
         min-width: 75px;
-        max-width: 75px;
         border-right: 1px solid #ddd;
     }
-    
+
     tbody td:nth-child(3),
     thead th:nth-child(3) {
         left: 101px; /* 더 작은 랭크 + 이름 열 너비 (28 + 75 - 간격 조정) */
@@ -639,13 +829,13 @@ tr:hover { background-color: #e8f4ff; }
         max-width: 60px;
         border-left: 1px solid #ddd;
     }
-    
+
     /* Hide more columns on very small screens */
     td:nth-child(8), th:nth-child(8), /* 막금구승률 */
     td:nth-child(9), th:nth-child(9) { /* 이득확률 */
         display: none;
     }
-    
+
     /* Modal adjustments for very small screens */
     .modal-content {
         width: 100%;
@@ -655,40 +845,44 @@ tr:hover { background-color: #e8f4ff; }
         height: 100vh;
         max-height: 100vh;
     }
-    
+
     .modal-content h3 {
         font-size: 1em;
         margin-bottom: 8px;
     }
-    
+
     .tier-table .tier-badge {
         font-size: 0.7em;
         padding: 2px 4px;
         min-width: 20px;
     }
-    
+
     .tier-table td:first-child {
         width: 30px;
         min-width: 30px;
         padding: 3px 1px;
     }
-    
+
     .tier-table td:nth-child(2) {
         padding: 5px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        justify-content: flex-start;
     }
-    
+
     .tier-character-icon-container {
-        margin: 2px;
+        margin: 0;
         display: inline-block;
     }
-    
+
     .tier-character-icon {
-        width: 32px;
-        height: 32px;
+        width: 45px;
+        height: 45px;
     }
-    
+
     .tier-weapon-icon {
-        width: 11px;
-        height: 11px;
+        width: 14px;
+        height: 14px;
     }
 }
