@@ -242,4 +242,53 @@ trait ErDevTrait
 
         return $itemType2;
     }
+
+    /**
+     * 티어명 특정 언어로 변경, 가짓수가 적어서 하드코딩
+     * 기본적으로 한글 티어로 변경
+     * @param string $tierName
+     * @param string $lang
+     * @return string
+     */
+    public function replaceTierName(string $tierName, string $lang = 'ko')
+    {
+        $tiers = [
+            [
+                'ko' => '전체',
+                'en' => 'All'
+            ],
+            [
+                'ko' => '플레티넘',
+                'en' => 'Platinum'
+            ],
+            [
+                'ko' => '다이아',
+                'en' => 'Diamond'
+            ],
+            [
+                'ko' => '다이아2',
+                'en' => 'Diamond2'
+            ],
+            [
+                'ko' => '메테오라이트',
+                'en' => 'Meteorite'
+            ],
+            [
+                'ko' => '미스릴',
+                'en' => 'Mithril'
+            ],
+            [
+                'ko' => '최상위큐',
+                'en' => 'Top'
+            ],
+        ];
+
+        foreach ($tiers as $tier) {
+            if ($tier['en'] == $tierName || $tier['ko'] == $tierName) {
+                return $tier[$lang];
+            }
+        }
+
+        return $tierName;
+    }
 }
