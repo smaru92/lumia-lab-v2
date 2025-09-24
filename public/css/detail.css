@@ -319,6 +319,47 @@ tr:hover {
     }
 }
 
+/* Sticky first columns for all screen sizes */
+/* Main table (gameTable) first column sticky */
+#gameTable th:first-child,
+#gameTable td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa !important;
+    z-index: 5;
+    border-right: 2px solid #ddd;
+    min-width: 140px;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+/* Tier info table first column sticky */
+#tierInfoTable th:first-child,
+#tierInfoTable td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa !important;
+    z-index: 5;
+    border-right: 2px solid #ddd;
+    min-width: 100px;
+    white-space: nowrap;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+/* Character cell adjustments for sticky */
+#gameTable td:first-child.character-cell {
+    min-width: 140px;
+    white-space: normal;
+}
+
+/* Reset other cells to avoid stacking issues */
+#gameTable th:not(:first-child),
+#gameTable td:not(:first-child),
+#tierInfoTable th:not(:first-child),
+#tierInfoTable td:not(:first-child) {
+    position: static;
+    z-index: auto;
+}
+
 /* Large screens (desktops) */
 @media (min-width: 992px) {
     /* Add any specific styles for large screens if needed */
@@ -343,6 +384,24 @@ tr:hover {
 
 .show-more-button:hover {
     background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Toggle Button Style */
+.toggle-button {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-left: 10px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s;
+}
+
+.toggle-button:hover {
+    background-color: #545b62;
 }
 
 /* Character Cell Styles (Copied from main.css for consistency) */
@@ -489,6 +548,39 @@ tr:hover {
         font-size: 0.8em;
         min-width: 60px;
     }
+
+    /* Specific width for tier info table columns */
+    #tierInfoTable th:first-child,
+    #tierInfoTable td:first-child {
+        min-width: 80px; /* Wider for "최소티어" text */
+        white-space: nowrap;
+        position: sticky;
+        left: 0;
+        background-color: #f8f9fa !important;
+        z-index: 5;
+        border-right: 2px solid #ddd;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    }
+
+    /* Make sure main table name column is always visible */
+    #gameTable th:first-child,
+    #gameTable td:first-child {
+        position: sticky;
+        left: 0;
+        background-color: #f8f9fa !important;
+        z-index: 5;
+        min-width: 120px;
+        max-width: 120px;
+        border-right: 2px solid #ddd;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    }
+
+    /* Override character cell styles when sticky */
+    #gameTable td:first-child.character-cell {
+        min-width: 120px;
+        max-width: 120px;
+        white-space: normal;
+    }
     
     .sub-stat {
         font-size: 9px;
@@ -600,6 +692,13 @@ tr:hover {
         padding: 8px 12px;
         font-size: 0.9em;
         margin: 10px auto;
+    }
+
+    /* Toggle button mobile optimization */
+    .toggle-button {
+        padding: 4px 8px;
+        margin-left: 8px;
+        font-size: 0.75em;
     }
     
     /* Hide some less important columns on very small screens */

@@ -131,6 +131,85 @@
         </tr>
         </tbody>
     </table>
+    <h3>전체 티어정보 <button id="toggle-tier-info" class="toggle-button">▼ 펼치기</button></h3>
+
+    <div id="tier-info-container" style="display: none;">
+        <table id="tierInfoTable">
+            <thead>
+            <tr>
+                <th>최소티어</th>
+                <th>티어</th>
+                <th>픽률</th>
+                <th>승률</th>
+                <th>TOP2</th>
+                <th>TOP4</th>
+                <th>막금구승률</th>
+                <th>이득확률</th>
+                <th>손실확률</th>
+                <th>평균점수</th>
+                <th>이득평균점수</th>
+                <th>손실평균점수</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($byAll as $item)
+            <tr style="cursor: pointer;">
+                <td>
+                    {{ $item->tier_name }}
+                </td>
+                <td data-score="{{ $item->meta_score }}">
+                    @php
+                        $tier = $item->meta_tier;
+                        $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
+                    @endphp
+                    <span class="tier-badge {{ $tierClass }}">{{ $tier }}</span>
+                    <div class="sub-stat">{{ number_format($item->meta_score_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->game_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->game_count_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->top1_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->top2_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->top2_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->top4_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->top4_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->endgame_win_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->positive_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->negative_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td class="number">
+                    {{ number_format($item->avg_mmr_gain, 1) }}
+                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td class="number">
+                    {{ number_format($item->positive_avg_mmr_gain, 1) }}
+                    <div class="sub-stat">{{ number_format($item->positive_avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+                <td class="number">
+                    {{ number_format($item->negative_avg_mmr_gain, 1) }}
+                    <div class="sub-stat">{{ number_format($item->negative_avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                </td>
+            </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
     <h3>순위 통계</h3>
     <table class="sortable-table">
         <thead>

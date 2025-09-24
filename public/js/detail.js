@@ -289,5 +289,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial trait filter application on page load
     filterTraits();
 
+    // --- Tier Info Toggle Logic ---
+    const toggleTierInfoButton = document.getElementById('toggle-tier-info');
+    const tierInfoContainer = document.getElementById('tier-info-container');
+
+    if (toggleTierInfoButton && tierInfoContainer) {
+        toggleTierInfoButton.addEventListener('click', function() {
+            if (tierInfoContainer.style.display === 'none' || tierInfoContainer.style.display === '') {
+                tierInfoContainer.style.display = 'block';
+                this.innerHTML = '▲ 접기';
+            } else {
+                tierInfoContainer.style.display = 'none';
+                this.innerHTML = '▼ 펼치기';
+            }
+        });
+    }
 
 }); // End DOMContentLoaded

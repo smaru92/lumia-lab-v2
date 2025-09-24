@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Services\GameResultSummaryService;
 use App\Services\MainService;
 use App\Services\RankRangeService;
+use App\Traits\ErDevTrait;
 use Illuminate\Http\Request;
 
 class MainController extends Controller
 {
+    use ErDevTrait;
     protected MainService $mainService;
     protected RankRangeService $rankRangeService;
     protected int $versionSeason;
@@ -32,17 +34,17 @@ class MainController extends Controller
         $defaultVersion = config('erDev.defaultVersion');
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
-        
+
         // 버전 형식 검증
         if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
             $version = $defaultVersion;
         }
-        
+
         $version =  explode('.', $version);
         $versionSeason = $version[0];
         $versionMajor = $version[1];
         $versionMinor = $version[2];
-        
+
         // 추가 검증 - 숫자 범위 확인
         if (!is_numeric($versionSeason) || !is_numeric($versionMajor) || !is_numeric($versionMinor) ||
             $versionSeason < 0 || $versionSeason > 999 ||
@@ -54,14 +56,14 @@ class MainController extends Controller
             $versionMajor = $version[1];
             $versionMinor = $version[2];
         }
-        
+
         $filters = [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
             'min_tier' => $minTier,
         ];
-        
+
         // 버전별 최상위 티어 점수 동적 조회
         $versionFilters = [
             'version_season' => $versionSeason,
@@ -69,7 +71,7 @@ class MainController extends Controller
             'version_minor' => $versionMinor
         ];
         $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
-        
+
         $lastData = $this->mainService->getGameResultSummary($filters);
         if ($lastData->first()) {
             $lastUpdate = $lastData->first()->created_at ?? null;
@@ -105,7 +107,7 @@ class MainController extends Controller
         $versionMajor = $version[1] ?? $defaultVersionMajor;
         $versionMinor = $version[2] ?? $defaultVersionMinor;
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
-        
+
         // 버전별 최상위 티어 점수 동적 조회
         $versionFilters = [
             'version_season' => $versionSeason,
@@ -135,7 +137,15 @@ class MainController extends Controller
             'defaultTier' => $defaultTier,
             'versions' => $versions,
         ];
-        $data['byMain'] = $this->mainService->getGameResultSummaryDetail($filters);
+        $data['byAll'] = [];
+        foreach ($this->tierRange as $rankRange) {
+            $rankDetailFilters = $filters;
+            $rankDetailFilters['min_tier'] = $rankRange['tier'];
+            $data['byAll'][$rankRange['tier']] = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
+            $data['byAll'][$rankRange['tier']]->tier_name = $this->replaceTierName($rankRange['tier']);
+
+        }
+        $data['byMain'] = $data['byAll'][$minTier];
         $byMainFilter = $filters;
         unset($byMainFilter['character_name']);
         unset($byMainFilter['weapon_type']);
