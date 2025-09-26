@@ -97,6 +97,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 iconContainer.style.display = showIcon ? "inline-block" : "none";
             });
+
+            // Handle empty tier rows dynamically
+            const tierRows = tierModal.querySelectorAll(".tier-table tr");
+            tierRows.forEach(row => {
+                const tierContent = row.querySelector("td:nth-child(2)");
+                if (!tierContent) return;
+
+                // Check if this tier row has any visible icons
+                const visibleIcons = tierContent.querySelectorAll(".tier-character-icon-container:not([style*='display: none'])");
+                const hasVisibleIcons = visibleIcons.length > 0;
+
+                // Get tier name from the tier badge
+                const tierBadge = row.querySelector(".tier-badge");
+                const tierName = tierBadge ? tierBadge.textContent.trim() : '';
+                const isSpecialTier = ['OP', 'RIP'].includes(tierName);
+
+                if (!hasVisibleIcons) {
+                    if (isSpecialTier) {
+                        // Hide OP/RIP tiers when they have no visible items
+                        row.style.display = "none";
+                    } else {
+                        // Show regular tiers as empty with proper height
+                        row.style.display = "";
+                        tierContent.innerHTML = "&nbsp;";
+                        row.classList.add("empty-tier-row");
+                        tierContent.classList.add("empty-tier-content");
+                    }
+                } else {
+                    // Show tier with items
+                    row.style.display = "";
+                    row.classList.remove("empty-tier-row");
+                    tierContent.classList.remove("empty-tier-content");
+                }
+            });
         }
 
         renumberRankColumn();
