@@ -161,11 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (showMoreTacticalSkillsButton && tacticalSkillRows.length > 5) {
         // Show the button only if there are more than 5 rows
-        showMoreTacticalSkillsButton.style.display = 'block'; // Or 'inline-block' depending on your CSS for the button
+        showMoreTacticalSkillsButton.style.display = 'block';
+        showMoreTacticalSkillsButton.textContent = '더보기';
 
         showMoreTacticalSkillsButton.addEventListener('click', () => {
             tacticalSkillRows.forEach((row, index) => {
-                // Show rows starting from the 11th (index 5)
+                // Show rows starting from the 6th (index 5)
                 if (index >= 5) {
                     row.style.display = ''; // Remove inline style to show
                 }
@@ -238,27 +239,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let visibleCount = 0;
         let hiddenMatchingCount = 0;
-        // Use the state variable instead of checking display style
-        // const showMoreClicked = showMoreTraitsButtonJs.style.display === 'none'; // Removed
+        const showLimit = traitShowMoreActivated ? 999 : 10; // Show 10 initially, then all
 
         traitRows.forEach((row, index) => {
             const is_main = row.dataset.is_main;
             const matchesIsMain = is_main && checkedIsMains.includes(is_main);
             const category = row.dataset.category;
             const matchesCategory = category && checkedCategories.includes(category);
+
             if (matchesIsMain && matchesCategory) {
-                row.style.display = '';
-                visibleCount++;
+                if (visibleCount < showLimit) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                    hiddenMatchingCount++;
+                }
             } else {
                 // Hide if category doesn't match
                 row.style.display = 'none';
             }
         });
 
-        // Adjust "Show More" button visibility based on counts and state variable
-        if (hiddenMatchingCount > 0 && !traitShowMoreActivated) {
+        // Update "Show More" button
+        if (hiddenMatchingCount > 0 && !traitShowMoreActivated && showMoreTraitsButtonJs) {
             showMoreTraitsButtonJs.style.display = 'block';
-        } else {
+            showMoreTraitsButtonJs.textContent = '더보기';
+        } else if (showMoreTraitsButtonJs) {
             showMoreTraitsButtonJs.style.display = 'none';
         }
     }

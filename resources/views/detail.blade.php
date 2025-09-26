@@ -279,7 +279,7 @@
                     continue;
                 }
             @endphp
-            <tr class="tactical-skill-row" data-tactical_skill-id="{{ $firstTacticalSkillItem->tactical_skill_id }}" style="{{ $loop->parent->index >= 10 ? 'display: none;' : '' }}">
+            <tr class="tactical-skill-row" data-tactical_skill-id="{{ $firstTacticalSkillItem->tactical_skill_id }}" style="{{ $loop->parent->index >= 5 ? 'display: none;' : '' }}">
                 <td style="white-space: nowrap; overflow: visible; text-overflow: unset;">{{ $firstTacticalSkillItem->tactical_skill_name }}</td>
                 <td style="width: 40px; max-width: 40px; text-align: center; padding: 8px 4px;">{{ $firstTacticalSkillItem->tactical_skill_level }}</td>
                 <td>{{ $byTacticalSkillTotal[$firstTacticalSkillItem->tactical_skill_id][$firstTacticalSkillItem->tactical_skill_level] }}</td>
@@ -370,7 +370,7 @@
                 $traitCategory = $firstTraitItem->trait_category; // Store category for data attribute
             @endphp
             {{-- Add data-category attribute --}}
-            <tr class="trait-row" data-trait-id="{{ $firstTraitItem->trait_id }}" data-category="{{ $traitCategory }}" data-is_main="{{ $firstTraitItem->is_main }}">
+            <tr class="trait-row" data-trait-id="{{ $firstTraitItem->trait_id }}" data-category="{{ $traitCategory }}" data-is_main="{{ $firstTraitItem->is_main }}" style="{{ $loop->index >= 10 ? 'display: none;' : '' }}">
                 <td>{{ $firstTraitItem->trait_name }}</td>
                 <td>{{ $traitCategory }}</td>
                 <td>{{ $firstTraitItem->is_main ? '메인' : '서브' }}</td>
