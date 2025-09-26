@@ -1,0 +1,81 @@
+# Lumia Lab V2 프로젝트 구조 분석
+
+## 프로젝트 개요
+- **프레임워크**: Laravel (PHP)
+- **프로젝트 타입**: 게임 데이터 분석 웹 애플리케이션 (Lumia 게임 관련)
+
+## 데이터베이스 구조
+
+### 주요 테이블
+
+#### 1. 게임 결과 관련
+- **game_results**: 게임 결과 메인 테이블
+  - 게임 ID, 유저 ID, MMR 정보 (시작전/후/변동치/입장료)
+  - 캐릭터 ID, 무기 ID
+  - 킬/데스/어시스트 점수
+  - 게임 시작 시간, 버전 정보
+
+- **game_result_skill_orders**: 스킬 찍은 순서
+- **game_result_trait_orders**: 특성 정보 (메인/서브)
+- **game_result_equipment_orders**: 장비 아이템 순서
+- **game_result_first_equipment_orders**: 첫 장비 아이템 정보
+
+#### 2. 게임 데이터 관련
+- **characters**: 캐릭터 정보
+  - HP, MP, 공격력, 방어력 등 스탯
+  - 레벨별 증가치
+  - 공격속도, 이동속도, 시야 범위
+
+- **equipments**: 장비 아이템 정보
+  - 아이템 타입, 등급
+  - 각종 스탯 효과 (공격력, 방어력, 스킬 증폭 등)
+  - 특수 효과 (생명력 흡수, 치명타, 쿨다운 감소 등)
+
+- **traits**: 특성 정보
+- **tactical_skills**: 전술 스킬 정보
+- **character_skills**: 캐릭터 스킬 정보
+
+#### 3. 통계/요약 테이블
+- **game_results_summary**: 게임 결과 요약
+- **game_results_rank_summary**: 랭크별 요약
+- **game_results_equipment_summary**: 장비별 요약
+- **game_results_equipment_main_summary**: 메인 장비 요약
+- **game_results_tactical_skill_summary**: 전술 스킬 요약
+- **game_results_trait_summary**: 특성 요약
+- **game_results_first_equipment_main_summary**: 첫 장비 메인 요약
+
+#### 4. 기타
+- **users**: 사용자 정보
+- **version_history**: 버전 이력
+- **rank_ranges**: 랭크 범위 정보
+- **job_status**: 작업 상태
+
+## 모델 구조
+- **DynamicModel**: 커스텀 베이스 모델
+- 각 테이블별 Eloquent 모델 존재
+- GameResult 모델이 메인 모델로 사용됨
+
+## 라우팅 구조
+
+### Web 라우트
+- `/` , `/main`: 메인 페이지 (MainController)
+- `/equipment`: 장비 페이지 (EquipmentController)
+- `/equipment-first`: 첫 장비 페이지 (EquipmentFirstController)
+- `/detail/{types}`: 상세 페이지
+
+### API 라우트
+- `/api/character`: 캐릭터 정보 조회
+- `/api/equipment`: 장비 정보 조회
+- `/api/item`: 아이템 정보 조회
+- `/api/skill`: 스킬 정보 조회
+- `/api/trait`: 특성 정보 조회
+
+## 주요 기능
+1. 게임 결과 데이터 수집 및 저장
+2. 캐릭터/장비/스킬 등 게임 데이터 관리
+3. 게임 통계 분석 및 요약
+4. MMR 변동 추적
+5. 버전별 데이터 관리
+
+## 제약사항
+1. **터미널 명령어 실행 제한**: 모든 터미널 명령어는 사용자에게 먼저 요청하여 확인 받아야 함
