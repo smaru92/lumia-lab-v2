@@ -341,6 +341,20 @@ tr:hover { background-color: #e8f4ff; }
     position: relative;
 }
 
+/* Empty tier row styling */
+.tier-table tr.empty-tier-row {
+    height: auto;
+    min-height: 48px; /* Match typical tier row height */
+}
+
+.tier-table tr.empty-tier-row td.empty-tier-content {
+    padding: 12px 8px; /* Match normal tier row padding */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 48px;
+}
+
 /* Tooltip styles for tier modal */
 .tier-tooltip {
     visibility: hidden;
@@ -817,6 +831,20 @@ body > .tier-tooltip {
         justify-content: flex-start;
         min-width: 0;
         overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
+    }
+
+    /* Empty tier row styling for mobile */
+    .tier-table tr.empty-tier-row {
+        height: auto;
+        min-height: 40px; /* Smaller height for mobile */
+    }
+
+    .tier-table tr.empty-tier-row td.empty-tier-content {
+        padding: 8px 4px; /* Match mobile tier row padding */
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 40px;
     }
 
     .tier-character-icon-container {

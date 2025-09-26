@@ -172,7 +172,11 @@
                     $groupedByTier = $data->groupBy('meta_tier');
                 @endphp
                 @foreach($tiers as $tier)
-                    @if(isset($groupedByTier[$tier]) && count($groupedByTier[$tier]) > 0)
+                    @php
+                        $hasItems = isset($groupedByTier[$tier]) && count($groupedByTier[$tier]) > 0;
+                        $isSpecialTier = in_array($tier, ['OP', 'RIP']); // OP and RIP tiers should be hidden when empty
+                    @endphp
+                    @if($hasItems)
                         @php
                             $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
                         @endphp
@@ -202,6 +206,15 @@
                                     </div>
                                 @endforeach
                             </td>
+                        </tr>
+                    @elseif(!$isSpecialTier)
+                        {{-- Show empty tier row with proper height only for regular tiers (1,2,3,4,5) --}}
+                        @php
+                            $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-1, tier-2, etc.
+                        @endphp
+                        <tr class="empty-tier-row">
+                            <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }}">{{ $tier }}</span></td>
+                            <td class="empty-tier-content">&nbsp;</td>
                         </tr>
                     @endif
                 @endforeach
