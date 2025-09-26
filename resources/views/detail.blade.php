@@ -279,9 +279,9 @@
                     continue;
                 }
             @endphp
-            <tr class="tactical-skill-row" data-tactical_skill-id="{{ $firstTacticalSkillItem->tactical_skill_id }}" style="{{ $loop->parent->index >= 5 ? 'display: none;' : '' }}">
-                <td>{{ $firstTacticalSkillItem->tactical_skill_name }}</td>
-                <td>{{ $firstTacticalSkillItem->tactical_skill_level }}</td>
+            <tr class="tactical-skill-row" data-tactical_skill-id="{{ $firstTacticalSkillItem->tactical_skill_id }}" style="{{ $loop->parent->index >= 10 ? 'display: none;' : '' }}">
+                <td style="white-space: nowrap; overflow: visible; text-overflow: unset;">{{ $firstTacticalSkillItem->tactical_skill_name }}</td>
+                <td style="width: 40px; max-width: 40px; text-align: center; padding: 8px 4px;">{{ $firstTacticalSkillItem->tactical_skill_level }}</td>
                 <td>{{ $byTacticalSkillTotal[$firstTacticalSkillItem->tactical_skill_id][$firstTacticalSkillItem->tactical_skill_level] }}</td>
                 <td>
                     <div class="tooltip-wrap">
@@ -349,9 +349,9 @@
     <table class="sortable-table">
         <thead>
         <tr>
+            <th class="sortable" data-sort-index="0" data-sort-type="text">이름</th>
             <th class="sortable" data-sort-index="1" data-sort-type="text">분류</th>
-            <th class="sortable" data-sort-index="2" data-sort-type="text">이름</th>
-            <th class="sortable" data-sort-index="0" data-sort-type="text">구분</th>
+            <th class="sortable" data-sort-index="2" data-sort-type="text">구분</th>
             <th class="sortable" data-sort-index="3" data-sort-type="number">사용수</th>
             <th class="sortable" data-sort-index="4" data-sort-type="number">1위율</th>
             <th class="sortable" data-sort-index="5" data-sort-type="number">2위율</th>
@@ -371,8 +371,8 @@
             @endphp
             {{-- Add data-category attribute --}}
             <tr class="trait-row" data-trait-id="{{ $firstTraitItem->trait_id }}" data-category="{{ $traitCategory }}" data-is_main="{{ $firstTraitItem->is_main }}">
-                <td>{{ $traitCategory }}</td>
                 <td>{{ $firstTraitItem->trait_name }}</td>
+                <td>{{ $traitCategory }}</td>
                 <td>{{ $firstTraitItem->is_main ? '메인' : '서브' }}</td>
                     <td>{{ $byTraitTotal[$firstTraitItem->trait_id] }}</td>
                     <td>

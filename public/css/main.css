@@ -249,7 +249,7 @@ tr:hover { background-color: #e8f4ff; }
     position: relative;
     max-height: 90vh;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible; /* Allow tooltips to extend horizontally */
 }
 
 .close-button {
@@ -275,6 +275,7 @@ tr:hover { background-color: #e8f4ff; }
     margin-top: 20px;
     margin-bottom: 20px;
     table-layout: fixed;
+    overflow: visible; /* Allow tooltips to extend beyond table boundaries */
 }
 
 .tier-table th,
@@ -283,6 +284,11 @@ tr:hover { background-color: #e8f4ff; }
     padding: 8px;
     text-align: left;
     vertical-align: middle;
+    overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
+}
+
+.tier-table tr {
+    overflow: visible; /* Allow tooltips to extend beyond row boundaries */
 }
 
 .tier-table th {
@@ -316,6 +322,23 @@ tr:hover { background-color: #e8f4ff; }
     vertical-align: top; /* Align to top for multi-line text */
     position: relative;
     cursor: pointer;
+    z-index: 1; /* Base z-index for icon containers */
+}
+
+.tier-character-icon-container:hover {
+    z-index: 10000; /* Much higher z-index when hovering to ensure tooltip appears above everything */
+}
+
+/* Ensure the parent row doesn't clip tooltips when hovering */
+.tier-table tr:has(.tier-character-icon-container:hover) {
+    z-index: 9999;
+    position: relative;
+}
+
+/* Fallback for browsers that don't support :has() */
+.tier-table tr.tooltip-active {
+    z-index: 9999;
+    position: relative;
 }
 
 /* Tooltip styles for tier modal */
@@ -328,14 +351,20 @@ tr:hover { background-color: #e8f4ff; }
     border-radius: 6px;
     padding: 8px;
     position: absolute;
-    z-index: 1002;
+    z-index: 99999; /* Much higher z-index to appear above all tier content */
     left: 50%;
     transform: translateX(-50%);
     white-space: nowrap;
     opacity: 0;
     transition: opacity 0.2s;
     pointer-events: none;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5); /* Stronger shadow for better visibility */
+}
+
+/* When tooltip is moved to body (fixed positioning) */
+body > .tier-tooltip {
+    position: fixed !important;
+    z-index: 99999 !important;
 }
 
 /* Default: tooltip above */
@@ -457,7 +486,7 @@ tr:hover { background-color: #e8f4ff; }
         margin-bottom: 20px;
     }
 
-    /* Fixed first three columns for mobile (랭크, 이름, 티어) */
+    /* Fixed first two columns for mobile (랭크, 이름만) */
     tbody td:nth-child(1),
     thead th:nth-child(1) {
         position: sticky;
@@ -475,41 +504,26 @@ tr:hover { background-color: #e8f4ff; }
         left: 30px; /* 랭크 열 너비 (모바일용 축소) */
         z-index: 10;
         background: white;
-        box-shadow: 1px 0 3px rgba(0,0,0,0.1);
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         min-width: 80px;
         border-right: 1px solid #ddd;
     }
 
-    tbody td:nth-child(3),
-    thead th:nth-child(3) {
-        position: sticky;
-        left: 108px; /* 랭크 + 이름 열 너비 (랭크 30px + 이름 80px - 간격 조정) */
-        z-index: 10;
-        background: white;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        min-width: 65px;
-        max-width: 65px;
-        border-left: 1px solid #ddd;
-    }
-
     thead th:nth-child(1),
-    thead th:nth-child(2),
-    thead th:nth-child(3) {
+    thead th:nth-child(2) {
         z-index: 11;
         background: #f4f4f4;
     }
 
     /* Ensure proper background for even rows */
     tbody tr:nth-child(even) td:nth-child(1),
-    tbody tr:nth-child(even) td:nth-child(2),
-    tbody tr:nth-child(even) td:nth-child(3) {
+    tbody tr:nth-child(even) td:nth-child(2) {
         background: #f9f9f9;
     }
 
     /* Hover state for fixed columns */
     tbody tr:hover td:nth-child(1),
-    tbody tr:hover td:nth-child(2),
-    tbody tr:hover td:nth-child(3) {
+    tbody tr:hover td:nth-child(2) {
         background: #e8f4ff;
     }
 
@@ -565,6 +579,7 @@ tr:hover { background-color: #e8f4ff; }
         padding: 10px;
         max-height: 90vh;
         overflow-y: auto;
+        overflow-x: visible; /* Allow tooltips to extend horizontally */
     }
 
     .modal-content h3 {
@@ -578,6 +593,11 @@ tr:hover { background-color: #e8f4ff; }
         font-size: 0.9em;
         width: 100%;
         table-layout: fixed;
+        overflow: visible; /* Allow tooltips to extend beyond table boundaries */
+    }
+
+    .tier-table tr {
+        overflow: visible; /* Allow tooltips to extend beyond row boundaries */
     }
 
     .tier-table td:first-child {
@@ -589,10 +609,17 @@ tr:hover { background-color: #e8f4ff; }
         gap: 4px;
         min-width: 0;
         justify-content: flex-start;
+        overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
     }
 
     .tier-character-icon-container {
         margin: 0;
+        position: relative;
+        z-index: 1; /* Base z-index for icon containers */
+    }
+
+    .tier-character-icon-container:hover {
+        z-index: 10000; /* Much higher z-index when hovering to ensure tooltip appears above everything */
     }
 
     .tier-character-icon {
@@ -650,6 +677,7 @@ tr:hover { background-color: #e8f4ff; }
         align-items: flex-start;
         justify-content: flex-start;
         min-width: 0;
+        overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
     }
 
     .tier-character-icon-container {
@@ -657,6 +685,11 @@ tr:hover { background-color: #e8f4ff; }
         display: inline-block;
         position: relative;
         vertical-align: top;
+        z-index: 1; /* Base z-index for icon containers */
+    }
+
+    .tier-character-icon-container:hover {
+        z-index: 10000; /* Much higher z-index when hovering to ensure tooltip appears above everything */
     }
 
     .tier-character-icon {
@@ -742,7 +775,7 @@ tr:hover { background-color: #e8f4ff; }
         top: 0;
         left: 0;
         overflow-y: auto;
-        overflow-x: hidden;
+        overflow-x: visible; /* Allow tooltips to extend horizontally even on very small screens */
     }
 
     .close-button {
@@ -757,11 +790,17 @@ tr:hover { background-color: #e8f4ff; }
         margin-top: 10px;
         width: 100%;
         table-layout: fixed;
+        overflow: visible; /* Allow tooltips to extend beyond table boundaries */
+    }
+
+    .tier-table tr {
+        overflow: visible; /* Allow tooltips to extend beyond row boundaries */
     }
 
     .tier-table th,
     .tier-table td {
         padding: 4px;
+        overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
     }
 
     .tier-table td:first-child {
@@ -777,10 +816,17 @@ tr:hover { background-color: #e8f4ff; }
         flex-direction: row !important;
         justify-content: flex-start;
         min-width: 0;
+        overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
     }
 
     .tier-character-icon-container {
         margin: 0;
+        position: relative;
+        z-index: 1; /* Base z-index for icon containers */
+    }
+
+    .tier-character-icon-container:hover {
+        z-index: 10000; /* Much higher z-index when hovering to ensure tooltip appears above everything */
     }
 
     .tier-character-icon {
@@ -800,6 +846,8 @@ tr:hover { background-color: #e8f4ff; }
         max-width: 150px;
         bottom: auto;
         top: 110%;
+        z-index: 9999; /* Ensure high z-index on small screens too */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5); /* Stronger shadow for better visibility */
     }
 
     .tier-tooltip::after {
@@ -822,13 +870,6 @@ tr:hover { background-color: #e8f4ff; }
         border-right: 1px solid #ddd;
     }
 
-    tbody td:nth-child(3),
-    thead th:nth-child(3) {
-        left: 101px; /* 더 작은 랭크 + 이름 열 너비 (28 + 75 - 간격 조정) */
-        min-width: 60px;
-        max-width: 60px;
-        border-left: 1px solid #ddd;
-    }
 
     /* Hide more columns on very small screens */
     td:nth-child(8), th:nth-child(8), /* 막금구승률 */
@@ -844,6 +885,8 @@ tr:hover { background-color: #e8f4ff; }
         border-radius: 0;
         height: 100vh;
         max-height: 100vh;
+        overflow-y: auto;
+        overflow-x: visible; /* Allow tooltips to extend horizontally */
     }
 
     .modal-content h3 {
@@ -869,11 +912,18 @@ tr:hover { background-color: #e8f4ff; }
         flex-wrap: wrap;
         gap: 3px;
         justify-content: flex-start;
+        overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
     }
 
     .tier-character-icon-container {
         margin: 0;
         display: inline-block;
+        position: relative;
+        z-index: 1; /* Base z-index for icon containers */
+    }
+
+    .tier-character-icon-container:hover {
+        z-index: 10000; /* Much higher z-index when hovering to ensure tooltip appears above everything */
     }
 
     .tier-character-icon {

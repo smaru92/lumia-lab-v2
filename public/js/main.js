@@ -231,6 +231,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Tooltip functionality for tier modal ---
+    let activeTooltip = null; // Global reference to currently active tooltip
+
+    function hideActiveTooltip() {
+        if (activeTooltip && activeTooltip.element) {
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile && activeTooltip.element.parentNode === document.body) {
+                // Mobile: Clean up tooltip moved to body
+                activeTooltip.element.style.visibility = 'hidden';
+                activeTooltip.element.style.opacity = '0';
+
+                // Move back to original container
+                if (activeTooltip.originalContainer) {
+                    activeTooltip.originalContainer.appendChild(activeTooltip.element);
+                    activeTooltip.element.style.position = 'absolute';
+                    activeTooltip.element.style.top = '';
+                    activeTooltip.element.style.left = '';
+                    activeTooltip.element.style.transform = 'translateX(-50%)';
+                    activeTooltip.element.style.zIndex = '';
+                }
+            }
+
+            // Remove active class from parent row (desktop)
+            if (activeTooltip.parentRow) {
+                activeTooltip.parentRow.classList.remove('tooltip-active');
+            }
+
+            activeTooltip = null;
+        }
+    }
+
     function initializeTierTooltips() {
         const tierModal = document.getElementById('tierModal');
         if (!tierModal) return;
@@ -277,7 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Add dynamic positioning on hover
-            container.addEventListener('mouseenter', function(e) {
+            const showTooltip = function(e) {
+                // Hide any previously active tooltip
+                hideActiveTooltip();
+
                 const tooltip = this.querySelector('.tier-tooltip');
                 if (!tooltip) return;
 
@@ -285,19 +319,83 @@ document.addEventListener('DOMContentLoaded', () => {
                 const viewportHeight = window.innerHeight;
                 const iconCenterY = rect.top + (rect.height / 2);
                 const screenMiddle = viewportHeight / 2;
+                const isMobile = window.innerWidth <= 768;
 
-                // Simple logic: if icon is in upper half of screen, show tooltip below
-                // if icon is in lower half of screen, show tooltip above
-                if (iconCenterY < screenMiddle) {
-                    // Upper half - show tooltip below
-                    tooltip.classList.add('tooltip-below');
-                    tooltip.classList.remove('tooltip-above');
-                } else {
-                    // Lower half - show tooltip above
-                    tooltip.classList.remove('tooltip-below');
-                    tooltip.classList.add('tooltip-above');
+                // Set up active tooltip tracking
+                const parentRow = this.closest('tr');
+                activeTooltip = {
+                    element: tooltip,
+                    originalContainer: this,
+                    parentRow: parentRow
+                };
+
+                // Add active class to parent row for z-index control (desktop)
+                if (!isMobile && parentRow) {
+                    parentRow.classList.add('tooltip-active');
                 }
-            });
+
+                if (isMobile) {
+                    // Mobile: Move tooltip to body to avoid stacking context issues
+                    document.body.appendChild(tooltip);
+                    tooltip.style.position = 'fixed';
+                    tooltip.style.zIndex = '99999';
+
+                    // Show tooltip immediately for mobile to measure its size
+                    tooltip.style.visibility = 'visible';
+                    tooltip.style.opacity = '1';
+                    tooltip.style.left = '0px'; // Temporary position for measurement
+                    tooltip.style.top = '0px';
+
+                    // Get actual tooltip dimensions after rendering
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    const tooltipWidth = tooltipRect.width;
+                    const tooltipHeight = tooltipRect.height;
+
+                    // Calculate centered position
+                    const leftPos = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+
+                    if (iconCenterY < screenMiddle) {
+                        // Upper half - show tooltip below
+                        tooltip.style.top = (rect.bottom + 10) + 'px';
+                        tooltip.classList.add('tooltip-below');
+                        tooltip.classList.remove('tooltip-above');
+                    } else {
+                        // Lower half - show tooltip above
+                        tooltip.style.top = (rect.top - tooltipHeight - 10) + 'px';
+                        tooltip.classList.remove('tooltip-below');
+                        tooltip.classList.add('tooltip-above');
+                    }
+
+                    // Ensure tooltip stays within screen bounds
+                    const finalLeft = Math.max(10, Math.min(leftPos, window.innerWidth - tooltipWidth - 10));
+                    tooltip.style.left = finalLeft + 'px';
+                    tooltip.style.transform = 'none';
+                } else {
+                    // Desktop: Use original positioning logic
+                    if (iconCenterY < screenMiddle) {
+                        // Upper half - show tooltip below
+                        tooltip.classList.add('tooltip-below');
+                        tooltip.classList.remove('tooltip-above');
+                    } else {
+                        // Lower half - show tooltip above
+                        tooltip.classList.remove('tooltip-below');
+                        tooltip.classList.add('tooltip-above');
+                    }
+                }
+            };
+
+            const hideTooltip = function(e) {
+                // Use the global hideActiveTooltip function
+                hideActiveTooltip();
+            };
+
+            // Add event listeners for both desktop and mobile
+            container.addEventListener('mouseenter', showTooltip);
+            container.addEventListener('mouseleave', hideTooltip);
+
+            // Mobile touch events
+            container.addEventListener('touchstart', showTooltip);
+            container.addEventListener('touchend', hideTooltip);
         });
     }
 
