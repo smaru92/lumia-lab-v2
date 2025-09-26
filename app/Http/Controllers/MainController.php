@@ -140,9 +140,11 @@ class MainController extends Controller
         $data['byAll'] = [];
         foreach ($this->tierRange as $rankRange) {
             $rankDetailFilters = $filters;
-            $rankDetailFilters['min_tier'] = $rankRange['tier'];
-            $data['byAll'][$rankRange['tier']] = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
-            $data['byAll'][$rankRange['tier']]->tier_name = $this->replaceTierName($rankRange['tier']);
+            $rankRangeTier = $rankRange['tier'].$rankRange['tierNumber'];
+            $rankDetailFilters['min_tier'] = $rankRangeTier;
+            $data['byAll'][$rankRangeTier] = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
+            echo $rankRangeTier;
+            $data['byAll'][$rankRangeTier]->tier_name = $this->replaceTierName($rankRangeTier);
 
         }
         $data['byMain'] = $data['byAll'][$minTier];
