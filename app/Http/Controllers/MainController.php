@@ -143,7 +143,6 @@ class MainController extends Controller
             $rankRangeTier = $rankRange['tier'].$rankRange['tierNumber'];
             $rankDetailFilters['min_tier'] = $rankRangeTier;
             $data['byAll'][$rankRangeTier] = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
-            echo $rankRangeTier;
             $data['byAll'][$rankRangeTier]->tier_name = $this->replaceTierName($rankRangeTier);
 
         }
