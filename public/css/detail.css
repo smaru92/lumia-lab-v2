@@ -319,45 +319,128 @@ tr:hover {
     }
 }
 
-/* Sticky first columns for all screen sizes */
-/* Main table (gameTable) first column sticky */
-#gameTable th:first-child,
-#gameTable td:first-child {
-    position: sticky;
-    left: 0;
-    background-color: #f8f9fa !important;
-    z-index: 5;
-    border-right: 2px solid #ddd;
-    min-width: 140px;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+/* No sticky columns - allow all content to scroll horizontally */
+
+/* Tactical skill table specific styles */
+table:has(#tactical-skill-tbody) th:nth-child(2),
+#tactical-skill-tbody tr td:nth-child(2) {
+    width: 40px !important; /* Much smaller width for level column */
+    max-width: 40px !important;
+    min-width: 40px !important;
+    text-align: center;
+    padding: 8px 4px !important; /* Reduce padding */
+    box-sizing: border-box;
+    z-index: 1; /* Lower z-index */
 }
 
-/* Tier info table first column sticky */
-#tierInfoTable th:first-child,
-#tierInfoTable td:first-child {
+/* Tactical skill table - ensure proper layout */
+table:has(#tactical-skill-tbody) {
+    table-layout: fixed; /* Force fixed table layout */
+    width: 100%;
+}
+
+table:has(#tactical-skill-tbody) th:nth-child(1),
+#tactical-skill-tbody tr td:nth-child(1) {
+    white-space: nowrap; /* Prevent tactical skill name from wrapping */
+    overflow: visible;
+    text-overflow: unset;
+    width: 150px; /* Fixed width for skill names */
+    min-width: 150px;
+    max-width: 150px;
+}
+
+/* Ensure other columns have appropriate widths */
+table:has(#tactical-skill-tbody) th:nth-child(3),
+table:has(#tactical-skill-tbody) th:nth-child(4),
+table:has(#tactical-skill-tbody) th:nth-child(5),
+table:has(#tactical-skill-tbody) th:nth-child(6),
+table:has(#tactical-skill-tbody) th:nth-child(7),
+#tactical-skill-tbody tr td:nth-child(3),
+#tactical-skill-tbody tr td:nth-child(4),
+#tactical-skill-tbody tr td:nth-child(5),
+#tactical-skill-tbody tr td:nth-child(6),
+#tactical-skill-tbody tr td:nth-child(7) {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+    text-align: center;
+}
+
+/* Trait table layout */
+table:has(#trait-tbody) {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Trait table specific styles - sticky first column (name) */
+table:has(#trait-tbody) th:nth-child(1),
+table:has(#trait-tbody) td:nth-child(1) {
     position: sticky;
     left: 0;
     background-color: #f8f9fa !important;
-    z-index: 5;
+    z-index: 10; /* Higher z-index to stay above other columns */
     border-right: 2px solid #ddd;
-    min-width: 100px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
     white-space: nowrap;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    padding: 8px;
 }
 
-/* Character cell adjustments for sticky */
-#gameTable td:first-child.character-cell {
-    min-width: 140px;
-    white-space: normal;
+/* Set specific widths for trait table columns to prevent gaps */
+table:has(#trait-tbody) th:nth-child(2),
+table:has(#trait-tbody) td:nth-child(2) {
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    padding: 8px;
+    border-left: none; /* Remove left border to eliminate gap */
 }
 
-/* Reset other cells to avoid stacking issues */
-#gameTable th:not(:first-child),
-#gameTable td:not(:first-child),
-#tierInfoTable th:not(:first-child),
-#tierInfoTable td:not(:first-child) {
-    position: static;
-    z-index: auto;
+table:has(#trait-tbody) th:nth-child(3),
+table:has(#trait-tbody) td:nth-child(3) {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+    padding: 8px;
+    border-left: none; /* Remove left border to eliminate gap */
+}
+
+/* Remove any additional spacing in trait table */
+table:has(#trait-tbody) th,
+table:has(#trait-tbody) td {
+    border-spacing: 0;
+    margin: 0;
+}
+
+/* Ensure statistics columns fill remaining space properly */
+table:has(#trait-tbody) th:nth-child(n+4),
+table:has(#trait-tbody) td:nth-child(n+4) {
+    width: calc((100% - 330px) / 5); /* Divide remaining space among 5 stat columns */
+    min-width: 60px;
+}
+
+table:has(#trait-tbody) thead th:nth-child(1) {
+    background-color: #f4f4f4 !important;
+    z-index: 11; /* Even higher for header */
+}
+
+/* Ensure other columns in trait table have lower z-index */
+table:has(#trait-tbody) th:not(:nth-child(1)),
+table:has(#trait-tbody) td:not(:nth-child(1)) {
+    z-index: 1;
+}
+
+/* Ensure proper background for even rows in trait table */
+table:has(#trait-tbody) tbody tr:nth-child(even) td:nth-child(1) {
+    background: #f9f9f9 !important;
+}
+
+/* Hover state for trait table first column */
+table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
+    background: #e8f4ff !important;
 }
 
 /* Large screens (desktops) */
@@ -488,24 +571,24 @@ tr:hover {
     body {
         padding-top: 60px; /* Account for fixed navbar */
     }
-    
+
     .container {
         padding: 10px;
         margin: 0;
         border-radius: 0;
         box-shadow: none;
     }
-    
+
     h2 {
         font-size: 1.3em;
         margin-bottom: 15px;
     }
-    
+
     h3 {
         font-size: 1.1em;
         margin: 15px 0 10px 0;
     }
-    
+
     /* Filter container mobile optimization */
     .filter-container {
         flex-direction: column;
@@ -513,80 +596,49 @@ tr:hover {
         margin-bottom: 15px;
         padding: 0 5px;
     }
-    
+
     .filter-container > div {
         width: 100%;
         text-align: center;
     }
-    
+
     .filter-container strong {
         display: block;
         margin-bottom: 5px;
     }
-    
+
     select {
         width: 100%;
         max-width: none;
         font-size: 16px; /* Prevent zoom on iOS */
     }
-    
+
     /* Table mobile optimization */
     table {
         display: block;
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
-        font-size: 0.85em;
+        font-size: 0.95em; /* Increased from 0.85em */
     }
-    
+
     thead {
         position: static; /* Remove sticky on mobile for better scroll */
     }
-    
+
     th, td {
         padding: 6px 4px;
-        font-size: 0.8em;
+        font-size: 0.9em; /* Increased from 0.8em */
         min-width: 60px;
     }
 
-    /* Specific width for tier info table columns */
-    #tierInfoTable th:first-child,
-    #tierInfoTable td:first-child {
-        min-width: 80px; /* Wider for "최소티어" text */
-        white-space: nowrap;
-        position: sticky;
-        left: 0;
-        background-color: #f8f9fa !important;
-        z-index: 5;
-        border-right: 2px solid #ddd;
-        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
-    }
+    /* Remove all sticky positioning for mobile - allow full horizontal scroll */
 
-    /* Make sure main table name column is always visible */
-    #gameTable th:first-child,
-    #gameTable td:first-child {
-        position: sticky;
-        left: 0;
-        background-color: #f8f9fa !important;
-        z-index: 5;
-        min-width: 120px;
-        max-width: 120px;
-        border-right: 2px solid #ddd;
-        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
-    }
-
-    /* Override character cell styles when sticky */
-    #gameTable td:first-child.character-cell {
-        min-width: 120px;
-        max-width: 120px;
-        white-space: normal;
-    }
-    
     .sub-stat {
-        font-size: 9px;
+        font-size: 10px; /* Increased from 9px */
         line-height: 1.1;
     }
-    
+
     /* Character cell specific improvements */
     .character-cell {
         flex-direction: column;
@@ -597,87 +649,87 @@ tr:hover {
         min-width: 90px; /* Increased from 120px but still reasonable */
         max-width: 90px;
     }
-    
+
     .character-name-weapon {
         text-align: center;
         word-break: break-word;
         line-height: 1.2;
-        font-size: 0.85em;
+        font-size: 0.9em; /* Increased from 0.85em */
     }
-    
+
     .character-name-weapon small {
-        font-size: 0.75em;
+        font-size: 0.8em; /* Increased from 0.75em */
         margin-top: 2px;
     }
-    
+
     .icon-container {
         width: 36px;
         height: 36px;
         margin: 0 auto;
     }
-    
+
     .weapon-icon {
         width: 12px;
         height: 12px;
     }
-    
+
     /* Tier badge mobile optimization */
     .tier-badge {
         font-size: 0.7em;
         padding: 2px 5px;
         min-width: 25px;
     }
-    
+
     /* Equipment icon optimization */
     .equipment-icon {
         width: 30px;
         height: 30px;
         margin-right: 3px;
     }
-    
+
     /* Tooltip mobile optimization */
     .tooltip-wrap .tooltip-text {
-        font-size: 10px;
+        font-size: 11px; /* Increased from 10px */
         padding: 4px;
         border-radius: 4px;
     }
-    
+
     /* Tabs mobile optimization */
     .tabs {
         margin-top: 15px;
         flex-wrap: wrap;
     }
-    
+
     .tabs button {
         padding: 8px 6px;
-        font-size: 0.85em;
+        font-size: 0.9em; /* Increased from 0.85em */
         flex: 1 1 auto;
         min-width: 0;
         border-right: 1px solid #ccc;
     }
-    
+
     .tabs button:last-child {
         border-right: none;
     }
-    
+
     .tab-content {
         padding: 10px 8px;
     }
-    
+
     .tab-content h3 {
         font-size: 1em;
         margin-top: 5px;
         margin-bottom: 10px;
     }
-    
+
     /* Filter checkboxes mobile optimization */
     .trait-is-main-filter-container,
     .trait-category-filter-container,
     .grade-filter-container {
         margin-bottom: 10px;
-        font-size: 0.85em;
+        font-size: 0.9em; /* Increased from 0.85em */
     }
-    
+
     .trait-is-main-filter-container label,
     .trait-category-filter-container label,
     .grade-filter-container label {
@@ -685,7 +737,7 @@ tr:hover {
         margin-bottom: 5px;
         display: inline-block;
     }
-    
+
     /* Show more button mobile optimization */
     .show-more-button {
         max-width: 150px;
@@ -700,26 +752,105 @@ tr:hover {
         margin-left: 8px;
         font-size: 0.75em;
     }
-    
+
+    /* Mobile trait table specific styles */
+    table:has(#trait-tbody) {
+        table-layout: fixed !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    table:has(#trait-tbody) th:nth-child(1),
+    table:has(#trait-tbody) td:nth-child(1) {
+        width: 120px !important;
+        min-width: 120px !important;
+        max-width: 120px !important;
+        padding: 6px 4px !important;
+        text-align: left !important;
+    }
+
+    table:has(#trait-tbody) th:nth-child(2),
+    table:has(#trait-tbody) td:nth-child(2) {
+        width: 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
+        padding: 6px 4px !important;
+        border-left: none !important;
+        text-align: center !important;
+        z-index: 1 !important;
+    }
+
+    table:has(#trait-tbody) th:nth-child(3),
+    table:has(#trait-tbody) td:nth-child(3) {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+        padding: 6px 4px !important;
+        border-left: none !important;
+        text-align: center !important;
+    }
+
+    /* Mobile trait table statistics columns */
+    table:has(#trait-tbody) th:nth-child(n+4),
+    table:has(#trait-tbody) td:nth-child(n+4) {
+        width: calc((100% - 260px) / 5) !important; /* 120 + 80 + 60 = 260px */
+        min-width: 50px !important;
+        padding: 6px 2px !important;
+        font-size: 1em !important; /* Increased from 0.9em */
+        border-left: none !important;
+    }
+
+    /* Mobile trait table general text size */
+    table:has(#trait-tbody) td {
+        font-size: 0.9em !important; /* Increased from 0.85em */
+    }
+
+    /* Mobile tactical skill table specific styles */
+    table:has(#tactical-skill-tbody) th:nth-child(2),
+    table:has(#tactical-skill-tbody) td:nth-child(2) {
+        text-align: center !important;
+        z-index: 1 !important;
+    }
+
+    table:has(#tactical-skill-tbody) th:nth-child(1),
+    table:has(#tactical-skill-tbody) td:nth-child(1) {
+        text-align: left !important;
+    }
+
+    /* Mobile tactical skill table general text size */
+    table:has(#tactical-skill-tbody) td {
+        font-size: 0.9em !important; /* Increased from 0.85em */
+    }
+
+    /* Mobile equipment tables text size */
+    .tab-content table td {
+        font-size: 0.9em !important; /* Increased from 0.85em */
+    }
+
+    /* Mobile equipment tables statistics columns */
+    .tab-content table td:nth-child(n+3) {
+        font-size: 1em !important; /* Increased from 0.9em */
+    }
+
     /* Hide some less important columns on very small screens */
     @media (max-width: 480px) {
         th:nth-child(n+9), td:nth-child(n+9) { /* Hide columns 9+ */
             display: none;
         }
-        
+
         .character-cell {
             min-width: 80px;
             max-width: 80px;
         }
-        
+
         .character-name-weapon {
             font-size: 0.8em;
         }
-        
+
         .character-name-weapon small {
             font-size: 0.7em;
         }
-        
+
         .tabs button {
             font-size: 0.8em;
             padding: 6px 4px;
@@ -732,11 +863,11 @@ tr:hover {
     .container {
         padding: 15px;
     }
-    
+
     .character-cell {
         min-width: 140px;
     }
-    
+
     th, td {
         padding: 8px;
     }

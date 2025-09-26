@@ -166,13 +166,13 @@
                     $groupedByTier = $data->groupBy('meta_tier');
                 @endphp
                 @foreach($tiers as $tier)
-                    @php
-                        $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
-                    @endphp
-                    <tr>
-                        <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }} ">{{ $tier }}</span></td>
-                        <td>
-                            @if(isset($groupedByTier[$tier]))
+                    @if(isset($groupedByTier[$tier]) && count($groupedByTier[$tier]) > 0)
+                        @php
+                            $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
+                        @endphp
+                        <tr>
+                            <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }} ">{{ $tier }}</span></td>
+                            <td>
                                 @foreach($groupedByTier[$tier] as $item)
                                     <div class="tier-character-icon-container"
                                          data-pick-rate="{{ number_format($item->game_count_percent, 2) }}"
@@ -194,9 +194,9 @@
                                              onerror="this.onerror=null; this.src='{{ $defaultEquipmentIconPath }}';">
                                     </div>
                                 @endforeach
-                            @endif
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
+                    @endif
                 @endforeach
             </tbody>
         </table>
