@@ -59,7 +59,13 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             $filters['c.name'] = $filters['character_name'];
             unset($filters['character_name']);
         }
-        $data = GameResultEquipmentSummary::select(
+
+        // 캐시 키 생성
+        $cacheKey = "equipment_summary_" . md5(json_encode($filters));
+        $cacheDuration = 60 * 10; // 10분 캐싱
+
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+            return GameResultEquipmentSummary::select(
             'c.name as character_name',
             'e.item_type1',
             'e.item_type2',
@@ -137,6 +143,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             ->orderBy('e.id', 'asc')
             ->orderBy('game_results_equipment_summary.game_rank', 'asc')
             ->get();
+        });
         $total = array();
         $result = array(
             'Weapon' => array(),
