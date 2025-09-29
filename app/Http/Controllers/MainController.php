@@ -101,6 +101,10 @@ class MainController extends Controller
         $version = $request->input('version', $defaultVersion);
         $version =  explode('.', $version);
 
+        // 캐시 키 생성
+        $cacheKey = "game_detail_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheDuration = 60 * 10; // 10분 캐싱
+
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         [$defaultVersionSeason, $defaultVersionMajor, $defaultVersionMinor] =  array_pad(explode('.', $defaultVersion), 3, null);
         $versionSeason = $version[0] ?? $defaultVersionSeason;
