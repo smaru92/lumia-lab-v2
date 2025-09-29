@@ -121,20 +121,26 @@ class GameResultTraitSummaryService
             $filters['c.name'] = $filters['character_name'];
             unset($filters['character_name']);
         }
-        $data = GameResultTraitSummary::select(
-            'game_results_trait_summary.*',
-            'c.name as character_name',
-            't.name as trait_name',
-            't.id as trait_id',
-            't.name as trait_name',
-            't.category as trait_category',
-        )
-            ->join('traits as t', 't.id', 'game_results_trait_summary.trait_id')
-            ->join('characters as c', 'c.id', 'game_results_trait_summary.character_id')
-            ->where($filters)
-            ->orderBy('game_rank_count', 'desc')
-            ->orderBy('game_rank', 'asc')
-            ->get();
+
+        // 캐시 키 생성
+        $cacheKey = "trait_summary_" . md5(json_encode($filters));
+        $cacheDuration = 60 * 10; // 10분 캐싱
+
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+            return GameResultTraitSummary::select(
+                'game_results_trait_summary.*',
+                'c.name as character_name',
+                't.name as trait_name',
+                't.id as trait_id',
+                't.category as trait_category'
+            )
+                ->join('traits as t', 't.id', 'game_results_trait_summary.trait_id')
+                ->join('characters as c', 'c.id', 'game_results_trait_summary.character_id')
+                ->where($filters)
+                ->orderBy('game_rank_count', 'desc')
+                ->orderBy('game_rank', 'asc')
+                ->get();
+        });
         $total = array();
         $result = array();
         foreach ($data as $item) {

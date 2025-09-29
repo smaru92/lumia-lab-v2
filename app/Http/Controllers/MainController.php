@@ -175,8 +175,10 @@ class MainController extends Controller
         sort($traitCategories); // Sort categories alphabetically
         $data['traitCategories'] = $traitCategories;
 
-
-        return view('detail', $data);
+        // 캐시가 있으면 캐시된 뷰 반환
+        return cache()->remember($cacheKey, $cacheDuration, function () use ($data) {
+            return view('detail', $data)->render();
+        });
     }
 
     public function test()
