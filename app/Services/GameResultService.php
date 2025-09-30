@@ -835,14 +835,14 @@ class GameResultService
 
         // P: 성능 점수
         $P = (
-                $endGameScore * 0.15 +
+                $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
-                $mmrScore * 2.8
+                $mmrScore * 3.0
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 3;
+        $A = $pickScore * 2.5;
 
         // 최종 메타 점수
         $metaScore = ($P * 1.5 + $A) * (0.6 + 0.4 * $pickWeight) * 2;
@@ -911,16 +911,16 @@ class GameResultService
         // P: 성능 점수
         $P = (
                 $endGameScore * 0.2 +
-                $top2Score * 0.25 +
-                $top4Score * 0.25 +
-                $mmrScore * 3.2
+                $top2Score * 0.2 +
+                $top4Score * 0.2 +
+                $mmrScore * 3.0
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
         $A = $pickScore * 2.5;
 
         // 최종 메타 점수
-        $metaScore = ($P * 1.5 + $A) * (0.6 + 0.4 * $pickWeight) * 2;
+        $metaScore = ($P * 1.5 + $A) * (0.6 + 0.3 * $pickWeight) * 2;
 
         // 티어 분류
         $metaTier = match (true) {
