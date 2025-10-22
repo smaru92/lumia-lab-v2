@@ -41,31 +41,49 @@ class InfoController
     {
         $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
+
+        $upsertData = [];
+        $columns = $this->getColumns('characters');
+
         foreach ($data as $character) {
-            $characters = new Character();
-            $columns = $this->getColumns('characters');
+            $row = [];
             foreach($character as $key => $item) {
                 $column = Str::snake($key);
                 if ($column == 'code') {
                     $column = 'id';
                 }
                 if (in_array($column, $columns)) {
-                    $characters->$column = $item;
+                    $row[$column] = $item;
                 }
-
             }
-            $characters->save();
+            $upsertData[] = $row;
         }
+
+        // name 컬럼을 제외한 업데이트 컬럼 목록
+        $updateColumns = array_filter($columns, function($column) {
+            return $column !== 'name' && $column !== 'id';
+        });
+
+        Character::upsert(
+            $upsertData,
+            ['id'], // unique key
+            $updateColumns // name 제외한 업데이트 컬럼
+        );
+
         return response()->json(['msg' => '완료']);
     }
     public function getEquipments(Request $request)
     {
-        $data = $this->fetchFromErApi('v2/data/ItemWeapon');
-        $data = $data['data'];
-        foreach ($data as $character) {
-            $equipments = new Equipment();
-            $columns = $this->getColumns('equipments');
-            foreach($character as $key => $item) {
+        $upsertData = [];
+        $columns = $this->getColumns('equipments');
+
+        // ItemWeapon 데이터 처리
+        $weaponData = $this->fetchFromErApi('v2/data/ItemWeapon');
+        $weaponData = $weaponData['data'];
+
+        foreach ($weaponData as $item) {
+            $row = [];
+            foreach($item as $key => $value) {
                 $column = Str::snake($key);
                 if ($column == 'code') {
                     $column = 'id';
@@ -77,18 +95,19 @@ class InfoController
                     $column = 'item_type2';
                 }
                 if (in_array($column, $columns)) {
-                    $equipments->$column = $item;
+                    $row[$column] = $value;
                 }
-
             }
-            $equipments->save();
+            $upsertData[] = $row;
         }
-        $data = $this->fetchFromErApi('v2/data/ItemArmor');
-        $data = $data['data'];
-        foreach ($data as $character) {
-            $equipments = new Equipment();
-            $columns = $this->getColumns('equipments');
-            foreach($character as $key => $item) {
+
+        // ItemArmor 데이터 처리
+        $armorData = $this->fetchFromErApi('v2/data/ItemArmor');
+        $armorData = $armorData['data'];
+
+        foreach ($armorData as $item) {
+            $row = [];
+            foreach($item as $key => $value) {
                 $column = Str::snake($key);
                 if ($column == 'code') {
                     $column = 'id';
@@ -100,75 +119,128 @@ class InfoController
                     $column = 'item_type2';
                 }
                 if (in_array($column, $columns)) {
-                    $equipments->$column = $item;
+                    $row[$column] = $value;
                 }
-
             }
-            $equipments->save();
+            $upsertData[] = $row;
         }
+
+        // name 컬럼을 제외한 업데이트 컬럼 목록
+        $updateColumns = array_filter($columns, function($column) {
+            return $column !== 'name' && $column !== 'id';
+        });
+
+        Equipment::upsert(
+            $upsertData,
+            ['id'], // unique key
+            $updateColumns // name 제외한 업데이트 컬럼
+        );
+
         return response()->json(['msg' => '완료']);
     }
     public function getItems(Request $request)
     {
         $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
+
+        $upsertData = [];
+        $columns = $this->getColumns('characters');
+
         foreach ($data as $character) {
-            $characters = new Character();
-            $columns = $this->getColumns('characters');
+            $row = [];
             foreach($character as $key => $item) {
                 $column = Str::snake($key);
                 if ($column == 'code') {
                     $column = 'id';
                 }
                 if (in_array($column, $columns)) {
-                    $characters->$column = $item;
+                    $row[$column] = $item;
                 }
-
             }
-            $characters->save();
+            $upsertData[] = $row;
         }
+
+        // name 컬럼을 제외한 업데이트 컬럼 목록
+        $updateColumns = array_filter($columns, function($column) {
+            return $column !== 'name' && $column !== 'id';
+        });
+
+        Character::upsert(
+            $upsertData,
+            ['id'], // unique key
+            $updateColumns // name 제외한 업데이트 컬럼
+        );
+
         return response()->json(['msg' => '완료']);
     }
     public function getSkills(Request $request)
     {
         $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
+
+        $upsertData = [];
+        $columns = $this->getColumns('characters');
+
         foreach ($data as $character) {
-            $characters = new Character();
-            $columns = $this->getColumns('characters');
+            $row = [];
             foreach($character as $key => $item) {
                 $column = Str::snake($key);
                 if ($column == 'code') {
                     $column = 'id';
                 }
                 if (in_array($column, $columns)) {
-                    $characters->$column = $item;
+                    $row[$column] = $item;
                 }
-
             }
-            $characters->save();
+            $upsertData[] = $row;
         }
+
+        // name 컬럼을 제외한 업데이트 컬럼 목록
+        $updateColumns = array_filter($columns, function($column) {
+            return $column !== 'name' && $column !== 'id';
+        });
+
+        Character::upsert(
+            $upsertData,
+            ['id'], // unique key
+            $updateColumns // name 제외한 업데이트 컬럼
+        );
+
         return response()->json(['msg' => '완료']);
     }
-    public function getTrait(Request $request)
+    public function getTraits(Request $request)
     {
         $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
+
+        $upsertData = [];
+        $columns = $this->getColumns('characters');
+
         foreach ($data as $character) {
-            $characters = new Character();
-            $columns = $this->getColumns('characters');
+            $row = [];
             foreach($character as $key => $item) {
                 $column = Str::snake($key);
                 if ($column == 'code') {
                     $column = 'id';
                 }
                 if (in_array($column, $columns)) {
-                    $characters->$column = $item;
+                    $row[$column] = $item;
                 }
-
             }
-            $characters->save();
+            $upsertData[] = $row;
         }
+
+        // name 컬럼을 제외한 업데이트 컬럼 목록
+        $updateColumns = array_filter($columns, function($column) {
+            return $column !== 'name' && $column !== 'id';
+        });
+
+        Character::upsert(
+            $upsertData,
+            ['id'], // unique key
+            $updateColumns // name 제외한 업데이트 컬럼
+        );
+
         return response()->json(['msg' => '완료']);
     }
 }
