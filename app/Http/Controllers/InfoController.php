@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Helper\ERDev;
 use App\Models\Character;
 use App\Models\Equipment;
 use App\Traits\ErDevTrait;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -15,9 +15,31 @@ use Illuminate\Support\Str;
 class InfoController
 {
     use ErDevTrait;
+
+    /**
+     * ER API에서 데이터를 가져오는 메서드
+     */
+    private function fetchFromErApi($endpoint)
+    {
+        try {
+            $client = new Client();
+            $response = $client->get(
+                "https://open-api.bser.io/" . $endpoint,
+                [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'x-api-key' => config('erDev.apiKey'),
+                    ]
+                ]
+            );
+            return json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch data from ER API: ' . $e->getMessage());
+        }
+    }
     public function getCharacters(Request $request)
     {
-        $data = ERDev::sendCurl([], 'v2/data/Character');
+        $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
         foreach ($data as $character) {
             $characters = new Character();
@@ -38,7 +60,7 @@ class InfoController
     }
     public function getEquipments(Request $request)
     {
-        $data = ERDev::sendCurl([], 'v2/data/ItemWeapon');
+        $data = $this->fetchFromErApi('v2/data/ItemWeapon');
         $data = $data['data'];
         foreach ($data as $character) {
             $equipments = new Equipment();
@@ -61,7 +83,7 @@ class InfoController
             }
             $equipments->save();
         }
-        $data = ERDev::sendCurl([], 'v2/data/ItemArmor');
+        $data = $this->fetchFromErApi('v2/data/ItemArmor');
         $data = $data['data'];
         foreach ($data as $character) {
             $equipments = new Equipment();
@@ -88,7 +110,7 @@ class InfoController
     }
     public function getItems(Request $request)
     {
-        $data = ERDev::sendCurl([], 'v2/data/Character');
+        $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
         foreach ($data as $character) {
             $characters = new Character();
@@ -109,7 +131,7 @@ class InfoController
     }
     public function getSkills(Request $request)
     {
-        $data = ERDev::sendCurl([], 'v2/data/Character');
+        $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
         foreach ($data as $character) {
             $characters = new Character();
@@ -130,7 +152,7 @@ class InfoController
     }
     public function getTrait(Request $request)
     {
-        $data = ERDev::sendCurl([], 'v2/data/Character');
+        $data = $this->fetchFromErApi('v2/data/Character');
         $data = $data['data'];
         foreach ($data as $character) {
             $characters = new Character();
