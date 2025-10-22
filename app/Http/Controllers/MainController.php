@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\GameResultSummaryService;
 use App\Services\MainService;
+use App\Services\PerformanceMonitor;
 use App\Services\RankRangeService;
 use App\Traits\ErDevTrait;
 use Illuminate\Http\Request;
@@ -146,9 +147,11 @@ class MainController extends Controller
             $rankDetailFilters = $filters;
             $rankRangeTier = $rankRange['tier'].$rankRange['tierNumber'];
             $rankDetailFilters['min_tier'] = $rankRangeTier;
-            $data['byAll'][$rankRangeTier] = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
-            $data['byAll'][$rankRangeTier]->tier_name = $this->replaceTierName($rankRangeTier);
-
+            $rankRangeTierData = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
+            if (!empty($rankRangeTierData)) {
+                $data['byAll'][$rankRangeTier] = $rankRangeTierData;
+                $data['byAll'][$rankRangeTier]->tier_name = $this->replaceTierName($rankRangeTier);
+            }
         }
         $data['byMain'] = $data['byAll'][$minTier];
         $byMainFilter = $filters;
