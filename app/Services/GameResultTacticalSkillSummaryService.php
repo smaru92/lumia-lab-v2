@@ -212,6 +212,14 @@ class GameResultTacticalSkillSummaryService
             }
             $result[$item->tactical_skill_id][$item->tactical_skill_level][$item->game_rank] = $item;
         }
+
+        // Sort by total usage count (sum of all levels for each tactical skill)
+        uksort($result, function($idA, $idB) use ($total) {
+            $totalA = isset($total[$idA]) ? array_sum($total[$idA]) : 0;
+            $totalB = isset($total[$idB]) ? array_sum($total[$idB]) : 0;
+            return $totalB - $totalA;
+        });
+
         return [
             'data' => $result,
             'total' => $total

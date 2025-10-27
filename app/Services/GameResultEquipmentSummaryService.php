@@ -202,6 +202,16 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             $result[$itemType][$item->equipment_id][$item->game_rank] = $item;
 
         }
+
+        // Sort each item type by total usage count
+        foreach ($result as $itemType => $items) {
+            uksort($result[$itemType], function($idA, $idB) use ($total) {
+                $totalA = isset($total[$idA]) ? $total[$idA] : 0;
+                $totalB = isset($total[$idB]) ? $total[$idB] : 0;
+                return $totalB - $totalA;
+            });
+        }
+
         return [
             'data' => $result,
             'total' => $total
