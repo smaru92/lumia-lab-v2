@@ -47,6 +47,16 @@ h2 {
     margin-bottom: 15px;
     gap: 10px; /* Add space between filter elements */
 }
+
+.detail-filter-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 10px;
+    gap: 20px;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+}
 select {
     padding: 8px;
     font-size: 1em; /* Responsive font size */
@@ -527,6 +537,14 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
         font-size: 16px; /* Prevent zoom on iOS */
     }
 
+    /* Filter mobile optimization */
+    .detail-filter-container {
+        flex-direction: column; /* Stack vertically on mobile */
+        gap: 10px; /* Reduce gap */
+        padding: 0 10px; /* Add side padding */
+        align-items: center; /* Center items horizontally */
+    }
+
     /* Table mobile optimization */
     .container {
         overflow-x: visible; /* Container should not scroll */
@@ -552,6 +570,18 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
         padding: 6px 4px;
         font-size: 0.9em; /* Increased from 0.8em */
         min-width: 60px;
+    }
+
+    /* Override main.css column hiding - detail page should show all columns on mobile */
+    #gameTable th:nth-child(6),
+    #gameTable td:nth-child(6),
+    #gameTable th:nth-child(8),
+    #gameTable td:nth-child(8),
+    #gameTable th:nth-child(9),
+    #gameTable td:nth-child(9),
+    #gameTable th:nth-child(11),
+    #gameTable td:nth-child(11) {
+        display: table-cell !important; /* Force display on detail page */
     }
 
     /* First column (rank) - keep it compact */
@@ -715,8 +745,10 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 
     /* Hide some less important columns on very small screens */
     @media (max-width: 480px) {
-        th:nth-child(n+9), td:nth-child(n+9) { /* Hide columns 9+ */
-            display: none;
+        /* Override main.css column hiding - detail page should show all columns */
+        td:nth-child(12), th:nth-child(12),
+        td:nth-child(13), th:nth-child(13) {
+            display: table-cell !important;
         }
 
         .character-cell {
@@ -735,6 +767,15 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
             font-size: 0.8em;
             padding: 6px 4px;
         }
+    }
+}
+
+/* Very small screens - override main.css column hiding */
+@media screen and (max-width: 380px) {
+    /* Override main.css hiding of columns 8 and 9 */
+    td:nth-child(8), th:nth-child(8),
+    td:nth-child(9), th:nth-child(9) {
+        display: table-cell !important;
     }
 }
 
