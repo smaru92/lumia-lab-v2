@@ -112,7 +112,10 @@ thead {
 }
 
 th, td {
-    border: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-left: none;
+    border-right: none;
     padding: 10px;
     text-align: center;
     white-space: nowrap;
@@ -281,7 +284,10 @@ tr:hover { background-color: #e8f4ff; }
 
 .tier-table th,
 .tier-table td {
-    border: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-left: none;
+    border-right: none;
     padding: 8px;
     text-align: left;
     vertical-align: middle;
@@ -521,7 +527,7 @@ body > .tier-tooltip {
         background: white;
         box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         min-width: 80px;
-        border-right: 1px solid #ddd;
+        border-right: none;
     }
 
     thead th:nth-child(1),
@@ -896,7 +902,7 @@ body > .tier-tooltip {
     thead th:nth-child(2) {
         left: 28px; /* 더 작은 랭크 열 너비 */
         min-width: 75px;
-        border-right: 1px solid #ddd;
+        border-right: none;
     }
 
 
@@ -964,4 +970,61 @@ body > .tier-tooltip {
         width: 14px;
         height: 14px;
     }
+}
+
+/* Info icon tooltip styles */
+.info-icon {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 12px;
+    color: #666;
+    cursor: help;
+    vertical-align: super;
+    font-weight: normal;
+    position: relative;
+}
+
+.info-icon:hover {
+    color: #333;
+}
+
+.info-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: normal;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.info-icon::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.info-icon:hover::after,
+.info-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
 }
