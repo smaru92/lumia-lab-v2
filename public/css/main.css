@@ -657,9 +657,13 @@ body > .tier-tooltip {
     }
 
     .close-button {
-        font-size: 24px;
-        right: 10px;
-        top: 5px;
+        font-size: 32px;
+        right: 15px;
+        top: 10px;
+        padding: 5px 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 4px;
+        z-index: 1000;
     }
 
     .tier-table {
@@ -803,9 +807,10 @@ body > .tier-tooltip {
     }
 
     .close-button {
-        font-size: 20px;
-        right: 5px;
-        top: 5px;
+        font-size: 28px;
+        right: 10px;
+        top: 8px;
+        padding: 3px 8px;
     }
 
     /* Tier table very small screen adjustments */
@@ -898,12 +903,10 @@ body > .tier-tooltip {
     tbody td:nth-child(1),
     thead th:nth-child(1) {
         min-width: 28px;
-        max-width: 28px;
     }
 
     tbody td:nth-child(2),
     thead th:nth-child(2) {
-        left: 28px; /* 더 작은 랭크 열 너비 */
         min-width: 75px;
         border-right: none;
     }
@@ -1034,13 +1037,15 @@ body > .tier-tooltip {
 
 /* Hide specific columns in main, equipment, and first-equipment pages - mobile only */
 @media screen and (max-width: 768px) {
-    /* Hide TOP2 (6th column), 막금구승률 (8th column), 평균획득점수 (9th column) */
+    /* Hide TOP2 (6th column), 막금구승률 (8th column), 평균획득점수 (9th column), 손실확률 (11th column) */
     #gameTable th:nth-child(6),
     #gameTable td:nth-child(6),
     #gameTable th:nth-child(8),
     #gameTable td:nth-child(8),
     #gameTable th:nth-child(9),
-    #gameTable td:nth-child(9) {
+    #gameTable td:nth-child(9),
+    #gameTable th:nth-child(11),
+    #gameTable td:nth-child(11) {
         display: none;
     }
 }

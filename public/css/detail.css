@@ -60,9 +60,6 @@ table {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
-    overflow-x: auto; /* Allow horizontal scrolling on small screens */
-    overflow-y: visible; /* Allow tooltips to show above table */
-    display: block; /* Needed for overflow-x */
     margin-bottom: 15px; /* Add space below table */
     border: 1px solid #ddd;
 }
@@ -332,119 +329,17 @@ tr:hover {
 /* Tactical skill table specific styles */
 table:has(#tactical-skill-tbody) th:nth-child(2),
 #tactical-skill-tbody tr td:nth-child(2) {
-    width: 40px !important; /* Much smaller width for level column */
-    max-width: 40px !important;
-    min-width: 40px !important;
     text-align: center;
-    padding: 8px 4px !important; /* Reduce padding */
-    box-sizing: border-box;
-    z-index: 1; /* Lower z-index */
+    padding: 8px 4px;
 }
 
-/* Tactical skill table - ensure proper layout */
-table:has(#tactical-skill-tbody) {
-    table-layout: fixed; /* Force fixed table layout */
-    width: 100%;
-}
-
+/* Tactical skill table - let browser handle column widths */
 table:has(#tactical-skill-tbody) th:nth-child(1),
 #tactical-skill-tbody tr td:nth-child(1) {
-    white-space: nowrap; /* Prevent tactical skill name from wrapping */
-    overflow: visible;
-    text-overflow: unset;
-    width: 150px; /* Fixed width for skill names */
-    min-width: 150px;
-    max-width: 150px;
-}
-
-/* Ensure other columns have appropriate widths */
-table:has(#tactical-skill-tbody) th:nth-child(3),
-table:has(#tactical-skill-tbody) th:nth-child(4),
-table:has(#tactical-skill-tbody) th:nth-child(5),
-table:has(#tactical-skill-tbody) th:nth-child(6),
-table:has(#tactical-skill-tbody) th:nth-child(7),
-#tactical-skill-tbody tr td:nth-child(3),
-#tactical-skill-tbody tr td:nth-child(4),
-#tactical-skill-tbody tr td:nth-child(5),
-#tactical-skill-tbody tr td:nth-child(6),
-#tactical-skill-tbody tr td:nth-child(7) {
-    width: 80px;
-    min-width: 80px;
-    max-width: 80px;
-    text-align: center;
-}
-
-/* Trait table layout */
-table:has(#trait-tbody) {
-    table-layout: fixed;
-    width: 100%;
-    border-collapse: collapse;
-}
-
-/* Trait table specific styles - removed sticky positioning for horizontal scroll */
-table:has(#trait-tbody) th:nth-child(1),
-table:has(#trait-tbody) td:nth-child(1) {
-    border-right: none;
-    width: 150px;
-    min-width: 150px;
-    max-width: 150px;
     white-space: nowrap;
-    padding: 8px;
 }
 
-/* Set specific widths for trait table columns to prevent gaps */
-table:has(#trait-tbody) th:nth-child(2),
-table:has(#trait-tbody) td:nth-child(2) {
-    width: 100px;
-    min-width: 100px;
-    max-width: 100px;
-    padding: 8px;
-    border-left: none; /* Remove left border to eliminate gap */
-}
-
-table:has(#trait-tbody) th:nth-child(3),
-table:has(#trait-tbody) td:nth-child(3) {
-    width: 80px;
-    min-width: 80px;
-    max-width: 80px;
-    padding: 8px;
-    border-left: none; /* Remove left border to eliminate gap */
-}
-
-/* Remove any additional spacing in trait table */
-table:has(#trait-tbody) th,
-table:has(#trait-tbody) td {
-    border-spacing: 0;
-    margin: 0;
-}
-
-/* Ensure statistics columns fill remaining space properly */
-table:has(#trait-tbody) th:nth-child(n+4),
-table:has(#trait-tbody) td:nth-child(n+4) {
-    width: calc((100% - 330px) / 5); /* Divide remaining space among 5 stat columns */
-    min-width: 60px;
-}
-
-table:has(#trait-tbody) thead th:nth-child(1) {
-    background-color: #f4f4f4 !important;
-    z-index: 11; /* Even higher for header */
-}
-
-/* Ensure other columns in trait table have lower z-index */
-table:has(#trait-tbody) th:not(:nth-child(1)),
-table:has(#trait-tbody) td:not(:nth-child(1)) {
-    z-index: 1;
-}
-
-/* Ensure proper background for even rows in trait table */
-table:has(#trait-tbody) tbody tr:nth-child(even) td:nth-child(1) {
-    background: #f9f9f9 !important;
-}
-
-/* Hover state for trait table first column */
-table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
-    background: #e8f4ff !important;
-}
+/* Trait table - let browser handle layout */
 
 /* Large screens (desktops) */
 @media (min-width: 992px) {
@@ -633,16 +528,24 @@ table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
     }
 
     /* Table mobile optimization */
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-        font-size: 0.95em; /* Increased from 0.85em */
+    .container {
+        overflow-x: visible; /* Container should not scroll */
     }
 
-    thead {
-        position: static; /* Remove sticky on mobile for better scroll */
+    .table-wrapper {
+        overflow-x: auto; /* Wrapper handles horizontal scroll */
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    table {
+        display: table; /* Normal table display */
+        width: max-content; /* Table expands to fit content */
+        min-width: 100%; /* At least full width */
+        table-layout: auto; /* Columns size based on content */
+        font-size: 0.95em;
+        margin-bottom: 0; /* Remove margin since wrapper has it */
     }
 
     th, td {
@@ -665,8 +568,7 @@ table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
     #gameTable th:nth-child(2),
     #tierInfoTable td:nth-child(2),
     #tierInfoTable th:nth-child(2) {
-        min-width: 45px;
-        max-width: 45px;
+        max-width: 100px; /* Allow some flexibility, prevent it from being too wide */
         padding: 3px 1px;
     }
 
@@ -713,7 +615,6 @@ table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
         font-size: 0.65em;
         padding: 2px 3px;
         min-width: 20px;
-        max-width: 28px; /* Limit badge width */
         display: inline-block; /* Use inline-block instead of block */
         margin: 0 auto;
         width: fit-content; /* Only as wide as content */
@@ -792,73 +693,14 @@ table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
         font-size: 0.75em;
     }
 
-    /* Mobile trait table specific styles */
-    table:has(#trait-tbody) {
-        table-layout: fixed !important;
-        width: 100% !important;
-        border-collapse: collapse !important;
-    }
-
-    table:has(#trait-tbody) th:nth-child(1),
-    table:has(#trait-tbody) td:nth-child(1) {
-        width: 120px !important;
-        min-width: 120px !important;
-        max-width: 120px !important;
-        padding: 6px 4px !important;
-        text-align: left !important;
-    }
-
-    table:has(#trait-tbody) th:nth-child(2),
-    table:has(#trait-tbody) td:nth-child(2) {
-        width: 80px !important;
-        min-width: 80px !important;
-        max-width: 80px !important;
-        padding: 6px 4px !important;
-        border-left: none !important;
-        text-align: center !important;
-        z-index: 1 !important;
-    }
-
-    table:has(#trait-tbody) th:nth-child(3),
-    table:has(#trait-tbody) td:nth-child(3) {
-        width: 60px !important;
-        min-width: 60px !important;
-        max-width: 60px !important;
-        padding: 6px 4px !important;
-        border-left: none !important;
-        text-align: center !important;
-    }
-
-    /* Mobile trait table statistics columns */
-    table:has(#trait-tbody) th:nth-child(n+4),
-    table:has(#trait-tbody) td:nth-child(n+4) {
-        width: calc((100% - 260px) / 5) !important; /* 120 + 80 + 60 = 260px */
-        min-width: 50px !important;
-        padding: 6px 2px !important;
-        font-size: 1em !important; /* Increased from 0.9em */
-        border-left: none !important;
-    }
-
-    /* Mobile trait table general text size */
+    /* Mobile trait table - simplified, let browser handle layout */
     table:has(#trait-tbody) td {
-        font-size: 0.9em !important; /* Increased from 0.85em */
+        font-size: 0.9em;
     }
 
-    /* Mobile tactical skill table specific styles */
-    table:has(#tactical-skill-tbody) th:nth-child(2),
-    table:has(#tactical-skill-tbody) td:nth-child(2) {
-        text-align: center !important;
-        z-index: 1 !important;
-    }
-
-    table:has(#tactical-skill-tbody) th:nth-child(1),
-    table:has(#tactical-skill-tbody) td:nth-child(1) {
-        text-align: left !important;
-    }
-
-    /* Mobile tactical skill table general text size */
+    /* Mobile tactical skill table - simplified, let browser handle layout */
     table:has(#tactical-skill-tbody) td {
-        font-size: 0.9em !important; /* Increased from 0.85em */
+        font-size: 0.9em;
     }
 
     /* Mobile equipment tables text size */

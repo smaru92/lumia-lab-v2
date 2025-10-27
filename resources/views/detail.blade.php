@@ -34,6 +34,7 @@
     </div>
     <h3>기본정보</h3>
 
+    <div class="table-wrapper">
     <table id="gameTable">
         <thead>
         <tr>
@@ -134,9 +135,11 @@
         </tr>
         </tbody>
     </table>
+    </div>
     <h3>전체 티어정보 <button id="toggle-tier-info" class="toggle-button">▼ 펼치기</button></h3>
 
     <div id="tier-info-container" style="display: none;">
+        <div class="table-wrapper">
         <table id="tierInfoTable">
             <thead>
             <tr>
@@ -215,8 +218,10 @@
             @endforeach
             </tbody>
         </table>
+        </div>
     </div>
     <h3>순위 통계</h3>
+    <div class="table-wrapper">
     <table class="sortable-table">
         <thead>
         <tr>
@@ -262,9 +267,11 @@
         @endforeach
         </tbody>
     </table>
+    </div>
 
 
     <h3>전술스킬 통계</h3>
+    <div class="table-wrapper">
     <table class="sortable-table">
         <thead>
         <tr>
@@ -333,6 +340,7 @@
         @endforeach
         </tbody>
     </table>
+    </div>
     <button id="show-more-tactical-skills" class="show-more-button">더보기</button>
 
 
@@ -355,6 +363,7 @@
             </label>
         @endforeach
     </div>
+    <div class="table-wrapper">
     <table class="sortable-table">
         <thead>
         <tr>
@@ -424,6 +433,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     <button id="show-more-traits" class="show-more-button">더보기</button>
     <!-- Tab links -->
     <div class="tabs">
@@ -470,6 +480,7 @@
                 </label>
             @endforeach
         </div>
+        <div class="table-wrapper">
         <table class="sortable-table">
             <thead>
             <tr>
@@ -561,6 +572,7 @@
             @endforeach
             </tbody>
         </table>
+        </div>
     </div>
     @endforeach
 </div>
