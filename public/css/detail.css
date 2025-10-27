@@ -53,7 +53,7 @@ select {
     border: 1px solid #ccc;
     border-radius: 5px;
     cursor: pointer;
-    width: 80%; /* Adjust width */
+    min-width: 120px; /* Ensure select boxes have minimum width */
     max-width: 300px; /* Max width for select */
 }
 table {

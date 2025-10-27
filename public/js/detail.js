@@ -3,6 +3,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const versionFilterSelect = document.getElementById('sel-version-filter'); // Use updated ID
     const tierFilterSelect = document.getElementById('sel-tier-filter'); // Use updated ID
 
+    // --- Initialize select boxes from URL parameters ---
+    function initializeFiltersFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Sync tier select
+        if (tierFilterSelect) {
+            const tierParam = urlParams.get('min_tier');
+            if (tierParam && tierFilterSelect.value !== tierParam) {
+                tierFilterSelect.value = tierParam;
+            }
+        }
+
+        // Sync version select
+        if (versionFilterSelect) {
+            const versionParam = urlParams.get('version');
+            if (versionParam && versionFilterSelect.value !== versionParam) {
+                versionFilterSelect.value = versionParam;
+            }
+        }
+    }
+
+    // Initialize on page load
+    initializeFiltersFromUrl();
+
+    // Re-initialize on browser back/forward
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // Page was loaded from cache (bfcache)
+            initializeFiltersFromUrl();
+        }
+    });
+
+    // Also handle popstate event for browser back/forward
+    window.addEventListener('popstate', function() {
+        initializeFiltersFromUrl();
+    });
+
     function updateDetailUrl() {
         const selectedVersion = versionFilterSelect.value;
         const selectedTier = tierFilterSelect.value;

@@ -94,6 +94,7 @@ select, input[type="number"] {
     cursor: pointer;
     margin-left: 5px;
     margin-bottom: 5px; /* Add margin for wrapped items */
+    min-width: 120px; /* Ensure select boxes have minimum width */
 }
 
 table {

@@ -9,15 +9,17 @@
     <h2><a href="/equipment-first">초기 장비 통계</a></h2>
     <div style="margin-bottom: 15px;">
         <!-- 중앙 정렬 컨테이너 -->
-        <div style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 10px;">
-            <div class="filter-container">
-                <label for="sel-min-tier"><strong>버전:</strong> </label>
+        <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; margin-bottom: 10px; gap: 20px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label for="sel-min-tier" style="margin-bottom: 5px;"><strong>버전</strong></label>
                 <select id="sel-min-tier">
                     @foreach($versions as $version)
                         <option value="{{ $version }}" {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}>{{ $version }}</option>
                     @endforeach
                 </select>
-                <label for="sel-version"><strong>최소 티어 선택:</strong> </label>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label for="sel-version" style="margin-bottom: 5px;"><strong>최소 티어</strong></label>
                 <select id="sel-version">
                     <option value="All" {{ request('min_tier', $defaultTier) === 'All' ? 'selected' : '' }}>전체</option>
                     <option value="Platinum" {{ request('min_tier', $defaultTier) === 'Platinum' ? 'selected' : '' }}>플레티넘</option>
@@ -27,13 +29,13 @@
                     <option value="Mithril" {{ request('min_tier', $defaultTier) === 'Mithril' ? 'selected' : '' }}>미스릴</option>
                     <option value="Top" {{ request('min_tier', $defaultTier) === 'Top' ? 'selected' : '' }}>최상위큐({{ $topRankScore }}+)</option>
                 </select>
-                <label for="input-pick-rate" style="margin-left: 10px;"><strong>최소 픽률(%):</strong> </label>
-                <input type="number" id="input-pick-rate" min="0" max="100" step="0.01" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 80px;">
             </div>
-        </div>
-        <div style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 10px;">
-            <div class="filter-container">
-                <label for="sel-item-type2" style="margin-left: 10px;"><strong>아이템 부위:</strong> </label>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label for="input-pick-rate" style="margin-bottom: 5px;"><strong>최소 픽률(%)</strong></label>
+                <input type="number" id="input-pick-rate" min="0" max="100" step="0.01" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label for="sel-item-type2" style="margin-bottom: 5px;"><strong>아이템 부위</strong></label>
                 <select id="sel-item-type2">
                     <option value="All" selected>전체 부위</option>
                     <option value="Chest">옷</option>
