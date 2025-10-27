@@ -44,10 +44,10 @@
             <th>TOP2</th>
             <th>TOP4</th>
             <th>막금구승률</th>
+            <th>평균획득점수</th>
             <th>이득확률</th>
-            <th>손실확률</th>
-            <th>평균점수</th>
             <th>이득평균점수</th>
+            <th>손실확률</th>
             <th>손실평균점수</th>
         </tr>
         </thead>
@@ -108,21 +108,21 @@
                 <div>{{ number_format($byMain->endgame_win_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->endgame_win_percent_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
-            <td>
-                <div>{{ number_format($byMain->positive_game_count_percent , 2) }}%</div>
-                <div class="sub-stat">{{ number_format($byMain->positive_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
-            </td>
-            <td>
-                <div>{{ number_format($byMain->negative_game_count_percent , 2) }}%</div>
-                <div class="sub-stat">{{ number_format($byMain->negative_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
-            </td>
             <td class="number">
                 {{ number_format($byMain->avg_mmr_gain, 1) }}
                 <div class="sub-stat">{{ number_format($byMain->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
+            <td>
+                <div>{{ number_format($byMain->positive_game_count_percent , 2) }}%</div>
+                <div class="sub-stat">{{ number_format($byMain->positive_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+            </td>
             <td class="number">
                 {{ number_format($byMain->positive_avg_mmr_gain, 1) }}
                 <div class="sub-stat">{{ number_format($byMain->positive_avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+            </td>
+            <td>
+                <div>{{ number_format($byMain->negative_game_count_percent , 2) }}%</div>
+                <div class="sub-stat">{{ number_format($byMain->negative_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
             <td class="number">
                 {{ number_format($byMain->negative_avg_mmr_gain, 1) }}
@@ -144,10 +144,10 @@
                 <th>TOP2</th>
                 <th>TOP4</th>
                 <th>막금구승률</th>
+                <th>평균획득점수</th>
                 <th>이득확률</th>
-                <th>손실확률</th>
-                <th>평균점수</th>
                 <th>이득평균점수</th>
+                <th>손실확률</th>
                 <th>손실평균점수</th>
             </tr>
             </thead>
@@ -163,47 +163,47 @@
                         $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
                     @endphp
                     <span class="tier-badge {{ $tierClass }}">{{ $tier }}</span>
-                    <div class="sub-stat">{{ number_format($item->meta_score_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->meta_score_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->game_count_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->game_count_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->game_count_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->top1_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->top1_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->top2_count_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->top2_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->top2_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->top4_count_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->top4_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->top4_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->endgame_win_percent_rank) }} / {{ number_format($byMainCount) }}</div>
-                </td>
-                <td>
-                    <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->positive_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
-                </td>
-                <td>
-                    <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
-                    <div class="sub-stat">{{ number_format($item->negative_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->endgame_win_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td class="number">
                     {{ number_format($item->avg_mmr_gain, 1) }}
-                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->positive_game_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td class="number">
                     {{ number_format($item->positive_avg_mmr_gain, 1) }}
-                    <div class="sub-stat">{{ number_format($item->positive_avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->positive_avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
+                </td>
+                <td>
+                    <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
+                    <div class="sub-stat">{{ number_format($item->negative_game_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td class="number">
                     {{ number_format($item->negative_avg_mmr_gain, 1) }}
-                    <div class="sub-stat">{{ number_format($item->negative_avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                    <div class="sub-stat">{{ number_format($item->negative_avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
             </tr>
             @endforeach
@@ -216,7 +216,7 @@
         <tr>
             <th data-sort-index="1" data-sort-type="number">게임순위</th>
             <th data-sort-index="2" data-sort-type="number">비율</th>
-            <th data-sort-index="3" data-sort-type="number">평균점수획득</th>
+            <th data-sort-index="3" data-sort-type="number">평균획득점수</th>
             <th data-sort-index="4" data-sort-type="number">이득확률</th>
             <th data-sort-index="5" data-sort-type="number">이득평균점수</th>
             <th data-sort-index="6" data-sort-type="number">손실확률</th>
@@ -428,22 +428,36 @@
     <!-- Tab content -->
     @php
         $grades = [
-            'Mythic',
-            'Legend',
-            'Epic',
-            'Rare',
-            'Uncommon',
-            'Common',
+            'Mythic' => '초월',
+            'Legend' => '전설',
+            'Epic' => '영웅',
         ]; // 등급 목록 정의
+
+        $gradeTranslation = [
+            'Mythic' => '초월',
+            'Legend' => '전설',
+            'Epic' => '영웅',
+            'Rare' => '희귀',
+            'Uncommon' => '고급',
+            'Common' => '일반',
+        ];
+
+        $itemTypeTranslation = [
+            'Weapon' => '무기',
+            'Chest' => '옷',
+            'Head' => '머리',
+            'Arm' => '팔/장식',
+            'Leg' => '다리',
+        ];
     @endphp
     @foreach($byEquipmentData as $key => $equipmentData)
     <div id="{{ strtolower($key) }}-stats" class="tab-content {{ $key === 'Weapon' ? 'active' : ''}}">
-        <h3>{{ $key }} 통계</h3>
+        <h3>{{ $itemTypeTranslation[$key] ?? $key }} 통계</h3>
         <div class="grade-filter-container" style="margin-bottom: 10px;"> {{-- Added margin for spacing --}}
             <strong>등급 필터:</strong>
-            @foreach($grades as $grade)
+            @foreach($grades as $gradeEn => $gradeKo)
                 <label style="margin-right: 10px;"> {{-- Added margin for spacing --}}
-                    <input type="checkbox" class="grade-filter-checkbox" value="{{ $grade }}" data-tab-key="{{ strtolower($key) }}" checked> {{ $grade }}
+                    <input type="checkbox" class="grade-filter-checkbox" value="{{ $gradeEn }}" data-tab-key="{{ strtolower($key) }}" checked> {{ $gradeKo }}
                 </label>
             @endforeach
         </div>
@@ -477,7 +491,7 @@
             @endphp
             {{-- Make sure data-grade uses the defined $firstItem --}}
             <tr data-equipment-id="{{ $firstItem->equipment_id }}" data-grade="{{ $firstItem->item_grade }}">
-                <td>{{ $preequipmentName == $equipmentName ? '' : $firstItem->item_grade }}</td>
+                <td>{{ $preequipmentName == $equipmentName ? '' : ($gradeTranslation[$firstItem->item_grade] ?? $firstItem->item_grade) }}</td>
                 <td>
                     @php
                         $equipmentId = $firstItem->equipment_id;
