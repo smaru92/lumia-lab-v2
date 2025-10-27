@@ -151,6 +151,11 @@ class MainController extends Controller
             if (!empty($rankRangeTierData)) {
                 $data['byAll'][$rankRangeTier] = $rankRangeTierData;
                 $data['byAll'][$rankRangeTier]->tier_name = $this->replaceTierName($rankRangeTier);
+                $rankCountFilter = $filters;
+                $rankCountFilter['min_tier'] = $rankRangeTier;
+                unset($rankCountFilter['character_name']);
+                unset($rankCountFilter['weapon_type']);
+                $data['byAll'][$rankRangeTier]->rank_count = $this->mainService->getGameResultSummary($rankCountFilter)->count();
             }
         }
         $data['byMain'] = $data['byAll'][$minTier];
@@ -181,7 +186,6 @@ class MainController extends Controller
         }
         sort($traitCategories); // Sort categories alphabetically
         $data['traitCategories'] = $traitCategories;
-
         // 캐시가 있으면 캐시된 뷰 반환
         return cache()->remember($cacheKey, $cacheDuration, function () use ($data) {
             return view('detail', $data)->render();

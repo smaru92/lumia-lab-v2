@@ -74,9 +74,7 @@
             <th class="sortable">막금구승률</th>
             <th class="sortable">평균획득점수</th>
             <th class="sortable">이득확률</th>
-            <th class="sortable">이득시 평균점수</th>
             <th class="sortable">손실확률</th>
-            <th class="sortable">손실시 평균점수</th>
         </tr>
         </thead>
         <tbody>
@@ -143,14 +141,12 @@
                     <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
                     <td>
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
-                        <div class="sub-stat">{{ $item->positive_game_count }}</div>
+                        <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
                     </td>
-                    <td class="number">{{ number_format($item->positive_avg_mmr_gain, 1) }}</td>
                     <td>
                         <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
-                        <div class="sub-stat">{{ $item->negative_game_count }}</div>
+                        <div class="sub-stat">평균 {{ number_format($item->negative_avg_mmr_gain, 1) }}점</div>
                     </td>
-                    <td class="number">{{ number_format($item->negative_avg_mmr_gain, 1) }}</td>
                 </tr>
                 @php
                     $preEquipmentName = $equipmentName;
