@@ -9,7 +9,7 @@
     <h2><a href="/main?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
 
     {{-- Keep filters for changing options --}}
-    <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; margin-bottom: 10px; gap: 20px;">
+    <div class="detail-filter-container">
         <div style="display: flex; flex-direction: column; align-items: center;">
             <label for="sel-version-filter" style="margin-bottom: 5px;"><strong>버전</strong></label>
             <select id="sel-version-filter"> {{-- Changed ID to avoid conflict --}}

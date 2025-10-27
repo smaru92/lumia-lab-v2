@@ -9,7 +9,7 @@
     <h2><a href="/equipment">장비 통계</a></h2>
     <div style="margin-bottom: 15px;">
         <!-- 중앙 정렬 컨테이너 -->
-        <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; margin-bottom: 10px; gap: 20px;">
+        <div class="main-filter-container">
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <label for="sel-min-tier" style="margin-bottom: 5px;"><strong>버전</strong></label>
                 <select id="sel-min-tier">
