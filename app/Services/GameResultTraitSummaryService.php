@@ -186,6 +186,14 @@ class GameResultTraitSummaryService
             }
             $result[$item->trait_id][$item->game_rank] = $item;
         }
+
+        // Sort by total usage count
+        uksort($result, function($idA, $idB) use ($total) {
+            $totalA = isset($total[$idA]) ? $total[$idA] : 0;
+            $totalB = isset($total[$idB]) ? $total[$idB] : 0;
+            return $totalB - $totalA;
+        });
+
         return [
             'data' => $result,
             'total' => $total
