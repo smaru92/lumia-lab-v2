@@ -32,6 +32,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     box-sizing: border-box; /* Include padding in width calculation */
+    overflow: visible; /* Allow tooltips to overflow container */
 }
 h2 {
     text-align: center;
@@ -60,6 +61,7 @@ table {
     border-collapse: collapse;
     background: #fff;
     overflow-x: auto; /* Allow horizontal scrolling on small screens */
+    overflow-y: visible; /* Allow tooltips to show above table */
     display: block; /* Needed for overflow-x */
     margin-bottom: 15px; /* Add space below table */
 }
@@ -68,10 +70,13 @@ thead {
     top: 0;
     background: #f8f9fa;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    z-index: 1; /* Ensure header stays above scrolling content */
+    z-index: 100; /* Ensure header stays above scrolling content but below tooltips */
 }
 th, td {
-    border: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-left: none;
+    border-right: none;
     padding: 8px; /* Adjusted padding */
     text-align: center;
     white-space: nowrap;
@@ -380,7 +385,7 @@ table:has(#trait-tbody) td:nth-child(1) {
     left: 0;
     background-color: #f8f9fa !important;
     z-index: 10; /* Higher z-index to stay above other columns */
-    border-right: 2px solid #ddd;
+    border-right: none;
     width: 150px;
     min-width: 150px;
     max-width: 150px;
@@ -705,7 +710,7 @@ table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
         font-size: 0.9em; /* Increased from 0.85em */
         flex: 1 1 auto;
         min-width: 0;
-        border-right: 1px solid #ccc;
+        border-right: none;
     }
 
     .tabs button:last-child {
@@ -871,4 +876,61 @@ table:has(#trait-tbody) tbody tr:hover td:nth-child(1) {
     th, td {
         padding: 8px;
     }
+}
+
+/* Info icon tooltip styles */
+.info-icon {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 12px;
+    color: #666;
+    cursor: help;
+    vertical-align: super;
+    font-weight: normal;
+    position: relative;
+}
+
+.info-icon:hover {
+    color: #333;
+}
+
+.info-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: normal;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.info-icon::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #333;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.info-icon:hover::after,
+.info-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
 }

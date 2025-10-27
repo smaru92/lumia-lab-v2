@@ -66,7 +66,10 @@
             <th class="sortable">TOP2</th>
             <th class="sortable">TOP4</th>
             <th class="sortable">막금구승률</th>
-            <th class="sortable">평균획득점수</th>
+            <th class="sortable">
+                평균획득점수
+                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+            </th>
             <th class="sortable">이득확률</th>
             <th class="sortable">손실확률</th>
         </tr>
