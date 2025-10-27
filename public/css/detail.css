@@ -64,6 +64,7 @@ table {
     overflow-y: visible; /* Allow tooltips to show above table */
     display: block; /* Needed for overflow-x */
     margin-bottom: 15px; /* Add space below table */
+    border: 1px solid #ddd;
 }
 thead {
     position: sticky;
