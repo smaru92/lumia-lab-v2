@@ -9,17 +9,17 @@
     <h2><a href="/main?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
 
     {{-- Keep filters for changing options --}}
-    <div class="filter-container">
-        <div>
-            <strong>버전 변경:</strong>
+    <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; margin-bottom: 10px; gap: 20px;">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <label for="sel-version-filter" style="margin-bottom: 5px;"><strong>버전</strong></label>
             <select id="sel-version-filter"> {{-- Changed ID to avoid conflict --}}
                 @foreach($versions as $version)
                     <option value="{{ $version }}" {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}>{{ $version }}</option>
                 @endforeach
             </select>
         </div>
-        <div>
-            <strong>최소 티어:</strong>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <label for="sel-tier-filter" style="margin-bottom: 5px;"><strong>최소 티어</strong></label>
             <select id="sel-tier-filter"> {{-- Changed ID to avoid conflict --}}
                 <option value="All" {{ request('min_tier', $defaultTier) === 'All' ? 'selected' : '' }}>전체</option>
                 <option value="Platinum" {{ request('min_tier', $defaultTier) === 'Platinum' ? 'selected' : '' }}>플레티넘</option>

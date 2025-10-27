@@ -15,6 +15,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const openTierModalBtn = document.getElementById('openTierModal');
     const closeButton = document.querySelector('.close-button');
 
+    // --- Initialize select boxes from URL parameters ---
+    function initializeFiltersFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Sync version select (sel-min-tier is actually the version selector)
+        if (selMinTier) {
+            const versionParam = urlParams.get('version');
+            if (versionParam && selMinTier.value !== versionParam) {
+                selMinTier.value = versionParam;
+            }
+        }
+
+        // Sync min_tier select (sel-version is actually the min_tier selector)
+        if (selVersion) {
+            const minTierParam = urlParams.get('min_tier');
+            if (minTierParam && selVersion.value !== minTierParam) {
+                selVersion.value = minTierParam;
+            }
+        }
+    }
+
+    // Initialize on page load
+    initializeFiltersFromUrl();
+
+    // Re-initialize on browser back/forward
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // Page was loaded from cache (bfcache)
+            initializeFiltersFromUrl();
+        }
+    });
+
+    // Also handle popstate event for browser back/forward
+    window.addEventListener('popstate', function() {
+        initializeFiltersFromUrl();
+    });
+
     // --- Filter and URL Update Logic ---
 
     function updateUrlForVersionAndTier() {
