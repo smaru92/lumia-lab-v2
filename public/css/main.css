@@ -64,7 +64,8 @@ body {
 }
 
 .container {
-    width: 90%;
+    width: 100%;
+    max-width: 1200px;
     margin: 20px auto; /* Body padding handles space from navbar */
     background: #fff;
     padding: 20px;
