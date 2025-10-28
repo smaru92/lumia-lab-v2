@@ -68,16 +68,8 @@ class GameResultSummaryService extends BaseSummaryService
 
     public function getList(array $filters)
     {
-        return GameResultSummary::select(
-            'game_results_summary.*',
-            DB::raw("RANK() OVER (ORDER BY meta_score DESC) AS meta_score_rank"),
-            DB::raw("RANK() OVER (ORDER BY game_count DESC) AS game_count_rank"),
-            DB::raw("RANK() OVER (ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
-        )
-            ->where($filters)
+        // 메인 페이지용: 랭킹 계산 제거로 성능 최적화 (랭킹은 detail 페이지에서만 사용)
+        return GameResultSummary::where($filters)
             ->orderBy('meta_score', 'desc')
             ->get();
     }
@@ -106,6 +98,53 @@ class GameResultSummaryService extends BaseSummaryService
             ->where('character_name', $filters['character_name'])
             ->where('weapon_type', $filters['weapon_type'])
             ->first();
+    }
+
+    public function getDetailBulk(array $filters, array $tierRange)
+    {
+        // 모든 티어를 한 번에 조회 (성능 최적화)
+        $baseFilters = $filters;
+        unset($baseFilters['character_name']);
+        unset($baseFilters['weapon_type']);
+        unset($baseFilters['min_tier']);
+
+        // PARTITION BY min_tier로 각 티어별 랭킹을 한 번에 계산
+        $subQuery = GameResultSummary::select(
+            'game_results_summary.*',
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY meta_score DESC) AS meta_score_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY game_count DESC) AS game_count_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY endgame_win_percent DESC) AS endgame_win_percent_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY positive_game_count_percent DESC) AS positive_game_count_percent_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY negative_game_count_percent ASC) AS negative_game_count_percent_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY positive_avg_mmr_gain DESC) AS positive_avg_mmr_gain_rank"),
+            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY negative_avg_mmr_gain DESC) AS negative_avg_mmr_gain_rank"),
+            DB::raw("COUNT(*) OVER (PARTITION BY min_tier) AS rank_count")
+        )
+            ->where($baseFilters);
+
+        // 필요한 티어들만 필터링
+        $tierList = array_map(function($tier) {
+            return $tier['tier'] . $tier['tierNumber'];
+        }, $tierRange);
+
+        $results = DB::table(DB::raw("({$subQuery->toSql()}) as ranked"))
+            ->mergeBindings($subQuery->getQuery())
+            ->where('character_name', $filters['character_name'])
+            ->where('weapon_type', $filters['weapon_type'])
+            ->whereIn('min_tier', $tierList)
+            ->get();
+
+        // 티어별로 그룹화
+        $groupedResults = [];
+        foreach ($results as $result) {
+            $groupedResults[$result->min_tier] = $result;
+        }
+
+        return $groupedResults;
     }
 }
 

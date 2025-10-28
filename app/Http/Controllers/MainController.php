@@ -58,38 +58,46 @@ class MainController extends Controller
             $versionMinor = $version[2];
         }
 
-        $filters = [
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor,
-            'min_tier' => $minTier,
-        ];
+        // 캐시 키 생성
+        $cacheKey = "game_main_{$minTier}_" . implode('_', $version);
+        $cacheDuration = 60 * 60; // 1시간 캐싱
 
-        // 버전별 최상위 티어 점수 동적 조회
-        $versionFilters = [
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor
-        ];
-        $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
+        // 데이터 조회 전체를 캐싱
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($versionSeason, $versionMajor, $versionMinor, $minTier, $defaultTier, $defaultVersion) {
+            $filters = [
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor,
+                'min_tier' => $minTier,
+            ];
 
-        $lastData = $this->mainService->getGameResultSummary($filters);
-        if ($lastData->first()) {
-            $lastUpdate = $lastData->first()->created_at ?? null;
-        } else {
-            $lastUpdate = null;
-        }
+            // 버전별 최상위 티어 점수 동적 조회
+            $versionFilters = [
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor
+            ];
+            $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
 
-        $versions = $this->mainService->getLatestVersionList();
+            $lastData = $this->mainService->getGameResultSummary($filters);
+            if ($lastData->first()) {
+                $lastUpdate = $lastData->first()->created_at ?? null;
+            } else {
+                $lastUpdate = null;
+            }
 
-        $data = [
-            'lastUpdate' => $lastUpdate,
-            'defaultVersion' => $defaultVersion,
-            'defaultTier' => $defaultTier,
-            'topRankScore' => $topRankScore,
-            'data' => $lastData,
-            'versions' => $versions,
-        ];
+            $versions = $this->mainService->getLatestVersionList();
+
+            return [
+                'lastUpdate' => $lastUpdate,
+                'defaultVersion' => $defaultVersion,
+                'defaultTier' => $defaultTier,
+                'topRankScore' => $topRankScore,
+                'data' => $lastData,
+                'versions' => $versions,
+            ];
+        });
+
         return view('main', $data);
     }
 
@@ -103,93 +111,82 @@ class MainController extends Controller
         $version =  explode('.', $version);
 
         // 캐시 키 생성
-        $cacheKey = "game_detail_{$types}_{$minTier}_" . implode('_', $version);
-        $cacheDuration = 60 * 10; // 10분 캐싱
+        $cacheKey = "game_detail_data_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheDuration = 60 * 60; // 1시간 캐싱
 
-        [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
-        [$defaultVersionSeason, $defaultVersionMajor, $defaultVersionMinor] =  array_pad(explode('.', $defaultVersion), 3, null);
-        $versionSeason = $version[0] ?? $defaultVersionSeason;
-        $versionMajor = $version[1] ?? $defaultVersionMajor;
-        $versionMinor = $version[2] ?? $defaultVersionMinor;
-        $weaponType = empty($weaponType) ? 'All' : $weaponType;
+        // 데이터 조회 전체를 캐싱
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($types, $minTier, $version, $defaultTier, $defaultVersion) {
+            [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
+            [$defaultVersionSeason, $defaultVersionMajor, $defaultVersionMinor] =  array_pad(explode('.', $defaultVersion), 3, null);
+            $versionSeason = $version[0] ?? $defaultVersionSeason;
+            $versionMajor = $version[1] ?? $defaultVersionMajor;
+            $versionMinor = $version[2] ?? $defaultVersionMinor;
+            $weaponType = empty($weaponType) ? 'All' : $weaponType;
 
-        // 버전별 최상위 티어 점수 동적 조회
-        $versionFilters = [
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor
-        ];
-        $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
-        $filters = [
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor,
-            'character_name' => $characterName,
-            'weapon_type' => $weaponType,
-            'min_tier' => $minTier,
-        ];
+            // 버전별 최상위 티어 점수 동적 조회
+            $versionFilters = [
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor
+            ];
+            $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
+            $filters = [
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor,
+                'character_name' => $characterName,
+                'weapon_type' => $weaponType,
+                'min_tier' => $minTier,
+            ];
 
-        $versions = $this->mainService->getLatestVersionList();
-        $data = [
-            'minTier' => $minTier,
-            'versionSeason' => $versionSeason,
-            'versionMajor' => $versionMajor,
-            'versionMinor' => $versionMinor,
-            'characterName' => $characterName,
-            'weaponType' => $weaponType,
-            'defaultVersion' => $defaultVersion,
-            'topRankScore' => $topRankScore,
-            'defaultTier' => $defaultTier,
-            'versions' => $versions,
-        ];
-        $data['byAll'] = [];
-        foreach ($this->tierRange as $rankRange) {
-            $rankDetailFilters = $filters;
-            $rankRangeTier = $rankRange['tier'].$rankRange['tierNumber'];
-            $rankDetailFilters['min_tier'] = $rankRangeTier;
-            $rankRangeTierData = $this->mainService->getGameResultSummaryDetail($rankDetailFilters);
-            if (!empty($rankRangeTierData)) {
-                $data['byAll'][$rankRangeTier] = $rankRangeTierData;
-                $data['byAll'][$rankRangeTier]->tier_name = $this->replaceTierName($rankRangeTier);
-                $rankCountFilter = $filters;
-                $rankCountFilter['min_tier'] = $rankRangeTier;
-                unset($rankCountFilter['character_name']);
-                unset($rankCountFilter['weapon_type']);
-                $data['byAll'][$rankRangeTier]->rank_count = $this->mainService->getGameResultSummary($rankCountFilter)->count();
+            $versions = $this->mainService->getLatestVersionList();
+            $data = [
+                'minTier' => $minTier,
+                'versionSeason' => $versionSeason,
+                'versionMajor' => $versionMajor,
+                'versionMinor' => $versionMinor,
+                'characterName' => $characterName,
+                'weaponType' => $weaponType,
+                'defaultVersion' => $defaultVersion,
+                'topRankScore' => $topRankScore,
+                'defaultTier' => $defaultTier,
+                'versions' => $versions,
+            ];
+            // 모든 티어 데이터를 한 번에 조회 (성능 최적화)
+            $data['byAll'] = $this->mainService->getGameResultSummaryDetailBulk($filters, $this->tierRange);
+            $data['byMain'] = $data['byAll'][$minTier];
+            $byMainFilter = $filters;
+            unset($byMainFilter['character_name']);
+            unset($byMainFilter['weapon_type']);
+            $data['byMainCount'] = $this->mainService->getGameResultSummary($byMainFilter)->count();
+            $data['byRank'] = $this->mainService->getGameResultRankSummary($filters);
+            $byTacticalSkill = $this->mainService->getGameResultTacticalSkillSummary($filters);
+            $data['byTacticalSkillData'] = $byTacticalSkill['data'];
+            $data['byTacticalSkillTotal'] = $byTacticalSkill['total'];
+
+            $byEquipment = $this->mainService->getGameResultEquipmentSummary($filters);
+            $data['byEquipmentData'] = $byEquipment['data'];
+            $data['byEquipmentTotal'] = $byEquipment['total'];
+
+            $byTrait = $this->mainService->getGameResultTraitSummary($filters);
+            $data['byTraitData'] = $byTrait['data'];
+            $data['byTraitTotal'] = $byTrait['total'];
+
+            // Extract unique trait categories for filtering
+            $traitCategories = [];
+            foreach ($data['byTraitData'] as $traitGroup) {
+                $firstTraitItem = reset($traitGroup); // Get the first item to access category
+                if ($firstTraitItem && !in_array($firstTraitItem->trait_category, $traitCategories)) {
+                    $traitCategories[] = $firstTraitItem->trait_category;
+                }
             }
-        }
-        $data['byMain'] = $data['byAll'][$minTier];
-        $byMainFilter = $filters;
-        unset($byMainFilter['character_name']);
-        unset($byMainFilter['weapon_type']);
-        $data['byMainCount'] = $this->mainService->getGameResultSummary($byMainFilter)->count();
-        $data['byRank'] = $this->mainService->getGameResultRankSummary($filters);
-        $byTacticalSkill = $this->mainService->getGameResultTacticalSkillSummary($filters);
-        $data['byTacticalSkillData'] = $byTacticalSkill['data'];
-        $data['byTacticalSkillTotal'] = $byTacticalSkill['total'];
+            sort($traitCategories); // Sort categories alphabetically
+            $data['traitCategories'] = $traitCategories;
 
-        $byEquipment = $this->mainService->getGameResultEquipmentSummary($filters);
-        $data['byEquipmentData'] = $byEquipment['data'];
-        $data['byEquipmentTotal'] = $byEquipment['total'];
-
-        $byTrait = $this->mainService->getGameResultTraitSummary($filters);
-        $data['byTraitData'] = $byTrait['data'];
-        $data['byTraitTotal'] = $byTrait['total'];
-
-        // Extract unique trait categories for filtering
-        $traitCategories = [];
-        foreach ($data['byTraitData'] as $traitGroup) {
-            $firstTraitItem = reset($traitGroup); // Get the first item to access category
-            if ($firstTraitItem && !in_array($firstTraitItem->trait_category, $traitCategories)) {
-                $traitCategories[] = $firstTraitItem->trait_category;
-            }
-        }
-        sort($traitCategories); // Sort categories alphabetically
-        $data['traitCategories'] = $traitCategories;
-        // 캐시가 있으면 캐시된 뷰 반환
-        return cache()->remember($cacheKey, $cacheDuration, function () use ($data) {
-            return view('detail', $data)->render();
+            return $data;
         });
+
+        return view('detail', $data);
     }
 
     public function test()
