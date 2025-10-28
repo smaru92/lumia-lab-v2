@@ -78,6 +78,23 @@ class MainService
         return $result;
     }
 
+    public function getGameResultSummaryDetailBulk(array $filters, array $tierRange)
+    {
+        $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
+        $results = $this->gameResultSummaryService->getDetailBulk($filters, $tierRange);
+
+        // 각 티어에 대해 tier_name 추가
+        foreach ($results as $tier => $result) {
+            if ($result) {
+                $result->tier_name = $this->replaceTierName($tier);
+                $result->weapon_type_en = $result->weapon_type;
+                $result->weapon_type = $this->replaceWeaponType($result->weapon_type);
+            }
+        }
+
+        return $results;
+    }
+
     public function getGameResultRankSummary(array $filters = [])
     {
         return $this->gameResultRankSummaryService->getDetail($filters);

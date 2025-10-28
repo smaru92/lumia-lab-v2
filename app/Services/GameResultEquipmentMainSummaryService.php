@@ -123,16 +123,11 @@ class GameResultEquipmentMainSummaryService
 
     public function getList(array $filters)
     {
+        // 장비 페이지용: 랭킹 계산 제거로 성능 최적화
         return GameResultEquipmentMainSummary::select(
             'game_results_equipment_main_summary.*',
             'equipments.item_grade',
-            'equipments.item_type2',
-            DB::raw("RANK() OVER (ORDER BY meta_score DESC) AS meta_score_rank"),
-            DB::raw("RANK() OVER (ORDER BY game_count DESC) AS game_count_rank"),
-            DB::raw("RANK() OVER (ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
+            'equipments.item_type2'
         )
             ->join('equipments', 'equipments.id', '=', 'game_results_equipment_main_summary.equipment_id')
             ->where($filters)
