@@ -77,10 +77,10 @@
                             @php
                                 // Format character ID to 3 digits with leading zeros
                                 $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
-                                $characterIconPath = asset('storage/Character/icon/' . $formattedCharacterId . '.png');
-                                $defaultCharacterIconPath = asset('storage/Character/icon/default.png');
-                                $weaponIconPath = asset('storage/Weapon/' . $item->weapon_type_en . '.png');
-                                $defaultWeaponIconPath = asset('storage/Weapon/icon/default.png');
+                                $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
+                                $defaultCharacterIconPath = image_asset('storage/Character/icon/default.png');
+                                $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png');
+                                $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
                             @endphp
                             <div class="icon-container">
                                 <img src="{{ $characterIconPath }}"
@@ -181,10 +181,10 @@
                                          data-avg-score="{{ number_format($item->avg_mmr_gain, 1) }}">
                                     @php
                                         $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
-                                        $characterIconPath = asset('storage/Character/icon/' . $formattedCharacterId . '.png');
-                                        $defaultCharacterIconPath = asset('storage/Character/icon/default.png');
-                                        $weaponIconPath = asset('storage/Weapon/' . $item->weapon_type_en . '.png');
-                                        $defaultWeaponIconPath = asset('storage/Weapon/icon/default.png');
+                                        $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
+                                        $defaultCharacterIconPath = image_asset('storage/Character/icon/default.png');
+                                        $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png');
+                                        $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
                                     @endphp
 
                                     <img src="{{ $characterIconPath }}"
