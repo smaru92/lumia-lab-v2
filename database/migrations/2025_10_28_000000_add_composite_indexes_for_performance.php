@@ -38,16 +38,18 @@ return new class extends Migration
         }
 
         // game_results_equipment_main_summary - 메인 장비 쿼리 최적화
+        // weapon_type 컬럼이 없으므로 제외
         if (Schema::hasTable('game_results_equipment_main_summary')) {
             if (!$this->indexExists('game_results_equipment_main_summary', 'idx_equipment_main_composite')) {
-                DB::statement('CREATE INDEX idx_equipment_main_composite ON game_results_equipment_main_summary(version_season, version_major, version_minor, min_tier, weapon_type(50))');
+                DB::statement('CREATE INDEX idx_equipment_main_composite ON game_results_equipment_main_summary(version_season, version_major, version_minor, min_tier, equipment_id)');
             }
         }
 
         // game_results_first_equipment_main_summary - 첫 장비 쿼리 최적화
+        // weapon_type 컬럼이 없으므로 제외
         if (Schema::hasTable('game_results_first_equipment_main_summary')) {
             if (!$this->indexExists('game_results_first_equipment_main_summary', 'idx_first_equipment_composite')) {
-                DB::statement('CREATE INDEX idx_first_equipment_composite ON game_results_first_equipment_main_summary(version_season, version_major, version_minor, min_tier, weapon_type(50))');
+                DB::statement('CREATE INDEX idx_first_equipment_composite ON game_results_first_equipment_main_summary(version_season, version_major, version_minor, min_tier, equipment_id)');
             }
         }
     }
