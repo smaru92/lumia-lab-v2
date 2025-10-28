@@ -36,37 +36,45 @@ class EquipmentFirstController
         $versionSeason = $version[0];
         $versionMajor = $version[1];
         $versionMinor = $version[2];
-        
-        // 버전별 최상위 티어 점수 동적 조회
-        $versionFilters = [
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor
-        ];
-        $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
-        $filters = [
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor,
-            'min_tier' => $minTier,
-        ];
-        $lastData = $this->firstEquipmentMainService->getGameResultFirstEquipmentMainSummary($filters);
-        if ($lastData->first()) {
-            $lastUpdate = $lastData->first()->created_at ?? null;
-        } else {
-            $lastUpdate = null;
-        }
 
-        $versions = $this->firstEquipmentMainService->getLatestVersionList();
+        // 캐시 키 생성
+        $cacheKey = "game_equipment_first_{$minTier}_" . implode('_', $version);
+        $cacheDuration = 60 * 60; // 1시간 캐싱
 
-        $data = [
-            'lastUpdate' => $lastUpdate,
-            'defaultVersion' => $defaultVersion,
-            'defaultTier' => $defaultTier,
-            'topRankScore' => $topRankScore,
-            'data' => $lastData,
-            'versions' => $versions,
-        ];
+        // 데이터 조회 전체를 캐싱
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($versionSeason, $versionMajor, $versionMinor, $minTier, $defaultTier, $defaultVersion) {
+            // 버전별 최상위 티어 점수 동적 조회
+            $versionFilters = [
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor
+            ];
+            $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
+            $filters = [
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor,
+                'min_tier' => $minTier,
+            ];
+            $lastData = $this->firstEquipmentMainService->getGameResultFirstEquipmentMainSummary($filters);
+            if ($lastData->first()) {
+                $lastUpdate = $lastData->first()->created_at ?? null;
+            } else {
+                $lastUpdate = null;
+            }
+
+            $versions = $this->firstEquipmentMainService->getLatestVersionList();
+
+            return [
+                'lastUpdate' => $lastUpdate,
+                'defaultVersion' => $defaultVersion,
+                'defaultTier' => $defaultTier,
+                'topRankScore' => $topRankScore,
+                'data' => $lastData,
+                'versions' => $versions,
+            ];
+        });
+
         return view('first-equipment', $data);
     }
 
