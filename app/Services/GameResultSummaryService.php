@@ -138,10 +138,19 @@ class GameResultSummaryService extends BaseSummaryService
             ->whereIn('min_tier', $tierList)
             ->get();
 
-        // 티어별로 그룹화
-        $groupedResults = [];
+        // 티어별로 그룹화 (먼저 임시 배열에 저장)
+        $tempResults = [];
         foreach ($results as $result) {
-            $groupedResults[$result->min_tier] = $result;
+            $tempResults[$result->min_tier] = $result;
+        }
+
+        // tierRange 순서대로 정렬된 결과 배열 생성
+        $groupedResults = [];
+        foreach ($tierRange as $tier) {
+            $tierKey = $tier['tier'] . $tier['tierNumber'];
+            if (isset($tempResults[$tierKey])) {
+                $groupedResults[$tierKey] = $tempResults[$tierKey];
+            }
         }
 
         return $groupedResults;
