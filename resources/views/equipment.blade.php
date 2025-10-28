@@ -100,10 +100,10 @@
                             @php
                                 // Format equipment ID to 3 digits with leading zeros
                                 $formattedEquipmentId = $item->equipment_id;
-                                $equipmentIconPath = asset('storage/Equipment/' . $formattedEquipmentId . '.png');
-                                $defaultEquipmentIconPath = asset('storage/Equipment/default.png');
-                                // $weaponIconPath = asset('storage/Weapon/' . $item->weapon_type_en . '.png'); // 장비 페이지에서는 불필요
-                                // $defaultWeaponIconPath = asset('storage/Weapon/icon/default.png');
+                                $equipmentIconPath = image_asset('storage/Equipment/' . $formattedEquipmentId . '.png');
+                                $defaultEquipmentIconPath = image_asset('storage/Equipment/default.png');
+                                // $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png'); // 장비 페이지에서는 불필요
+                                // $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
                             @endphp
                             <div class="icon-container">
                                 <img src="{{ $equipmentIconPath }}"
@@ -199,8 +199,8 @@
                                          data-avg-score="{{ number_format($item->avg_mmr_gain, 1) }}">
                                     @php
                                         $formattedEquipmentId = $item->equipment_id;
-                                        $equipmentIconPath = asset('storage/Equipment/' . $formattedEquipmentId . '.png');
-                                        $defaultEquipmentIconPath = asset('storage/Equipment/default.png');
+                                        $equipmentIconPath = image_asset('storage/Equipment/' . $formattedEquipmentId . '.png');
+                                        $defaultEquipmentIconPath = image_asset('storage/Equipment/default.png');
                                     @endphp
                                     <img src="{{ $equipmentIconPath }}"
                                              alt="{{ $item->equipment_name }}"
