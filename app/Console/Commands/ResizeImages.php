@@ -19,7 +19,7 @@ class ResizeImages extends Command
      *
      * @var string
      */
-    protected $description = 'Resize images in Character/icon and Equipment directories';
+    protected $description = 'Resize images in Character/icon, Equipment, Trait, and TacticalSkill directories';
 
     /**
      * Execute the console command.
@@ -31,6 +31,8 @@ class ResizeImages extends Command
         $directories = [
             storage_path('app/public/Character/icon'),
             storage_path('app/public/Equipment'),
+            storage_path('app/public/Trait'),
+            storage_path('app/public/TacticalSkill'),
         ];
 
         $this->info("Starting image resize with scale factor: {$scale}");
@@ -54,37 +56,78 @@ class ResizeImages extends Command
 
             $this->info("\nProcessing directory: {$directory}");
 
+            // Check if origin directory has images
+            $originFiles = [];
+            if (File::exists($originDirectory)) {
+                $originFiles = File::files($originDirectory);
+                $originFiles = array_filter($originFiles, function($file) {
+                    return in_array(strtolower($file->getExtension()), ['png', 'jpg', 'jpeg', 'gif']);
+                });
+            }
+
+            // Get images from main directory
             $files = File::files($directory);
             $imageFiles = array_filter($files, function($file) {
                 return in_array(strtolower($file->getExtension()), ['png', 'jpg', 'jpeg', 'gif']);
             });
 
-            $this->info("Found " . count($imageFiles) . " images");
+            // If origin has images, use those as source
+            if (count($originFiles) > 0) {
+                $this->info("Found " . count($originFiles) . " images in origin directory");
 
-            foreach ($imageFiles as $file) {
-                try {
-                    $filename = $file->getFilename();
-                    $originalPath = $file->getPathname();
-                    $backupPath = $originDirectory . '/' . $filename;
+                foreach ($originFiles as $file) {
+                    try {
+                        $filename = $file->getFilename();
+                        $originPath = $file->getPathname();
+                        $targetPath = $directory . '/' . $filename;
 
-                    // Backup original file to origin directory if not already backed up
-                    if (!File::exists($backupPath)) {
-                        File::copy($originalPath, $backupPath);
-                        $totalBacked++;
-                    }
+                        // Resize from origin to target directory
+                        // First copy to target
+                        File::copy($originPath, $targetPath);
 
-                    // Resize image
-                    $result = $this->resizeImage($originalPath, $scale);
-                    if ($result) {
-                        $this->line("✓ Resized: {$filename}");
-                        $totalProcessed++;
-                    } else {
-                        $this->error("✗ Failed: {$filename}");
+                        // Then resize the target
+                        $result = $this->resizeImage($targetPath, $scale);
+                        if ($result) {
+                            $this->line("✓ Resized: {$filename}");
+                            $totalProcessed++;
+                        } else {
+                            $this->error("✗ Failed: {$filename}");
+                            $totalFailed++;
+                        }
+                    } catch (\Exception $e) {
+                        $this->error("✗ Error processing {$file->getFilename()}: {$e->getMessage()}");
                         $totalFailed++;
                     }
-                } catch (\Exception $e) {
-                    $this->error("✗ Error processing {$file->getFilename()}: {$e->getMessage()}");
-                    $totalFailed++;
+                }
+            } else {
+                // No origin directory, process normally
+                $this->info("Found " . count($imageFiles) . " images");
+
+                foreach ($imageFiles as $file) {
+                    try {
+                        $filename = $file->getFilename();
+                        $originalPath = $file->getPathname();
+                        $backupPath = $originDirectory . '/' . $filename;
+
+                        // Backup original file to origin directory if not already backed up
+                        if (!File::exists($backupPath)) {
+                            File::copy($originalPath, $backupPath);
+                            $totalBacked++;
+                        }
+
+                        // Resize image
+                        $result = $this->resizeImage($originalPath, $scale);
+                        if ($result) {
+                            $this->line("✓ Resized: {$filename}");
+                            $totalProcessed++;
+                        } else {
+                            $this->error("✗ Failed: {$filename}");
+                            $totalFailed++;
+                        }
+                    } catch (\Exception $e) {
+                        $this->error("✗ Error processing {$file->getFilename()}: {$e->getMessage()}");
+                        $totalFailed++;
+                    }
                 }
             }
         }

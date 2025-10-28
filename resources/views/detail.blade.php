@@ -296,7 +296,15 @@
                 }
             @endphp
             <tr class="tactical-skill-row" data-tactical_skill-id="{{ $firstTacticalSkillItem->tactical_skill_id }}" style="{{ $loop->parent->index >= 5 ? 'display: none;' : '' }}">
-                <td style="white-space: nowrap; overflow: visible; text-overflow: unset;">{{ $firstTacticalSkillItem->tactical_skill_name }}</td>
+                <td style="white-space: nowrap; overflow: visible; text-overflow: unset;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <img src="{{ asset('storage/TacticalSkill/' . $firstTacticalSkillItem->tactical_skill_id . '.png') }}"
+                             alt="{{ $firstTacticalSkillItem->tactical_skill_name }}"
+                             class="equipment-icon"
+                             onerror="this.style.display='none'">
+                        {{ $firstTacticalSkillItem->tactical_skill_name }}
+                    </div>
+                </td>
                 <td style="width: 40px; max-width: 40px; text-align: center; padding: 8px 4px;">{{ $firstTacticalSkillItem->tactical_skill_level }}</td>
                 <td>{{ $byTacticalSkillTotal[$firstTacticalSkillItem->tactical_skill_id][$firstTacticalSkillItem->tactical_skill_level] }}</td>
                 <td>
@@ -389,7 +397,15 @@
             @endphp
             {{-- Add data-category attribute --}}
             <tr class="trait-row" data-trait-id="{{ $firstTraitItem->trait_id }}" data-category="{{ $traitCategory }}" data-is_main="{{ $firstTraitItem->is_main }}" style="{{ $loop->index >= 10 ? 'display: none;' : '' }}">
-                <td>{{ $firstTraitItem->trait_name }}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <img src="{{ asset('storage/Trait/' . $firstTraitItem->trait_id . '.png') }}"
+                             alt="{{ $firstTraitItem->trait_name }}"
+                             class="equipment-icon"
+                             onerror="this.style.display='none'">
+                        {{ $firstTraitItem->trait_name }}
+                    </div>
+                </td>
                 <td>{{ $traitCategory }}</td>
                 <td>{{ $firstTraitItem->is_main ? '메인' : '서브' }}</td>
                     <td>{{ $byTraitTotal[$firstTraitItem->trait_id] }}</td>
