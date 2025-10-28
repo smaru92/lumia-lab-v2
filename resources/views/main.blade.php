@@ -86,11 +86,13 @@
                                 <img src="{{ $characterIconPath }}"
                                      alt="{{ $item->character_name }}"
                                      class="character-icon"
+                                     loading="lazy"
                                      onerror="this.onerror=null; this.src='{{ $defaultCharacterIconPath }}';">
                                 @if($item->weapon_type !== 'All')
                                 <img src="{{ $weaponIconPath }}"
                                      alt="{{ $item->weapon_type }}"
                                      class="weapon-icon"
+                                     loading="lazy"
                                      onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                 @endif
                             </div>
@@ -190,11 +192,13 @@
                                     <img src="{{ $characterIconPath }}"
                                              alt="{{ $item->character_name }}"
                                              class="tier-character-icon"
+                                             loading="lazy"
                                              onerror="this.onerror=null; this.src='{{ $defaultCharacterIconPath }}';">
                                     @if($item->weapon_type !== 'All')
                                     <img src="{{ $weaponIconPath }}"
                                              alt="{{ $item->weapon_type }}"
                                              class="tier-weapon-icon"
+                                             loading="lazy"
                                              onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                     @endif
                                     </div>
