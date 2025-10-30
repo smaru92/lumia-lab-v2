@@ -842,7 +842,7 @@ class GameResultService
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 3;
+        $A = $pickScore * 3.3;
 
         // 최종 메타 점수
         $metaScore = ($P * 1.8 + $A) * (0.6 + 0.4 * $pickWeight) * 2;
@@ -917,7 +917,7 @@ class GameResultService
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 2.5;
+        $A = $pickScore * 2.0;
 
         // 최종 메타 점수
         $metaScore = ($P * 1.5 + $A) * (0.6 + 0.3 * $pickWeight) * 2;
