@@ -77,5 +77,38 @@
 4. MMR 변동 추적
 5. 버전별 데이터 관리
 
+## Filament 관리자 패널
+- **버전**: Filament 4 (v4.x)
+- **중요**: Filament 4 사용 중! v3 문법 사용 금지
+
+### Filament 4 주요 변경사항
+1. **Form → Schema**: `Form` 대신 `Schema` 사용
+   - `form(Form $form)` → `form(Schema $schema)`
+   - `$form->schema([])` → `$schema->components([])`
+
+2. **Actions 네임스페이스**:
+   - `Filament\Tables\Actions\*` → `Filament\Actions\*`
+   - `->actions([])` → `->recordActions([])`
+   - `->bulkActions([])` → `->toolbarActions([])`
+
+3. **Icon 속성 타입**:
+   - `protected static ?string $navigationIcon` → `protected static string|BackedEnum|null $navigationIcon`
+   - Heroicon enum 사용: `Heroicon::OutlineUser` 등
+
+4. **Get/Set 유틸리티**:
+   - `Forms\Get` → `Schemas\Components\Utilities\Get`
+   - `Forms\Set` → `Schemas\Components\Utilities\Set`
+   - 클로저 내에서 타입 힌트 필수
+
+5. **Section 컴포넌트**:
+   - Schema 내부에서는 Section 사용 불가, 평면적인 컴포넌트 구조 사용
+
+### 관리 페이지 구조
+- Characters (캐릭터 관리)
+- Equipment (장비 관리)
+- VersionHistories (버전 관리)
+  - PatchNotesRelationManager (패치노트 관계 매니저)
+
 ## 제약사항
 1. **터미널 명령어 실행 제한**: 모든 터미널 명령어는 사용자에게 먼저 요청하여 확인 받아야 함
+2. **Filament 버전 주의**: 반드시 Filament 4 문법 사용
