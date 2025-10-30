@@ -39,7 +39,7 @@ class EquipmentFirstController
 
         // 캐시 키 생성
         $cacheKey = "game_equipment_first_{$minTier}_" . implode('_', $version);
-        $cacheDuration = 60 * 60; // 1시간 캐싱
+        $cacheDuration = config('erDev.cacheDuration'); // 캐시 지속 시간
 
         // 데이터 조회 전체를 캐싱
         $data = cache()->remember($cacheKey, $cacheDuration, function () use ($versionSeason, $versionMajor, $versionMinor, $minTier, $defaultTier, $defaultVersion) {
