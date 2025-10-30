@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Redirect login to Filament admin login
+Route::get('/login', function() {
+    return redirect('/admin/login');
+})->name('login');
 
 Route::get('/', [MainController::class, 'index']);
 
