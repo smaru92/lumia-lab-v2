@@ -173,14 +173,7 @@
                             <td>
                                 @foreach($groupedByTier[$tier] as $item)
                                     <div class="tier-character-icon-container"
-                                         data-pick-rate="{{ number_format($item->game_count_percent, 2) }}"
-                                         data-character-name="{{ $item->character_name }}"
-                                         data-weapon-type="{{ $item->weapon_type }}"
-                                         data-tier="{{ $item->meta_tier }}"
-                                         data-win-rate="{{ number_format($item->top1_count_percent, 2) }}"
-                                         data-top2-rate="{{ number_format($item->top2_count_percent, 2) }}"
-                                         data-top4-rate="{{ number_format($item->top4_count_percent, 2) }}"
-                                         data-avg-score="{{ number_format($item->avg_mmr_gain, 1) }}">
+                                         data-pick-rate="{{ $item->game_count_percent }}">
                                     @php
                                         $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
                                         $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
