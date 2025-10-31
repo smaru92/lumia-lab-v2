@@ -119,6 +119,7 @@
             </td>
             <td class="number">
                 {{ number_format($byMain->avg_team_kill_score, 2) }}
+                <div class="sub-stat">{{ number_format($byMain->avg_team_kill_score_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
             <td>
                 <div>{{ number_format($byMain->positive_game_count_percent , 2) }}%</div>
@@ -205,6 +206,7 @@
                 </td>
                 <td class="number">
                     {{ number_format($item->avg_team_kill_score, 2) }}
+                    <div class="sub-stat">{{ number_format($item->avg_team_kill_score_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
