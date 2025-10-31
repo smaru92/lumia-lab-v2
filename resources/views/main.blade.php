@@ -32,12 +32,11 @@
                 <tr style="background-color: #d4edda; border-bottom: 2px solid #28a745;">
                     <th style="padding: 10px; text-align: left;">캐릭터</th>
                     <th style="padding: 10px; text-align: center;">티어 변동</th>
-                    <th style="padding: 10px; text-align: center;">메타 스코어</th>
                     <th style="padding: 10px; text-align: center;">픽률</th>
                     <th style="padding: 10px; text-align: center;">승률</th>
-                    <th style="padding: 10px; text-align: center;">TOP2</th>
-                    <th style="padding: 10px; text-align: center;">TOP4</th>
-                    <th style="padding: 10px; text-align: center;">막금구승률</th>
+                    <th class="hide-on-mobile" style="padding: 10px; text-align: center;">TOP2</th>
+                    <th class="hide-on-mobile" style="padding: 10px; text-align: center;">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet" style="padding: 10px; text-align: center;">막금구승률</th>
                     <th style="padding: 10px; text-align: center;">평균 획득점수</th>
                 </tr>
             </thead>
@@ -45,7 +44,7 @@
                 @foreach($buffedCharacters as $item)
                 <tr style="border-bottom: 1px solid #ddd; background-color: {{ $loop->iteration % 2 == 0 ? '#f8f9fa' : 'white' }};">
                     <td style="padding: 10px;">
-                        <div style="display: flex; align-items: center;">
+                        <div class="character-cell-content" style="display: flex; align-items: center;">
                             @php
                                 $formattedCharacterId = str_pad($item['character_id'], 3, '0', STR_PAD_LEFT);
                                 $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
@@ -89,14 +88,7 @@
                             <span style="color: #28a745;">→</span>
                             <span class="tier-badge {{ $latestTierClass }}" style="font-size: 11px; padding: 2px 6px;">{{ $latestTier }}</span>
                         </div>
-                    </td>
-                    <td style="padding: 10px; text-align: center;">
-                        <div>
-                            <span style="color: {{ $item['meta_score_diff'] > 0 ? '#28a745' : ($item['meta_score_diff'] < 0 ? '#dc3545' : '#666') }}; font-weight: bold;">
-                                {{ $item['meta_score_diff'] > 0 ? '+' : '' }}{{ number_format($item['meta_score_diff'], 2) }}
-                            </span>
-                        </div>
-                        <div style="font-size: 12px; color: #666;">
+                        <div style="font-size: 11px; color: #666; margin-top: 4px;">
                             {{ number_format($item['previous']->meta_score, 2) }} → {{ number_format($item['latest']->meta_score, 2) }}
                         </div>
                     </td>
@@ -189,12 +181,11 @@
                 <tr style="background-color: #f8d7da; border-bottom: 2px solid #dc3545;">
                     <th style="padding: 10px; text-align: left;">캐릭터</th>
                     <th style="padding: 10px; text-align: center;">티어 변동</th>
-                    <th style="padding: 10px; text-align: center;">메타 스코어</th>
                     <th style="padding: 10px; text-align: center;">픽률</th>
                     <th style="padding: 10px; text-align: center;">승률</th>
-                    <th style="padding: 10px; text-align: center;">TOP2</th>
-                    <th style="padding: 10px; text-align: center;">TOP4</th>
-                    <th style="padding: 10px; text-align: center;">막금구승률</th>
+                    <th class="hide-on-mobile" style="padding: 10px; text-align: center;">TOP2</th>
+                    <th class="hide-on-mobile" style="padding: 10px; text-align: center;">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet" style="padding: 10px; text-align: center;">막금구승률</th>
                     <th style="padding: 10px; text-align: center;">평균 획득점수</th>
                 </tr>
             </thead>
@@ -202,7 +193,7 @@
                 @foreach($nerfedCharacters as $item)
                 <tr style="border-bottom: 1px solid #ddd; background-color: {{ $loop->iteration % 2 == 0 ? '#f8f9fa' : 'white' }};">
                     <td style="padding: 10px;">
-                        <div style="display: flex; align-items: center;">
+                        <div class="character-cell-content" style="display: flex; align-items: center;">
                             @php
                                 $formattedCharacterId = str_pad($item['character_id'], 3, '0', STR_PAD_LEFT);
                                 $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
@@ -246,14 +237,7 @@
                             <span style="color: #dc3545;">→</span>
                             <span class="tier-badge {{ $latestTierClass }}" style="font-size: 11px; padding: 2px 6px;">{{ $latestTier }}</span>
                         </div>
-                    </td>
-                    <td style="padding: 10px; text-align: center;">
-                        <div>
-                            <span style="color: {{ $item['meta_score_diff'] > 0 ? '#28a745' : ($item['meta_score_diff'] < 0 ? '#dc3545' : '#666') }}; font-weight: bold;">
-                                {{ $item['meta_score_diff'] > 0 ? '+' : '' }}{{ number_format($item['meta_score_diff'], 2) }}
-                            </span>
-                        </div>
-                        <div style="font-size: 12px; color: #666;">
+                        <div style="font-size: 11px; color: #666; margin-top: 4px;">
                             {{ number_format($item['previous']->meta_score, 2) }} → {{ number_format($item['latest']->meta_score, 2) }}
                         </div>
                     </td>
@@ -341,3 +325,37 @@
     @endif
 </div>
 @endsection
+
+@push('styles')
+<style>
+    /* 태블릿 환경 (768px ~ 1024px) - 막금구승률 숨김 */
+    @media (max-width: 1024px) and (min-width: 769px) {
+        .hide-on-tablet {
+            display: none !important;
+        }
+    }
+
+    /* 모바일 환경 (768px 이하) - TOP2, TOP4, 막금구승률 숨김 */
+    @media (max-width: 768px) {
+        .hide-on-mobile {
+            display: none !important;
+        }
+
+        /* 캐릭터 셀 세로 정렬 */
+        .character-cell-content {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+        }
+
+        .icon-container {
+            margin-right: 0 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .character-name-weapon {
+            text-align: center !important;
+        }
+    }
+</style>
+@endpush
