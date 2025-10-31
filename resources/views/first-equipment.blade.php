@@ -64,14 +64,14 @@
             <th class="sortable">이름</th>
             <th class="sortable">티어</th>
             <th class="sortable">픽률</th>
-            <th class="sortable">승률</th>
-            <th class="sortable">TOP2</th>
-            <th class="sortable">TOP4</th>
-            <th class="sortable">막금구승률</th>
             <th class="sortable">
                 평균획득점수
                 <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
+            <th class="sortable">승률</th>
+            <th class="sortable">TOP2</th>
+            <th class="sortable">TOP4</th>
+            <th class="sortable">막금구승률</th>
             <th class="sortable">평균 TK</th>
             <th class="sortable">이득확률</th>
             <th class="sortable">손실확률</th>
@@ -123,6 +123,7 @@
                         <div>{{ number_format($item->game_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->game_count }}</div>
                     </td>
+                    <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
                     <td>
                         <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
                         <div  class="sub-stat">{{ $item->top1_count }}</div>
@@ -138,7 +139,6 @@
                     <td>
                         <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     </td>
-                    <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
                     <td class="number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
                     <td>
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>

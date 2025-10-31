@@ -6,7 +6,7 @@
 
 @section('content')
 <div class="container">
-    <h2><a href="/main?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
+    <h2><a href="/character?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
 
     {{-- Keep filters for changing options --}}
     <div class="detail-filter-container">
@@ -41,14 +41,14 @@
             <th>이름</th>
             <th>티어</th>
             <th>픽률</th>
-            <th>승률</th>
-            <th>TOP2</th>
-            <th>TOP4</th>
-            <th>막금구승률</th>
             <th>
                 평균획득점수
                 <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
+            <th>승률</th>
+            <th>TOP2</th>
+            <th>TOP4</th>
+            <th>막금구승률</th>
             <th>평균 TK</th>
             <th>이득확률</th>
             <th>이득평균점수</th>
@@ -97,6 +97,10 @@
                 <div>{{ number_format($byMain->game_count_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->game_count_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
+            <td class="number">
+                {{ number_format($byMain->avg_mmr_gain, 1) }}
+                <div class="sub-stat">{{ number_format($byMain->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+            </td>
             <td>
                 <div>{{ number_format($byMain->top1_count_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->top1_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
@@ -112,10 +116,6 @@
             <td>
                 <div>{{ number_format($byMain->endgame_win_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->endgame_win_percent_rank) }} / {{ number_format($byMainCount) }}</div>
-            </td>
-            <td class="number">
-                {{ number_format($byMain->avg_mmr_gain, 1) }}
-                <div class="sub-stat">{{ number_format($byMain->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
             <td class="number">
                 {{ number_format($byMain->avg_team_kill_score, 2) }}
@@ -150,14 +150,14 @@
                 <th>최소티어</th>
                 <th>티어</th>
                 <th>픽률</th>
-                <th>승률</th>
-                <th>TOP2</th>
-                <th>TOP4</th>
-                <th>막금구승률</th>
                 <th>
                     평균획득점수
                     <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
                 </th>
+                <th>승률</th>
+                <th>TOP2</th>
+                <th>TOP4</th>
+                <th>막금구승률</th>
                 <th>평균 TK</th>
                 <th>이득확률</th>
                 <th>이득평균점수</th>
@@ -183,6 +183,10 @@
                     <div>{{ number_format($item->game_count_percent , 2) }}%</div>
                     <div class="sub-stat">{{ number_format($item->game_count_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
+                <td class="number">
+                    {{ number_format($item->avg_mmr_gain, 1) }}
+                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
+                </td>
                 <td>
                     <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
                     <div class="sub-stat">{{ number_format($item->top1_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
@@ -198,10 +202,6 @@
                 <td>
                     <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     <div class="sub-stat">{{ number_format($item->endgame_win_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
-                </td>
-                <td class="number">
-                    {{ number_format($item->avg_mmr_gain, 1) }}
-                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td class="number">
                     {{ number_format($item->avg_team_kill_score, 2) }}

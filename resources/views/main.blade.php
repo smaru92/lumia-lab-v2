@@ -33,12 +33,12 @@
                     <th class="text-left">캐릭터</th>
                     <th class="text-center">티어 변동</th>
                     <th class="text-center">픽률</th>
+                    <th class="text-center">평균 획득점수</th>
                     <th class="text-center">승률</th>
                     <th class="hide-on-mobile text-center">TOP2</th>
                     <th class="hide-on-mobile text-center">TOP4</th>
                     <th class="hide-on-mobile hide-on-tablet text-center">막금구승률</th>
-                    <th class="text-center">평균 획득점수</th>
-                    <th class="text-center">평균 TK</th>
+                    <th class="hide-on-mobile text-center">평균 TK</th>
                 </tr>
             </thead>
             <tbody>
@@ -108,6 +108,16 @@
                     </td>
                     <td class="text-center">
                         <div>
+                            <span class="stat-diff {{ $item['avg_mmr_gain_diff'] > 0 ? 'positive' : ($item['avg_mmr_gain_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['avg_mmr_gain_diff'] > 0 ? '+' : '' }}{{ number_format($item['avg_mmr_gain_diff'], 1) }}
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->avg_mmr_gain, 1) }} → {{ number_format($item['latest']->avg_mmr_gain, 1) }}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div>
                             <span class="stat-diff {{ $item['win_rate_diff'] > 0 ? 'positive' : ($item['win_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
                                 {{ $item['win_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['win_rate_diff'], 2) }}%
                             </span>
@@ -116,7 +126,7 @@
                             {{ number_format($item['previous']->top1_count_percent, 2) }}% → {{ number_format($item['latest']->top1_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile text-center">
                         @php
                             $top2_diff = $item['latest']->top2_count_percent - $item['previous']->top2_count_percent;
                         @endphp
@@ -129,7 +139,7 @@
                             {{ number_format($item['previous']->top2_count_percent, 2) }}% → {{ number_format($item['latest']->top2_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile text-center">
                         <div>
                             <span class="stat-diff {{ $item['top4_rate_diff'] > 0 ? 'positive' : ($item['top4_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
                                 {{ $item['top4_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['top4_rate_diff'], 2) }}%
@@ -139,7 +149,7 @@
                             {{ number_format($item['previous']->top4_count_percent, 2) }}% → {{ number_format($item['latest']->top4_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile hide-on-tablet text-center">
                         @php
                             $endgame_diff = $item['latest']->endgame_win_percent - $item['previous']->endgame_win_percent;
                         @endphp
@@ -152,17 +162,7 @@
                             {{ number_format($item['previous']->endgame_win_percent, 2) }}% → {{ number_format($item['latest']->endgame_win_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
-                        <div>
-                            <span class="stat-diff {{ $item['avg_mmr_gain_diff'] > 0 ? 'positive' : ($item['avg_mmr_gain_diff'] < 0 ? 'negative' : 'neutral') }}">
-                                {{ $item['avg_mmr_gain_diff'] > 0 ? '+' : '' }}{{ number_format($item['avg_mmr_gain_diff'], 1) }}
-                            </span>
-                        </div>
-                        <div class="stat-detail">
-                            {{ number_format($item['previous']->avg_mmr_gain, 1) }} → {{ number_format($item['latest']->avg_mmr_gain, 1) }}
-                        </div>
-                    </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile text-center">
                         @php
                             $tk_diff = $item['latest']->avg_team_kill_score - $item['previous']->avg_team_kill_score;
                         @endphp
@@ -199,12 +199,12 @@
                     <th class="text-left">캐릭터</th>
                     <th class="text-center">티어 변동</th>
                     <th class="text-center">픽률</th>
+                    <th class="text-center">평균 획득점수</th>
                     <th class="text-center">승률</th>
                     <th class="hide-on-mobile text-center">TOP2</th>
                     <th class="hide-on-mobile text-center">TOP4</th>
                     <th class="hide-on-mobile hide-on-tablet text-center">막금구승률</th>
-                    <th class="text-center">평균 획득점수</th>
-                    <th class="text-center">평균 TK</th>
+                    <th class="hide-on-mobile text-center">평균 TK</th>
                 </tr>
             </thead>
             <tbody>
@@ -274,6 +274,16 @@
                     </td>
                     <td class="text-center">
                         <div>
+                            <span class="stat-diff {{ $item['avg_mmr_gain_diff'] > 0 ? 'positive' : ($item['avg_mmr_gain_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['avg_mmr_gain_diff'] > 0 ? '+' : '' }}{{ number_format($item['avg_mmr_gain_diff'], 1) }}
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->avg_mmr_gain, 1) }} → {{ number_format($item['latest']->avg_mmr_gain, 1) }}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div>
                             <span class="stat-diff {{ $item['win_rate_diff'] > 0 ? 'positive' : ($item['win_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
                                 {{ $item['win_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['win_rate_diff'], 2) }}%
                             </span>
@@ -282,7 +292,7 @@
                             {{ number_format($item['previous']->top1_count_percent, 2) }}% → {{ number_format($item['latest']->top1_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile text-center">
                         @php
                             $top2_diff = $item['latest']->top2_count_percent - $item['previous']->top2_count_percent;
                         @endphp
@@ -295,7 +305,7 @@
                             {{ number_format($item['previous']->top2_count_percent, 2) }}% → {{ number_format($item['latest']->top2_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile text-center">
                         <div>
                             <span class="stat-diff {{ $item['top4_rate_diff'] > 0 ? 'positive' : ($item['top4_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
                                 {{ $item['top4_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['top4_rate_diff'], 2) }}%
@@ -305,7 +315,7 @@
                             {{ number_format($item['previous']->top4_count_percent, 2) }}% → {{ number_format($item['latest']->top4_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile hide-on-tablet text-center">
                         @php
                             $endgame_diff = $item['latest']->endgame_win_percent - $item['previous']->endgame_win_percent;
                         @endphp
@@ -318,17 +328,7 @@
                             {{ number_format($item['previous']->endgame_win_percent, 2) }}% → {{ number_format($item['latest']->endgame_win_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="text-center">
-                        <div>
-                            <span class="stat-diff {{ $item['avg_mmr_gain_diff'] > 0 ? 'positive' : ($item['avg_mmr_gain_diff'] < 0 ? 'negative' : 'neutral') }}">
-                                {{ $item['avg_mmr_gain_diff'] > 0 ? '+' : '' }}{{ number_format($item['avg_mmr_gain_diff'], 1) }}
-                            </span>
-                        </div>
-                        <div class="stat-detail">
-                            {{ number_format($item['previous']->avg_mmr_gain, 1) }} → {{ number_format($item['latest']->avg_mmr_gain, 1) }}
-                        </div>
-                    </td>
-                    <td class="text-center">
+                    <td class="hide-on-mobile text-center">
                         @php
                             $tk_diff = $item['latest']->avg_team_kill_score - $item['previous']->avg_team_kill_score;
                         @endphp
@@ -562,6 +562,12 @@
     @media (max-width: 768px) {
         .hide-on-mobile {
             display: none !important;
+        }
+
+        /* 캐릭터 컬럼 최소 너비 줄이기 */
+        .patch-table th:first-child,
+        .patch-table td:first-child {
+            min-width: 60px;
         }
 
         /* 캐릭터 셀 세로 정렬 */
