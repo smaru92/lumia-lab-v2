@@ -838,7 +838,7 @@ class GameResultService
                 $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
-                $mmrScore * 3.0
+                $mmrScore * 2.7
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
@@ -913,7 +913,7 @@ class GameResultService
                 $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
-                $mmrScore * 3.0
+                $mmrScore * 2.7
             ) * $stabilityFactor;
 
         // A: 신뢰도 보정 + 픽률 점수
