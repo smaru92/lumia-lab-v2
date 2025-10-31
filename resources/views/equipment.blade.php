@@ -80,6 +80,7 @@
                 평균획득점수
                 <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
+            <th class="sortable">평균 TK</th>
             <th class="sortable">이득확률</th>
             <th class="sortable">손실확률</th>
         </tr>
@@ -146,6 +147,7 @@
                         <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     </td>
                     <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
+                    <td class="number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
                     <td>
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
