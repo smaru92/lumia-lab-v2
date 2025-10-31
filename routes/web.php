@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\EquipmentFirstController;
 use App\Http\Controllers\MainController;
@@ -23,7 +24,7 @@ Route::get('/login', function() {
 
 Route::get('/', [MainController::class, 'index']);
 
-Route::get('/main', [MainController::class, 'index']);
+Route::get('/character', [CharacterController::class, 'index']);
 Route::get('/equipment', [EquipmentController::class, 'index']);
 Route::get('/equipment-first', [EquipmentFirstController::class, 'index']);
-Route::get('/detail/{types}', [MainController::class, 'show']);
+Route::get('/detail/{types}', [CharacterController::class, 'show']);
