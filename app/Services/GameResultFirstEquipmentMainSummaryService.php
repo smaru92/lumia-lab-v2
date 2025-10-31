@@ -87,6 +87,7 @@ class GameResultFirstEquipmentMainSummaryService
                         'top4_count_percent' => $gameResult['top4CountPercent'],
                         'endgame_win_percent' => $gameResult['endgameWinPercent'],
                         'avg_mmr_gain' => $gameResult['avgMmrGain'],
+                        'avg_team_kill_score' => $gameResult['avgTeamKillScore'],
                         'positive_avg_mmr_gain' => $gameResult['positiveAvgMmrGain'],
                         'negative_avg_mmr_gain' => $gameResult['negativeAvgMmrGain'],
                         'version_season' => $versionSeason,

@@ -49,6 +49,7 @@
                 평균획득점수
                 <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
+            <th>평균 TK</th>
             <th>이득확률</th>
             <th>이득평균점수</th>
             <th>손실확률</th>
@@ -116,6 +117,9 @@
                 {{ number_format($byMain->avg_mmr_gain, 1) }}
                 <div class="sub-stat">{{ number_format($byMain->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
+            <td class="number">
+                {{ number_format($byMain->avg_team_kill_score, 2) }}
+            </td>
             <td>
                 <div>{{ number_format($byMain->positive_game_count_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->positive_game_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
@@ -154,6 +158,7 @@
                     평균획득점수
                     <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
                 </th>
+                <th>평균 TK</th>
                 <th>이득확률</th>
                 <th>이득평균점수</th>
                 <th>손실확률</th>
@@ -198,6 +203,9 @@
                     {{ number_format($item->avg_mmr_gain, 1) }}
                     <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
+                <td class="number">
+                    {{ number_format($item->avg_team_kill_score, 2) }}
+                </td>
                 <td>
                     <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
                     <div class="sub-stat">{{ number_format($item->positive_game_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
@@ -231,7 +239,8 @@
                 평균획득점수
                 <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
-            <th data-sort-index="4" data-sort-type="number">이득확률</th>
+            <th data-sort-index="4" data-sort-type="number">평균 TK</th>
+            <th data-sort-index="5" data-sort-type="number">이득확률</th>
             <th data-sort-index="5" data-sort-type="number">이득평균점수</th>
             <th data-sort-index="6" data-sort-type="number">손실확률</th>
             <th data-sort-index="7" data-sort-type="number">손실평균점수</th>

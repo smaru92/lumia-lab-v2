@@ -451,6 +451,7 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
@@ -492,6 +493,7 @@ class GameResultService
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
                 'avgMmrGain' => round($item->avg_mmr_gain,1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score,2) : 0,
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
@@ -574,6 +576,7 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
@@ -615,6 +618,7 @@ class GameResultService
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
                 'avgMmrGain' => round($item->avg_mmr_gain,1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score,2) : 0,
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
@@ -697,6 +701,7 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
@@ -738,6 +743,7 @@ class GameResultService
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
                 'avgMmrGain' => round($item->avg_mmr_gain,1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score,2) : 0,
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
@@ -831,7 +837,7 @@ class GameResultService
         // $stabilityFactor = min($stabilityFactor, 1.0);
 
         // 픽률 기반 전체 스코어 가중치
-        $pickWeight = log(1 + max($pickRate, 0.01)) ** 0.8;
+        $pickWeight = log(1 + max($pickRate, 0.005)) ** 0.8;
 
         // P: 성능 점수
         $P = (
