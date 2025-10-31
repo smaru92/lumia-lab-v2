@@ -836,22 +836,58 @@ class GameResultService
         $stabilityFactor = log(1 + $pickRate) / log(1 + 0.05);   // 5% 이상이면 1.0
         // $stabilityFactor = min($stabilityFactor, 1.0);
 
-        // 픽률 기반 전체 스코어 가중치
-        $pickWeight = log(1 + max($pickRate, 0.005)) ** 0.8;
+        // 픽률 점수: 로그 스케일로 계산 (1% 기준)
+        $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
+        $pickRateScore = max(-3, min(3, $pickRateScore)); // -3~3 범위로 제한
 
-        // P: 성능 점수
-        $P = (
+        // 성능 점수 계산
+        $performanceScore = (
+                $top1Score * 0.2 +
                 $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
-                $mmrScore * 2.7
-            ) * $stabilityFactor;
+                $mmrScore * 2.1
+            );
 
-        // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 3.3;
+        // 극저픽 페널티: 1% 미만일 때만 성능 감쇠
+        $lowPickPenalty = 1.0;
+        if ($pickRate < 0.01) {
+            $lowPickPenalty = 0.3 + 0.7 * ($pickRate / 0.01); // 0.1%=0.37, 0.5%=0.65, 1%=1.0
+        }
+        $performanceScore = $performanceScore * $lowPickPenalty;
+
+        // 픽률-성능 곱셈 시너지 (둘 다 좋아야 보너스)
+        $pickNormalized = max(0, min(1, $pickRate / 0.05)); // 5% = 1.0
+        $perfNormalized = max(0, min(1, ($performanceScore + 2) / 4)); // -2~2를 0~1로
+        $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($P * 1.8 + $A) * (0.6 + 0.4 * $pickWeight) * 2;
+        $metaScore = ($performanceScore * 1.0 + $pickRateScore * 2.0 + $synergy) / 2;
+
+        // 디버깅용 변수 재할당
+        $P_raw = $performanceScore / $lowPickPenalty;
+        $P = $performanceScore;
+        $pickAbsoluteScore = $pickRateScore;
+        $performanceNormalized = $perfNormalized;
+
+        // 디버깅용 로그 (특정 케이스만)
+        if (isset($data['characterName']) && in_array($data['characterName'], ['히스이', '케네스'])) {
+            \Log::info("Meta Score Debug - {$data['characterName']}", [
+                'pickRate' => $pickRate,
+                'pickAbsoluteScore' => $pickAbsoluteScore,
+                'pickNormalized' => $pickNormalized,
+                'stabilityFactor' => $stabilityFactor,
+                'P_raw' => $P_raw,
+                'P' => $P,
+                'performanceNormalized' => $performanceNormalized,
+                'synergy' => $synergy,
+                'metaScore' => $metaScore,
+                'avgMmrGain' => $data['avgMmrGain'],
+                'mmrDelta' => $mmrDelta,
+                'mmrScore' => $mmrScore,
+                'top1Score' => $top1Score,
+            ]);
+        }
 
         // 티어 분류
         $metaTier = match (true) {
@@ -906,27 +942,38 @@ class GameResultService
             ? -log(1 + abs($pickDelta))
             : log(1 + $pickDelta);
 
-        // 안정성 계수: 극저픽 캐릭터의 성능 감쇠 (신뢰도)
+        // 픽률 계산 (장비는 /5 적용)
         $pickRate = max($data['gameCountPercent'] / 5 / 100, 0.001); // 최소 0.1%
         $stabilityFactor = log(1 + $pickRate) / log(1 + 0.05);   // 5% 이상이면 1.0
         // $stabilityFactor = min($stabilityFactor, 1.0);
 
-        // 픽률 기반 전체 스코어 가중치
-        $pickWeight = log(1 + max($pickRate, 0.01)) ** 0.8;
+        // 픽률 점수: 로그 스케일로 계산 (1% 기준)
+        $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
+        $pickRateScore = max(-3, min(3, $pickRateScore)); // -3~3 범위로 제한
 
-        // P: 성능 점수
-        $P = (
+        // 성능 점수 계산
+        $performanceScore = (
+                $top1Score * 0.2 +
                 $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
-                $mmrScore * 2.7
-            ) * $stabilityFactor;
+                $mmrScore * 2.1
+            );
 
-        // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 2.0;
+        // 극저픽 페널티: 1% 미만일 때만 성능 감쇠
+        $lowPickPenalty = 1.0;
+        if ($pickRate < 0.01) {
+            $lowPickPenalty = 0.3 + 0.7 * ($pickRate / 0.01); // 0.1%=0.37, 0.5%=0.65, 1%=1.0
+        }
+        $performanceScore = $performanceScore * $lowPickPenalty;
+
+        // 픽률-성능 곱셈 시너지 (둘 다 좋아야 보너스)
+        $pickNormalized = max(0, min(1, $pickRate / 0.05)); // 5% = 1.0
+        $perfNormalized = max(0, min(1, ($performanceScore + 2) / 4)); // -2~2를 0~1로
+        $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($P * 1.5 + $A) * (0.6 + 0.3 * $pickWeight) * 2;
+        $metaScore = ($performanceScore * 1.0 + $pickRateScore * 2.0 + $synergy) / 2;
 
         // 티어 분류
         $metaTier = match (true) {
