@@ -838,7 +838,7 @@ class GameResultService
 
         // 픽률 점수: 로그 스케일로 계산 (1% 기준)
         $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
-        $pickRateScore = max(-3, min(3, $pickRateScore)); // -3~3 범위로 제한
+        $pickRateScore = max(-5, min(5, $pickRateScore)); // -5~5 범위로 제한
 
         // 성능 점수 계산
         $performanceScore = (
@@ -862,7 +862,7 @@ class GameResultService
         $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($performanceScore * 1.0 + $pickRateScore * 2.0 + $synergy) / 2;
+        $metaScore = ($performanceScore * 1.0 + $pickRateScore * 2.2 + $synergy) / 2;
 
         // 디버깅용 변수 재할당
         $P_raw = $performanceScore / $lowPickPenalty;
@@ -949,16 +949,16 @@ class GameResultService
 
         // 픽률 점수: 로그 스케일로 계산 (1% 기준)
         $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
-        $pickRateScore = max(-3, min(3, $pickRateScore)); // -3~3 범위로 제한
+        $pickRateScore = max(-20, min(20, $pickRateScore)); // -5~5 범위로 제한
 
         // 성능 점수 계산
         $performanceScore = (
-                $top1Score * 0.2 +
-                $endGameScore * 0.2 +
-                $top2Score * 0.2 +
-                $top4Score * 0.2 +
-                $mmrScore * 2.1
-            );
+            $top1Score * 0.2 +
+            $endGameScore * 0.2 +
+            $top2Score * 0.2 +
+            $top4Score * 0.2 +
+            $mmrScore * 2.1
+        );
 
         // 극저픽 페널티: 1% 미만일 때만 성능 감쇠
         $lowPickPenalty = 1.0;
@@ -973,7 +973,7 @@ class GameResultService
         $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($performanceScore * 1.0 + $pickRateScore * 2.0 + $synergy) / 2;
+        $metaScore = ($performanceScore * 1.0 + $pickRateScore * 2.2 + $synergy) / 2;
 
         // 티어 분류
         $metaTier = match (true) {
