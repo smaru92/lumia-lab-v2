@@ -569,6 +569,7 @@ class GameResultService
             ->join('equipments as e', 'gre.equipment_id', '=', 'e.id')
             ->select(
                 'gre.equipment_id',
+                'e.item_grade', // 등급 추가
                 DB::raw('MAX(e.name) as name'), // ✅ `GROUP BY` 없이 가져오기
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -587,6 +588,7 @@ class GameResultService
             ->whereIn('e.item_grade', ['Legend', 'Mythic'])
             ->groupBy(
                 'gre.equipment_id',
+                'e.item_grade' // 등급별로 그룹화
             )
             ->orderBy('game_count', 'desc');
 
@@ -610,10 +612,12 @@ class GameResultService
 
         $data = [];
         foreach ($gameResults as $item) {
-            $key = $item->equipment_id;
+            // 등급별로 분리하기 위해 키에 item_grade 포함
+            $key = $item->equipment_id . '_' . $item->item_grade;
             $data[$key] = [
                 'equipmentId' => $item->equipment_id,
-                'name' => $item->name,
+                'itemGrade' => $item->item_grade,
+                'name' => $item->name . ' (' . $item->item_grade . ')', // 이름에 등급 표시
                 'gameCount' => $item->game_count,
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
@@ -735,10 +739,12 @@ class GameResultService
 
         $data = [];
         foreach ($gameResults as $item) {
-            $key = $item->equipment_id;
+            // 등급별로 분리하기 위해 키에 item_grade 포함
+            $key = $item->equipment_id . '_' . $item->item_grade;
             $data[$key] = [
                 'equipmentId' => $item->equipment_id,
-                'name' => $item->name,
+                'itemGrade' => $item->item_grade,
+                'name' => $item->name . ' (' . $item->item_grade . ')', // 이름에 등급 표시
                 'gameCount' => $item->game_count,
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
