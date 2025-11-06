@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', '캐릭터 통계 | 아글라이아 연구소')
+
 @section('content')
 <div class="container">
     <h2><a href="/character">캐릭터 통계</a></h2>

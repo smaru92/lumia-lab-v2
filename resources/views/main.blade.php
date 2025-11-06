@@ -1,8 +1,19 @@
 @extends('layouts.app')
 
+@section('title', '메인 | 아글라이아 연구소')
+
 @section('content')
 <div class="container">
-    <h2><a href="/">패치 노트 영향 분석</a></h2>
+    <!-- 사이트 안내문구 -->
+    <div class="notice-box">
+        <ul>
+            <li>본 사이트는 비공식 사이트로, 데이터의 완전성과 정확성이 보증되지 않습니다. 사이트 내용을 악용하지 말아 주십시오.</li>
+            <li>데이터 갱신은 1시간~2시간 마다 한번씩 이뤄집니다.</li>
+            <li>사이트와 관련해 피드백은 <a href="mailto:aglaia.lumia@gmail.com">aglaia.lumia@gmail.com</a>으로 연락주시길 바랍니다.</li>
+        </ul>
+    </div>
+
+    <h2><a href="/">패치노트 영향 분석</a></h2>
 
     @if($latestVersion && $previousVersion)
     <div class="version-info-box">
@@ -42,8 +53,8 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($buffedCharacters as $item)
-                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Diamond&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}">
+                @foreach($buffedCharacters as $index => $item)
+                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Diamond&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="buffed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
                     <td>
                         <div class="character-cell-content">
                             @php
@@ -179,6 +190,13 @@
                 @endforeach
             </tbody>
         </table>
+        @if($buffedCharacters->count() > 5)
+        <div class="view-all-container">
+            <button id="buffedViewAll" class="view-all-btn">
+                전체보기 ({{ $buffedCharacters->count() }}개)
+            </button>
+        </div>
+        @endif
         @else
         <p class="empty-message">
             버프된 캐릭터가 없습니다.
@@ -208,8 +226,8 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($nerfedCharacters as $item)
-                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Diamond&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}">
+                @foreach($nerfedCharacters as $index => $item)
+                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Diamond&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="nerfed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
                     <td>
                         <div class="character-cell-content">
                             @php
@@ -345,6 +363,13 @@
                 @endforeach
             </tbody>
         </table>
+        @if($nerfedCharacters->count() > 5)
+        <div class="view-all-container">
+            <button id="nerfedViewAll" class="view-all-btn">
+                전체보기 ({{ $nerfedCharacters->count() }}개)
+            </button>
+        </div>
+        @endif
         @else
         <p class="empty-message">
             너프된 캐릭터가 없습니다.
@@ -362,6 +387,35 @@
 
 @push('styles')
 <style>
+    /* 사이트 안내 박스 */
+    .notice-box {
+        margin-bottom: 20px;
+        padding: 15px 20px;
+        background-color: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 5px;
+        color: #856404;
+    }
+
+    .notice-box ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .notice-box li {
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+
+    .notice-box a {
+        color: #856404;
+        text-decoration: underline;
+    }
+
+    .notice-box a:hover {
+        color: #533f03;
+    }
+
     /* 버전 비교 박스 */
     .version-info-box {
         margin-bottom: 20px;
@@ -551,6 +605,43 @@
         font-size: 16px;
     }
 
+    /* 숨김 행 스타일 */
+    .hidden-row {
+        display: none;
+    }
+
+    /* 전체보기 버튼 */
+    .view-all-container {
+        text-align: center;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #ddd;
+    }
+
+    .view-all-btn {
+        padding: 10px 30px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+    .view-all-btn:hover {
+        background-color: #0056b3;
+    }
+
+    .view-all-btn.collapse {
+        background-color: #6c757d;
+    }
+
+    .view-all-btn.collapse:hover {
+        background-color: #5a6268;
+    }
+
     /* 태블릿 환경 (768px ~ 1024px) - 막금구승률 숨김 */
     @media (max-width: 1024px) and (min-width: 769px) {
         .hide-on-tablet {
@@ -599,6 +690,58 @@
                 window.location.href = this.dataset.href;
             });
         });
+
+        // 버프된 캐릭터 전체보기 버튼
+        const buffedViewAllBtn = document.getElementById('buffedViewAll');
+        if (buffedViewAllBtn) {
+            buffedViewAllBtn.addEventListener('click', function() {
+                const hiddenRows = document.querySelectorAll('.buffed-row.hidden-row');
+
+                if (hiddenRows.length > 0) {
+                    // 펼치기 - 숨겨진 행이 있으면
+                    hiddenRows.forEach(row => {
+                        row.classList.remove('hidden-row');
+                    });
+                    this.textContent = '접기';
+                    this.classList.add('collapse');
+                } else {
+                    // 접기 - 모두 보이는 상태면
+                    document.querySelectorAll('.buffed-row').forEach((row, index) => {
+                        if (index >= 5) {
+                            row.classList.add('hidden-row');
+                        }
+                    });
+                    this.textContent = '전체보기 ({{ $buffedCharacters->count() }}개)';
+                    this.classList.remove('collapse');
+                }
+            });
+        }
+
+        // 너프된 캐릭터 전체보기 버튼
+        const nerfedViewAllBtn = document.getElementById('nerfedViewAll');
+        if (nerfedViewAllBtn) {
+            nerfedViewAllBtn.addEventListener('click', function() {
+                const hiddenRows = document.querySelectorAll('.nerfed-row.hidden-row');
+
+                if (hiddenRows.length > 0) {
+                    // 펼치기 - 숨겨진 행이 있으면
+                    hiddenRows.forEach(row => {
+                        row.classList.remove('hidden-row');
+                    });
+                    this.textContent = '접기';
+                    this.classList.add('collapse');
+                } else {
+                    // 접기 - 모두 보이는 상태면
+                    document.querySelectorAll('.nerfed-row').forEach((row, index) => {
+                        if (index >= 5) {
+                            row.classList.add('hidden-row');
+                        }
+                    });
+                    this.textContent = '전체보기 ({{ $nerfedCharacters->count() }}개)';
+                    this.classList.remove('collapse');
+                }
+            });
+        }
     });
 </script>
 @endpush

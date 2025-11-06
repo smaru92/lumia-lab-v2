@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', '상세 통계 | 아글라이아 연구소')
+
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/detail.css') }}">
 @endpush

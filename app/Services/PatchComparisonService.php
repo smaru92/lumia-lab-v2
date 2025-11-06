@@ -162,8 +162,8 @@ class PatchComparisonService
         }
 
         return [
-            'buffed' => $buffedCharacters->sortByDesc('meta_score_diff'),
-            'nerfed' => $nerfedCharacters->sortBy('meta_score_diff'),
+            'buffed' => $buffedCharacters->sortByDesc('meta_score_diff')->values(),
+            'nerfed' => $nerfedCharacters->sortBy('meta_score_diff')->values(),
         ];
     }
 

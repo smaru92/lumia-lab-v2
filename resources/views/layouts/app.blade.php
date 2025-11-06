@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>게임 통계</title>
+    <title>@yield('title', '아글라이아 연구소')</title>
     <link rel="stylesheet" href="{{ asset('css/main.css') }}">
     @stack('styles')
 </head>
