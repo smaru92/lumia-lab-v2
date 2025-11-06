@@ -19,27 +19,3 @@
         </ul>
     </div>
 </nav>
-
-<style>
-    .navbar-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .navbar-brand {
-        margin-right: 30px;
-    }
-
-    .site-title {
-        font-size: 20px;
-        font-weight: bold;
-        color: #fff;
-        text-decoration: none;
-        white-space: nowrap;
-    }
-
-    .site-title:hover {
-        color: #ddd;
-    }
-</style>
