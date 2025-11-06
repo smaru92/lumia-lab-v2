@@ -2,10 +2,6 @@
 
 @section('title', '장비 통계 | 아글라이아 연구소')
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('css/main.css') }}">
-@endpush
-
 @section('content')
 <div class="container">
     <h2><a href="/equipment">장비 통계</a></h2>
@@ -67,6 +63,7 @@
         </div>
     </div>
 
+    <div class="table-wrapper">
     <table id="gameTable">
         <thead>
         <tr>
@@ -75,16 +72,15 @@
             <th class="sortable">티어</th>
             <th class="sortable">픽률</th>
             <th class="sortable">
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
             <th class="sortable">승률</th>
-            <th class="sortable">TOP2</th>
-            <th class="sortable">TOP4</th>
-            <th class="sortable">막금구승률</th>
-            <th class="sortable">평균 TK</th>
-            <th class="sortable">이득확률</th>
-            <th class="sortable">손실확률</th>
+            <th class="sortable hide-on-mobile">TOP2</th>
+            <th class="sortable hide-on-mobile">TOP4</th>
+            <th class="sortable hide-on-mobile hide-on-tablet">막금구승률</th>
+            <th class="sortable hide-on-mobile">평균 TK</th>
+            <th class="sortable hide-on-mobile">이득확률</th>
+            <th class="sortable hide-on-mobile">손실확률</th>
         </tr>
         </thead>
         <tbody>
@@ -138,23 +134,23 @@
                         <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
                         <div  class="sub-stat">{{ $item->top1_count }}</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->top2_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->top2_count }}</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->top4_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->top4_count }}</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile hide-on-tablet">
                         <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     </td>
-                    <td class="number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
-                    <td>
+                    <td class="hide-on-mobile number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 {{ number_format($item->negative_avg_mmr_gain, 1) }}점</div>
                     </td>
@@ -165,6 +161,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Tier Modal -->

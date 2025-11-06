@@ -3,7 +3,7 @@
 @section('title', '상세 통계 | 아글라이아 연구소')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/detail.css') }}?v={{ time() }}">
 @endpush
 
 @section('content')
@@ -44,8 +44,7 @@
             <th>티어</th>
             <th>픽률</th>
             <th>
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
             <th>승률</th>
             <th>TOP2</th>
@@ -240,8 +239,7 @@
             <th data-sort-index="1" data-sort-type="number">게임순위</th>
             <th data-sort-index="2" data-sort-type="number">비율</th>
             <th data-sort-index="3" data-sort-type="number">
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
 {{--            <th data-sort-index="4" data-sort-type="number">평균 TK</th>--}}
             <th data-sort-index="5" data-sort-type="number">이득확률</th>

@@ -29,58 +29,38 @@
 </nav>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const hamburger = document.getElementById('hamburgerMenu');
-    const navMenu = document.getElementById('navMenu');
+(function() {
+    function initHamburgerMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const navMenu = document.getElementById('navMenu');
 
-    if (hamburger && navMenu) {
-        console.log('Hamburger menu initialized');
+        if (!hamburger || !navMenu) {
+            return;
+        }
 
-        hamburger.addEventListener('click', function(e) {
+        // Remove any existing listeners by cloning
+        const newHamburger = hamburger.cloneNode(true);
+        hamburger.parentNode.replaceChild(newHamburger, hamburger);
+
+        newHamburger.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Hamburger clicked');
 
             const isActive = navMenu.classList.contains('active');
-            console.log('Current active state:', isActive);
-            console.log('navMenu element:', navMenu);
-            const styles = window.getComputedStyle(navMenu);
-            console.log('navMenu styles:', styles.display);
-            console.log('navMenu position:', styles.position);
-            console.log('navMenu z-index:', styles.zIndex);
-            console.log('navMenu visibility:', styles.visibility);
-            console.log('navMenu opacity:', styles.opacity);
-            console.log('navMenu top:', styles.top);
-            console.log('navMenu right:', styles.right);
-            console.log('navMenu width:', styles.width);
-            console.log('navMenu height:', styles.height);
 
             if (isActive) {
                 navMenu.classList.remove('active');
-                hamburger.classList.remove('active');
-                // Force hidden with inline styles
+                newHamburger.classList.remove('active');
                 navMenu.style.setProperty('visibility', 'hidden', 'important');
                 navMenu.style.setProperty('opacity', '0', 'important');
                 navMenu.style.setProperty('pointer-events', 'none', 'important');
-                console.log('Menu closed');
             } else {
                 navMenu.classList.add('active');
-                hamburger.classList.add('active');
-                // Force visibility with inline styles
+                newHamburger.classList.add('active');
                 navMenu.style.setProperty('display', 'flex', 'important');
                 navMenu.style.setProperty('visibility', 'visible', 'important');
                 navMenu.style.setProperty('opacity', '1', 'important');
                 navMenu.style.setProperty('pointer-events', 'auto', 'important');
-                console.log('Menu opened');
-
-                // Check after a brief delay to ensure styles are applied
-                setTimeout(() => {
-                    const afterStyles = window.getComputedStyle(navMenu);
-                    console.log('After open - display:', afterStyles.display);
-                    console.log('After open - visibility:', afterStyles.visibility);
-                    console.log('After open - opacity:', afterStyles.opacity);
-                    console.log('Inline styles:', navMenu.style.cssText);
-                }, 50);
             }
         });
 
@@ -89,19 +69,29 @@ document.addEventListener('DOMContentLoaded', function() {
         navLinks.forEach(link => {
             link.addEventListener('click', function() {
                 navMenu.classList.remove('active');
-                hamburger.classList.remove('active');
+                newHamburger.classList.remove('active');
+                navMenu.style.setProperty('visibility', 'hidden', 'important');
+                navMenu.style.setProperty('opacity', '0', 'important');
+                navMenu.style.setProperty('pointer-events', 'none', 'important');
             });
         });
 
         // 메뉴 외부 클릭시 메뉴 닫기
         document.addEventListener('click', function(event) {
-            if (!hamburger.contains(event.target) && !navMenu.contains(event.target)) {
+            if (!newHamburger.contains(event.target) && !navMenu.contains(event.target)) {
                 navMenu.classList.remove('active');
-                hamburger.classList.remove('active');
+                newHamburger.classList.remove('active');
+                navMenu.style.setProperty('visibility', 'hidden', 'important');
+                navMenu.style.setProperty('opacity', '0', 'important');
+                navMenu.style.setProperty('pointer-events', 'none', 'important');
             }
         });
-    } else {
-        console.error('Hamburger or navMenu not found');
     }
-});
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHamburgerMenu);
+    } else {
+        initHamburgerMenu();
+    }
+})();
 </script>

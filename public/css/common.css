@@ -35,7 +35,7 @@
     color: #ddd;
 }
 
-/* Hamburger Menu */
+/* Hamburger Menu - Hidden on Desktop */
 .hamburger-menu {
     display: none;
     flex-direction: column;
@@ -55,6 +55,20 @@
     height: 3px;
     background-color: #fff;
     display: block;
+}
+
+/* Desktop nav-menu - Always visible on desktop */
+@media (min-width: 1025px) {
+    .hamburger-menu {
+        display: none !important;
+    }
+
+    .nav-menu {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: static !important;
+    }
 }
 
 /* Footer Styles */
@@ -79,6 +93,31 @@
     border: 1px solid #17a2b8;
     border-radius: 5px;
     color: #0c5460;
+    position: relative;
+}
+
+.notice-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #0c5460;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.notice-close-btn:hover {
+    opacity: 1;
 }
 
 .notice-header {
@@ -346,20 +385,12 @@
     background-color: #5a6268;
 }
 
-/* Tablet (768px ~ 1024px) */
-@media (max-width: 1024px) and (min-width: 769px) {
+/* Tablet and Mobile (1024px and below) */
+@media (max-width: 1024px) {
     .hide-on-tablet {
         display: none !important;
     }
-}
-
-/* Mobile (768px and below) */
-@media (max-width: 768px) {
-    .hide-on-mobile {
-        display: none !important;
-    }
-
-    /* Hamburger Menu for Mobile */
+    /* Hamburger Menu for Tablet and Mobile */
     .hamburger-menu {
         display: flex !important;
     }
@@ -373,15 +404,15 @@
         top: 50px !important;
         right: 0 !important;
         left: auto !important;
-        width: 140px !important;
-        max-width: 140px !important;
+        width: 160px !important;
+        max-width: 160px !important;
         background-color: #333 !important;
         flex-direction: column !important;
-        padding: 5px 0 !important;
+        padding: 8px 0 !important;
         margin: 0 !important;
         border-radius: 5px !important;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
-        z-index: 9999 !important;
+        z-index: 10001 !important;
         height: auto !important;
         list-style: none !important;
         visibility: hidden !important;
@@ -410,14 +441,21 @@
     .nav-links {
         display: block;
         width: 100%;
-        padding: 12px 15px;
+        padding: 15px 20px;
         color: #fff;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 500;
     }
 
     .nav-links:hover {
         background-color: #444;
+    }
+}
+
+/* Mobile specific (767px and below) */
+@media (max-width: 767px) {
+    .hide-on-mobile {
+        display: none !important;
     }
 
     .patch-table th:first-child,

@@ -5,7 +5,8 @@
 @section('content')
 <div class="container">
     <!-- 사이트 안내문구 -->
-    <div class="notice-box">
+    <div class="notice-box" id="noticeBox">
+        <button class="notice-close-btn" id="noticeCloseBtn" aria-label="안내 닫기">&times;</button>
         <div class="notice-header">
             <svg class="notice-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -13,7 +14,8 @@
             <h3 class="notice-title">안내</h3>
         </div>
         <ul>
-            <li>본 사이트는 비공식 사이트로, 데이터의 완전성과 정확성이 보증되지 않습니다. 사이트 내용을 악용하지 말아 주십시오.</li>
+            <li>본 사이트는 이터널리턴(Eternal Return) 게임의 실험체 및 아이템 통계를 다루는 비공식 사이트입니다.</li>
+            <li>데이터의 완전성과 정확성이 보증되지 않습니다. 사이트 내용을 악용하지 말아 주십시오.</li>
             <li>데이터 갱신은 1시간~2시간 마다 한번씩 이뤄집니다.</li>
             <li>이 사이트는 PC 화면 크기에 최적화되어 있습니다. 모바일 환경에서는 일부 기능이 제한될 수 있습니다.</li>
             <li>사이트 관련 피드백은 <a href="mailto:aglaia.lumia@gmail.com">aglaia.lumia@gmail.com</a>으로 연락주시길 바랍니다.</li>
@@ -45,6 +47,7 @@
         </h3>
 
         @if($buffedCharacters->count() > 0)
+        <div class="table-wrapper">
         <table id="buffedTable" class="patch-table buffed">
             <thead>
                 <tr>
@@ -197,6 +200,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         @if($buffedCharacters->count() > 5)
         <div class="view-all-container">
             <button id="buffedViewAll" class="view-all-btn">
@@ -218,6 +222,7 @@
         </h3>
 
         @if($nerfedCharacters->count() > 0)
+        <div class="table-wrapper">
         <table id="nerfedTable" class="patch-table nerfed">
             <thead>
                 <tr>
@@ -370,6 +375,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         @if($nerfedCharacters->count() > 5)
         <div class="view-all-container">
             <button id="nerfedViewAll" class="view-all-btn">
@@ -395,8 +401,25 @@
 
 @push('scripts')
 <script>
-    // 캐릭터 행 클릭시 상세 페이지로 이동
+    // 안내문구 닫기 버튼
     document.addEventListener('DOMContentLoaded', function() {
+        const noticeBox = document.getElementById('noticeBox');
+        const closeBtn = document.getElementById('noticeCloseBtn');
+
+        if (closeBtn && noticeBox) {
+            closeBtn.addEventListener('click', function() {
+                noticeBox.style.display = 'none';
+                // 로컬 스토리지에 닫힌 상태 저장
+                localStorage.setItem('noticeBoxClosed', 'true');
+            });
+
+            // 페이지 로드 시 닫힌 상태 확인
+            if (localStorage.getItem('noticeBoxClosed') === 'true') {
+                noticeBox.style.display = 'none';
+            }
+        }
+
+        // 캐릭터 행 클릭시 상세 페이지로 이동
         const rows = document.querySelectorAll('tr[data-href]');
         rows.forEach(row => {
             row.addEventListener('click', function() {

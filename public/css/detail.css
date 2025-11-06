@@ -241,7 +241,7 @@ tr:hover {
 
 .navbar {
     background-color: #333;
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
     position: fixed;
     top: 0;
@@ -797,7 +797,8 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 /* Info icon tooltip styles */
 .info-icon {
     display: inline-block;
-    margin-left: 4px;
+    margin: 0;
+    padding: 0;
     font-size: 12px;
     color: #666;
     cursor: help;
@@ -849,4 +850,80 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .info-icon:hover::before {
     opacity: 1;
     visibility: visible;
+}
+
+/* Desktop nav-menu - Always visible on desktop */
+@media (min-width: 1025px) {
+    .hamburger-menu {
+        display: none !important;
+    }
+
+    .nav-menu {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: static !important;
+    }
+}
+
+/* Tablet and Mobile hamburger menu override - must be at end to override earlier styles */
+@media (max-width: 1024px) {
+    .hamburger-menu {
+        display: flex !important;
+    }
+
+    .nav-menu {
+        position: absolute !important;
+        top: 50px !important;
+        right: 0 !important;
+        left: auto !important;
+        width: 160px !important;
+        max-width: 160px !important;
+        background-color: #333 !important;
+        flex-direction: column !important;
+        padding: 8px 0 !important;
+        margin: 0 !important;
+        border-radius: 5px !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+        z-index: 10001 !important;
+        height: auto !important;
+        list-style: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    ul.nav-menu.active,
+    .nav-menu.active {
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    .nav-item {
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid #444;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    .nav-item:last-child {
+        border-bottom: none;
+    }
+
+    .nav-links {
+        display: block !important;
+        width: 100%;
+        padding: 15px 20px !important;
+        color: #fff;
+        font-size: 18px !important;
+        font-weight: 500;
+        height: auto !important;
+    }
+
+    .nav-links:hover {
+        background-color: #444 !important;
+        color: #fff !important;
+    }
 }
