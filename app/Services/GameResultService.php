@@ -617,7 +617,7 @@ class GameResultService
             $data[$key] = [
                 'equipmentId' => $item->equipment_id,
                 'itemGrade' => $item->item_grade,
-                'name' => $item->name . ' (' . $item->item_grade . ')', // 이름에 등급 표시
+                'name' => $item->name, // 이름에 등급 표시
                 'gameCount' => $item->game_count,
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
