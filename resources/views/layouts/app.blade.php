@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', '아글라이아 연구소')</title>
+    <link rel="icon" type="image/png" href="{{ asset('storage/Common/favicon.png') }}">
     <link rel="stylesheet" href="{{ asset('css/main.css') }}">
     <link rel="stylesheet" href="{{ asset('css/common.css') }}">
     @stack('styles')

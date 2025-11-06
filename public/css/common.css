@@ -9,6 +9,20 @@
     margin-right: 30px;
 }
 
+.site-logo-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.site-logo {
+    height: 32px;
+    width: auto;
+    max-width: 100px;
+    object-fit: contain;
+}
+
 .site-title {
     font-size: 20px;
     font-weight: bold;
@@ -17,8 +31,30 @@
     white-space: nowrap;
 }
 
-.site-title:hover {
+.site-logo-link:hover .site-title {
     color: #ddd;
+}
+
+/* Hamburger Menu */
+.hamburger-menu {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1001;
+    width: 40px;
+    height: 40px;
+}
+
+.hamburger-line {
+    width: 25px;
+    height: 3px;
+    background-color: #fff;
+    display: block;
 }
 
 /* Footer Styles */
@@ -45,9 +81,29 @@
     color: #0c5460;
 }
 
+.notice-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.notice-icon {
+    width: 24px;
+    height: 24px;
+    color: #17a2b8;
+}
+
+.notice-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #0c5460;
+}
+
 .notice-box ul {
     margin: 0;
-    padding-left: 20px;
+    padding-left: 40px;
 }
 
 .notice-box li {
@@ -303,6 +359,67 @@
         display: none !important;
     }
 
+    /* Hamburger Menu for Mobile */
+    .hamburger-menu {
+        display: flex !important;
+    }
+
+    .navbar-container {
+        position: relative !important;
+    }
+
+    .nav-menu {
+        position: absolute !important;
+        top: 50px !important;
+        right: 0 !important;
+        left: auto !important;
+        width: 140px !important;
+        max-width: 140px !important;
+        background-color: #333 !important;
+        flex-direction: column !important;
+        padding: 5px 0 !important;
+        margin: 0 !important;
+        border-radius: 5px !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+        z-index: 9999 !important;
+        height: auto !important;
+        list-style: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    }
+
+    ul.nav-menu.active,
+    .nav-menu.active {
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    .nav-item {
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid #444;
+    }
+
+    .nav-item:last-child {
+        border-bottom: none;
+    }
+
+    .nav-links {
+        display: block;
+        width: 100%;
+        padding: 12px 15px;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    .nav-links:hover {
+        background-color: #444;
+    }
+
     .patch-table th:first-child,
     .patch-table td:first-child {
         min-width: 60px;
@@ -321,5 +438,13 @@
 
     .character-name-weapon {
         text-align: center !important;
+    }
+
+    .site-title {
+        font-size: 16px;
+    }
+
+    .navbar-brand {
+        margin-right: 10px;
     }
 }

@@ -6,9 +6,16 @@
 <div class="container">
     <!-- 사이트 안내문구 -->
     <div class="notice-box">
+        <div class="notice-header">
+            <svg class="notice-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="notice-title">안내</h3>
+        </div>
         <ul>
             <li>본 사이트는 비공식 사이트로, 데이터의 완전성과 정확성이 보증되지 않습니다. 사이트 내용을 악용하지 말아 주십시오.</li>
             <li>데이터 갱신은 1시간~2시간 마다 한번씩 이뤄집니다.</li>
+            <li>이 사이트는 PC 화면 크기에 최적화되어 있습니다. 모바일 환경에서는 일부 기능이 제한될 수 있습니다.</li>
             <li>사이트 관련 피드백은 <a href="mailto:aglaia.lumia@gmail.com">aglaia.lumia@gmail.com</a>으로 연락주시길 바랍니다.</li>
         </ul>
     </div>

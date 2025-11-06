@@ -243,7 +243,7 @@
                 평균획득점수
                 <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
-            <th data-sort-index="4" data-sort-type="number">평균 TK</th>
+{{--            <th data-sort-index="4" data-sort-type="number">평균 TK</th>--}}
             <th data-sort-index="5" data-sort-type="number">이득확률</th>
             <th data-sort-index="5" data-sort-type="number">이득평균점수</th>
             <th data-sort-index="6" data-sort-type="number">손실확률</th>
