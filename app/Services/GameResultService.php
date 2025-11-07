@@ -979,7 +979,7 @@ class GameResultService
         $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($performanceScore * 1.2 + $pickRateScore * 2.7 + $synergy) / 2;
+        $metaScore = ($performanceScore * 1.2 + $pickRateScore * 3.6 + $synergy) / 2;
 
         // 티어 분류
         $metaTier = match (true) {

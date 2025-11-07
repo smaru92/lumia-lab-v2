@@ -7,22 +7,23 @@
         /* 페이지 링크 카드 스타일 */
         .page-links-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 25px;
         }
 
         .page-link-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 8px;
             text-decoration: none;
             text-align: center;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             position: relative;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .page-link-card::before {
@@ -37,43 +38,43 @@
         }
 
         .page-link-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
         .page-link-card:hover::before {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .page-link-card.character {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
         }
 
         .page-link-card.equipment {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
         }
 
         .page-link-card.equipment-first {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
         }
 
         .page-link-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
+            font-size: 28px;
+            margin-bottom: 6px;
             position: relative;
             z-index: 1;
         }
 
         .page-link-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             position: relative;
             z-index: 1;
         }
 
         .page-link-desc {
-            font-size: 13px;
+            font-size: 12px;
             opacity: 0.9;
             position: relative;
             z-index: 1;
@@ -168,23 +169,26 @@
         /* 반응형 디자인 */
         @media (max-width: 599px) {
             .page-links-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
             }
 
             .page-link-card {
-                padding: 15px;
+                padding: 10px 8px;
             }
 
             .page-link-icon {
-                font-size: 28px;
+                font-size: 20px;
+                margin-bottom: 4px;
             }
 
             .page-link-title {
-                font-size: 16px;
+                font-size: 13px;
+                margin-bottom: 2px;
             }
 
             .page-link-desc {
-                font-size: 12px;
+                font-size: 10px;
             }
 
             .patch-tabs {
