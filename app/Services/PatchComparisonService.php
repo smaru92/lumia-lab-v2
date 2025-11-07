@@ -87,7 +87,7 @@ class PatchComparisonService
     }
 
     /**
-     * 패치 비교 데이터 생성
+     * 패치 비교 데이터 생성 (최적화 버전)
      */
     public function comparePatches($latestVersion, $previousVersion, $patchNotes, $characters, $minTier)
     {
@@ -95,6 +95,27 @@ class PatchComparisonService
         $nerfedCharacters = collect();
         $processedCombinations = [];
 
+        // 1. 모든 캐릭터 ID 수집
+        $characterIds = $patchNotes->pluck('target_id')->unique();
+
+        // 2. 한 번에 모든 통계 조회 (N+1 해결!)
+        $latestStats = GameResultSummary::where('version_season', $latestVersion->version_season)
+            ->where('version_major', $latestVersion->version_major)
+            ->where('version_minor', $latestVersion->version_minor)
+            ->where('min_tier', $minTier)
+            ->whereIn('character_id', $characterIds)
+            ->get()
+            ->groupBy('character_id');
+
+        $previousStats = GameResultSummary::where('version_season', $previousVersion->version_season)
+            ->where('version_major', $previousVersion->version_major)
+            ->where('version_minor', $previousVersion->version_minor)
+            ->where('min_tier', $minTier)
+            ->whereIn('character_id', $characterIds)
+            ->get()
+            ->groupBy('character_id');
+
+        // 3. 패치노트 처리
         foreach ($patchNotes as $patchNote) {
             $characterId = $patchNote->target_id;
             $weaponType = $patchNote->weapon_type;
@@ -105,14 +126,17 @@ class PatchComparisonService
                 continue;
             }
 
-            // weapon_type이 없으면 해당 캐릭터의 모든 weapon_type 통계 조회
-            if (empty($weaponType)) {
-                $latestStatsCollection = $this->getGameResultStats($latestVersion, $minTier, $characterId);
-                $previousStatsCollection = $this->getGameResultStats($previousVersion, $minTier, $characterId);
+            $latestStatsForChar = $latestStats[$characterId] ?? collect();
+            $previousStatsForChar = $previousStats[$characterId] ?? collect();
 
-                // 각 weapon_type별로 처리
-                foreach ($latestStatsCollection as $latestStat) {
-                    $previousStat = $previousStatsCollection->where('weapon_type', $latestStat->weapon_type)->first();
+            if ($latestStatsForChar->isEmpty() || $previousStatsForChar->isEmpty()) {
+                continue;
+            }
+
+            // weapon_type이 없으면 해당 캐릭터의 모든 weapon_type 통계 처리
+            if (empty($weaponType)) {
+                foreach ($latestStatsForChar as $latestStat) {
+                    $previousStat = $previousStatsForChar->where('weapon_type', $latestStat->weapon_type)->first();
 
                     if (!$previousStat) {
                         continue;
@@ -142,9 +166,9 @@ class PatchComparisonService
                 }
                 $processedCombinations[$combinationKey] = true;
 
-                // 특정 weapon_type 통계 조회
-                $latestStat = $this->getGameResultStats($latestVersion, $minTier, $characterId, $weaponType);
-                $previousStat = $this->getGameResultStats($previousVersion, $minTier, $characterId, $weaponType);
+                // 특정 weapon_type 통계 찾기
+                $latestStat = $latestStatsForChar->where('weapon_type', $weaponType)->first();
+                $previousStat = $previousStatsForChar->where('weapon_type', $weaponType)->first();
 
                 if (!$latestStat || !$previousStat) {
                     continue;
