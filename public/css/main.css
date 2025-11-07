@@ -1012,7 +1012,6 @@ body > .tier-tooltip {
     font-size: 12px;
     color: #666;
     cursor: help;
-    vertical-align: super;
     font-weight: normal;
     position: relative;
     margin: 0;
