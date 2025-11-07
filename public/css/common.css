@@ -452,8 +452,8 @@
     }
 }
 
-/* Mobile specific (767px and below) */
-@media (max-width: 767px) {
+/* Mobile specific (599px and below) */
+@media (max-width: 599px) {
     .hide-on-mobile {
         display: none !important;
     }

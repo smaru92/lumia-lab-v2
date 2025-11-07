@@ -486,7 +486,7 @@ body > .tier-tooltip {
 }
 
 /* Mobile Responsive Styles */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 599px) {
     body {
         padding-top: 50px;
     }
@@ -1068,7 +1068,7 @@ body > .tier-tooltip {
 }
 
 /* Mobile styles */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 599px) {
     /* Mobile tooltip styles */
     .info-icon {
         font-size: 14px;

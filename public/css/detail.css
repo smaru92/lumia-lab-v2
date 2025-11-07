@@ -475,7 +475,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .tier-rip { background-color: #696969; } /* DimGray */
 
 /* Comprehensive mobile improvements for detail page */
-@media (max-width: 767px) {
+@media (max-width: 599px) {
     body {
         padding-top: 60px; /* Account for fixed navbar */
     }
