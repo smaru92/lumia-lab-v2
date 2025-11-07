@@ -753,7 +753,6 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     font-size: 12px;
     color: #666;
     cursor: help;
-    vertical-align: super;
     font-weight: normal;
     position: relative;
 }
