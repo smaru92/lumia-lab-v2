@@ -2,8 +2,230 @@
 
 @section('title', '메인 | 아글라이아 연구소')
 
+@push('styles')
+    <style>
+        /* 페이지 링크 카드 스타일 */
+        .page-links-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .page-link-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-link-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0);
+            transition: background 0.3s ease;
+        }
+
+        .page-link-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-link-card:hover::before {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-link-card.character {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .page-link-card.equipment {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .page-link-card.equipment-first {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .page-link-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-link-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-link-desc {
+            font-size: 13px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 탭 메뉴 스타일 */
+        .patch-tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .patch-tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .patch-tab-button:hover {
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .patch-tab-button.active {
+            color: #28a745;
+            border-bottom-color: #28a745;
+        }
+
+        .patch-tab-button.active.buffed {
+            color: #28a745;
+            border-bottom-color: #28a745;
+        }
+
+        .patch-tab-button.active.nerfed {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
+        }
+
+        .patch-tab-badge {
+            display: inline-block;
+            background-color: #e0e0e0;
+            color: #666;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
+        .patch-tab-button.active .patch-tab-badge {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .patch-tab-button.active.buffed .patch-tab-badge {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .patch-tab-button.active.nerfed .patch-tab-badge {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .patch-tab-content {
+            display: none;
+        }
+
+        .patch-tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 599px) {
+            .page-links-container {
+                grid-template-columns: 1fr;
+            }
+
+            .page-link-card {
+                padding: 15px;
+            }
+
+            .page-link-icon {
+                font-size: 28px;
+            }
+
+            .page-link-title {
+                font-size: 16px;
+            }
+
+            .page-link-desc {
+                font-size: 12px;
+            }
+
+            .patch-tabs {
+                gap: 5px;
+            }
+
+            .patch-tab-button {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 600px) and (max-width: 1024px) {
+            .page-links-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+@endpush
+
 @section('content')
 <div class="container">
+    <!-- 페이지 링크 카드 -->
+    <div class="page-links-container">
+        <a href="/character" class="page-link-card character">
+            <div class="page-link-icon">🎭</div>
+            <div class="page-link-title">캐릭터 통계</div>
+            <div class="page-link-desc">캐릭터별 승률 및 통계</div>
+        </a>
+        <a href="/equipment" class="page-link-card equipment">
+            <div class="page-link-icon">⚔️</div>
+            <div class="page-link-title">장비 통계</div>
+            <div class="page-link-desc">장비 아이템 통계</div>
+        </a>
+        <a href="/equipment-first" class="page-link-card equipment-first">
+            <div class="page-link-icon">🛡️</div>
+            <div class="page-link-title">초기 장비 통계</div>
+            <div class="page-link-desc">초기 장비 아이템 통계</div>
+        </a>
+    </div>
+
     <!-- 사이트 안내문구 -->
     <div class="notice-box" id="noticeBox">
         <button class="notice-close-btn" id="noticeCloseBtn" aria-label="안내 닫기">&times;</button>
@@ -40,7 +262,20 @@
         </p>
     </div>
 
-    <!-- 버프된 캐릭터 섹션 -->
+    <!-- 탭 메뉴 -->
+    <div class="patch-tabs">
+        <button class="patch-tab-button buffed active" data-tab="buffed">
+            🔼 버프
+            <span class="patch-tab-badge">{{ $buffedCharacters->count() }}</span>
+        </button>
+        <button class="patch-tab-button nerfed" data-tab="nerfed">
+            🔽 너프
+            <span class="patch-tab-badge">{{ $nerfedCharacters->count() }}</span>
+        </button>
+    </div>
+
+    <!-- 버프된 캐릭터 탭 컨텐츠 -->
+    <div id="buffed-tab" class="patch-tab-content active">
     <div class="section-container">
         <h3 class="section-title buffed">
             🔼 버프된 캐릭터 ({{ $buffedCharacters->count() }}개)
@@ -214,8 +449,10 @@
         </p>
         @endif
     </div>
+    </div>
 
-    <!-- 너프된 캐릭터 섹션 -->
+    <!-- 너프된 캐릭터 탭 컨텐츠 -->
+    <div id="nerfed-tab" class="patch-tab-content">
     <div class="section-container">
         <h3 class="section-title nerfed">
             🔽 너프된 캐릭터 ({{ $nerfedCharacters->count() }}개)
@@ -389,6 +626,7 @@
         </p>
         @endif
     </div>
+    </div>
 
     @else
     <div class="no-data-message">
@@ -418,6 +656,31 @@
                 noticeBox.style.display = 'none';
             }
         }
+
+        // 탭 메뉴 기능
+        const tabButtons = document.querySelectorAll('.patch-tab-button');
+        const tabContents = document.querySelectorAll('.patch-tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+
+                // 모든 탭 버튼에서 active 제거
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+
+                // 모든 탭 컨텐츠 숨기기
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // 클릭한 탭 버튼 활성화
+                this.classList.add('active');
+
+                // 해당 탭 컨텐츠 표시
+                const targetTab = document.getElementById(tabName + '-tab');
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                }
+            });
+        });
 
         // 캐릭터 행 클릭시 상세 페이지로 이동
         const rows = document.querySelectorAll('tr[data-href]');

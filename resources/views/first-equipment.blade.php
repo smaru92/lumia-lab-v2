@@ -63,9 +63,7 @@
             <th class="sortable">이름</th>
             <th class="sortable">티어</th>
             <th class="sortable">픽률</th>
-            <th class="sortable">
-                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
-            </th>
+            <th class="sortable">평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
             <th class="sortable">승률</th>
             <th class="sortable hide-on-mobile">TOP2</th>
             <th class="sortable hide-on-mobile">TOP4</th>
