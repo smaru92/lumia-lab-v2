@@ -88,11 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rows = Array.from(tbody.querySelectorAll('tr'));
 
                 // Determine sort direction
+                // 이름(text), 티어(grade), 분류(text), 구분(text), 등급(grade) 컬럼은 오름차순 우선
+                const isTextOrGradeColumn = sortType === 'text' || sortType === 'grade';
+
                 if (currentSort.index === sortIndex) {
+                    // 같은 컬럼을 다시 클릭하면 방향 전환
                     currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
                 } else {
+                    // 새로운 컬럼 클릭: 텍스트/등급은 오름차순, 숫자는 내림차순
                     currentSort.index = sortIndex;
-                    currentSort.dir = 'asc'; // Default to ascending for new column
+                    currentSort.dir = isTextOrGradeColumn ? 'asc' : 'desc';
                 }
 
                 // Update header classes for visual feedback
