@@ -30,68 +30,86 @@
 
 <script>
 (function() {
+    'use strict';
+
     function initHamburgerMenu() {
         const hamburger = document.getElementById('hamburgerMenu');
         const navMenu = document.getElementById('navMenu');
 
         if (!hamburger || !navMenu) {
+            console.warn('Hamburger menu elements not found');
             return;
         }
 
-        // Remove any existing listeners by cloning
-        const newHamburger = hamburger.cloneNode(true);
-        hamburger.parentNode.replaceChild(newHamburger, hamburger);
-
-        newHamburger.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
+        // Toggle menu function
+        function toggleMenu() {
             const isActive = navMenu.classList.contains('active');
 
             if (isActive) {
-                navMenu.classList.remove('active');
-                newHamburger.classList.remove('active');
-                navMenu.style.setProperty('visibility', 'hidden', 'important');
-                navMenu.style.setProperty('opacity', '0', 'important');
-                navMenu.style.setProperty('pointer-events', 'none', 'important');
+                closeMenu();
             } else {
-                navMenu.classList.add('active');
-                newHamburger.classList.add('active');
-                navMenu.style.setProperty('display', 'flex', 'important');
-                navMenu.style.setProperty('visibility', 'visible', 'important');
-                navMenu.style.setProperty('opacity', '1', 'important');
-                navMenu.style.setProperty('pointer-events', 'auto', 'important');
+                openMenu();
             }
+        }
+
+        // Open menu
+        function openMenu() {
+            navMenu.classList.add('active');
+            hamburger.classList.add('active');
+        }
+
+        // Close menu
+        function closeMenu() {
+            navMenu.classList.remove('active');
+            hamburger.classList.remove('active');
+        }
+
+        // Hamburger click handler
+        hamburger.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMenu();
         });
 
-        // 메뉴 링크 클릭시 메뉴 닫기
-        const navLinks = document.querySelectorAll('.nav-links');
-        navLinks.forEach(link => {
+        // Close menu when clicking nav links
+        const navLinks = navMenu.querySelectorAll('.nav-links');
+        navLinks.forEach(function(link) {
             link.addEventListener('click', function() {
-                navMenu.classList.remove('active');
-                newHamburger.classList.remove('active');
-                navMenu.style.setProperty('visibility', 'hidden', 'important');
-                navMenu.style.setProperty('opacity', '0', 'important');
-                navMenu.style.setProperty('pointer-events', 'none', 'important');
+                closeMenu();
             });
         });
 
-        // 메뉴 외부 클릭시 메뉴 닫기
+        // Close menu when clicking outside
         document.addEventListener('click', function(event) {
-            if (!newHamburger.contains(event.target) && !navMenu.contains(event.target)) {
-                navMenu.classList.remove('active');
-                newHamburger.classList.remove('active');
-                navMenu.style.setProperty('visibility', 'hidden', 'important');
-                navMenu.style.setProperty('opacity', '0', 'important');
-                navMenu.style.setProperty('pointer-events', 'none', 'important');
+            const isClickInsideMenu = navMenu.contains(event.target);
+            const isClickOnHamburger = hamburger.contains(event.target);
+
+            if (!isClickInsideMenu && !isClickOnHamburger && navMenu.classList.contains('active')) {
+                closeMenu();
             }
+        });
+
+        // Close menu on window resize if switching to desktop
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                // Close menu if screen size becomes desktop (1025px+)
+                if (window.innerWidth >= 1025 && navMenu.classList.contains('active')) {
+                    closeMenu();
+                }
+            }, 250);
         });
     }
 
+    // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initHamburgerMenu);
     } else {
         initHamburgerMenu();
     }
+
+    // Prevent multiple initializations
+    window.hamburgerMenuInitialized = true;
 })();
 </script>

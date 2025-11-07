@@ -1,8 +1,26 @@
-/* Header Styles */
+/* ==================== HEADER & NAVIGATION STYLES ==================== */
+/* Navbar Base Styles */
+.navbar {
+    background-color: #333;
+    overflow: visible;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 50px;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+}
+
 .navbar-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 20px;
+    max-width: 1200px;
+    width: 100%;
+    height: 100%;
 }
 
 .navbar-brand {
@@ -35,7 +53,38 @@
     color: #ddd;
 }
 
-/* Hamburger Menu - Hidden on Desktop */
+/* Navigation Menu Base Styles */
+.nav-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-item {
+    margin: 0 10px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-links {
+    color: white;
+    text-align: center;
+    padding: 0 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-links:hover {
+    background-color: #555;
+    color: white;
+}
+
+/* Hamburger Menu - Hidden on Desktop by Default */
 .hamburger-menu {
     display: none;
     flex-direction: column;
@@ -45,7 +94,7 @@
     border: none;
     cursor: pointer;
     padding: 8px;
-    z-index: 1001;
+    z-index: 10001;
     width: 40px;
     height: 40px;
 }
@@ -55,9 +104,22 @@
     height: 3px;
     background-color: #fff;
     display: block;
+    transition: all 0.3s ease;
 }
 
-/* Desktop nav-menu - Always visible on desktop */
+.hamburger-menu.active .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-menu.active .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* ==================== DESKTOP (1025px+) ==================== */
 @media (min-width: 1025px) {
     .hamburger-menu {
         display: none !important;
@@ -68,6 +130,25 @@
         visibility: visible !important;
         opacity: 1 !important;
         position: static !important;
+        pointer-events: auto !important;
+        background-color: transparent !important;
+        flex-direction: row !important;
+        width: auto !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+    }
+
+    .nav-item {
+        margin: 0 10px !important;
+        display: flex !important;
+        border-bottom: none !important;
+    }
+
+    .nav-links {
+        padding: 0 16px !important;
+        font-size: 16px !important;
+        height: 50px !important;
     }
 }
 
@@ -385,12 +466,13 @@
     background-color: #5a6268;
 }
 
-/* Tablet and Mobile (1024px and below) */
+/* ==================== TABLET & MOBILE (1024px and below) ==================== */
 @media (max-width: 1024px) {
     .hide-on-tablet {
         display: none !important;
     }
-    /* Hamburger Menu for Tablet and Mobile */
+
+    /* Show Hamburger Menu */
     .hamburger-menu {
         display: flex !important;
     }
@@ -399,6 +481,7 @@
         position: relative !important;
     }
 
+    /* Dropdown Menu Styles */
     .nav-menu {
         position: absolute !important;
         top: 50px !important;
@@ -415,23 +498,27 @@
         z-index: 10001 !important;
         height: auto !important;
         list-style: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        transition: opacity 0.3s ease, visibility 0.3s ease !important;
+        /* Hidden by default */
+        display: none !important;
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
     }
 
-    ul.nav-menu.active,
+    /* Active state - show menu */
     .nav-menu.active {
+        display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
         pointer-events: auto !important;
     }
 
     .nav-item {
-        width: 100%;
+        width: 100% !important;
         text-align: center;
         border-bottom: 1px solid #444;
+        margin: 0 !important;
     }
 
     .nav-item:last-child {
@@ -439,16 +526,18 @@
     }
 
     .nav-links {
-        display: block;
+        display: block !important;
         width: 100%;
-        padding: 15px 20px;
-        color: #fff;
-        font-size: 18px;
+        padding: 15px 20px !important;
+        color: #fff !important;
+        font-size: 18px !important;
         font-weight: 500;
+        height: auto !important;
     }
 
     .nav-links:hover {
-        background-color: #444;
+        background-color: #444 !important;
+        color: #fff !important;
     }
 }
 

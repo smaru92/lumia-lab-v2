@@ -108,15 +108,50 @@ class CharacterController extends Controller
         $defaultVersion = config('erDev.defaultVersion');
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
+
+        // types 파라미터 검증
+        if (empty($types) || !is_string($types)) {
+            return view('detail-not-found', [
+                'message' => '잘못된 캐릭터 파라미터입니다.',
+                'defaultVersion' => $defaultVersion,
+                'defaultTier' => $defaultTier,
+            ]);
+        }
+
+        // 버전 형식 검증
+        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+            $version = $defaultVersion;
+        }
+
         $version =  explode('.', $version);
+        $versionSeason = $version[0];
+        $versionMajor = $version[1];
+        $versionMinor = $version[2];
+
+        // 추가 검증 - 숫자 범위 확인
+        if (!is_numeric($versionSeason) || !is_numeric($versionMajor) || !is_numeric($versionMinor) ||
+            $versionSeason < 0 || $versionSeason > 999 ||
+            $versionMajor < 0 || $versionMajor > 999 ||
+            $versionMinor < 0 || $versionMinor > 999) {
+            // 잘못된 버전이면 기본값 사용
+            $version =  explode('.', $defaultVersion);
+            $versionSeason = $version[0];
+            $versionMajor = $version[1];
+            $versionMinor = $version[2];
+        }
 
         // 캐시 키 생성
         $cacheKey = "game_detail_data_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration'); // 캐시 지속 시간
 
         // 데이터 조회 전체를 캐싱
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($types, $minTier, $version, $defaultTier, $defaultVersion) {
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($types, $minTier, $version, $defaultTier, $defaultVersion, $versionSeason, $versionMajor, $versionMinor) {
             [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
+
+            // characterName 검증
+            if (empty($characterName)) {
+                return null; // 데이터가 없음을 표시
+            }
             [$defaultVersionSeason, $defaultVersionMajor, $defaultVersionMinor] =  array_pad(explode('.', $defaultVersion), 3, null);
             $versionSeason = $version[0] ?? $defaultVersionSeason;
             $versionMajor = $version[1] ?? $defaultVersionMajor;
@@ -185,6 +220,16 @@ class CharacterController extends Controller
 
             return $data;
         });
+
+        // 데이터가 없거나 null인 경우 처리
+        if ($data === null || empty($data['byMain'])) {
+            return view('detail-not-found', [
+                'message' => '해당 캐릭터의 데이터를 찾을 수 없습니다.',
+                'characterName' => $types,
+                'defaultVersion' => $defaultVersion,
+                'defaultTier' => $defaultTier,
+            ]);
+        }
 
         return view('detail', $data);
     }

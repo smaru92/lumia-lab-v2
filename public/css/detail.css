@@ -239,56 +239,7 @@ tr:hover {
 
 /* Responsive adjustments using Media Queries */
 
-.navbar {
-    background-color: #333;
-    overflow: visible;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 50px; /* Fixed height for navbar */
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-}
-
-.navbar-container {
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    max-width: 1200px;
-    width: 100%;
-}
-
-.nav-menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.nav-item {
-    margin: 0 10px;
-    display: flex;
-    align-items: center;
-}
-
-.nav-links {
-    color: white;
-    text-align: center;
-    padding: 0 16px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.nav-links:hover {
-    background-color: #ddd;
-    color: black;
-}
+/* Navbar styles removed - using common.css instead to prevent conflicts */
 /* Medium screens (tablets, small desktops) */
 @media (min-width: 768px) {
     body {
@@ -852,78 +803,5 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     visibility: visible;
 }
 
-/* Desktop nav-menu - Always visible on desktop */
-@media (min-width: 1025px) {
-    .hamburger-menu {
-        display: none !important;
-    }
-
-    .nav-menu {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        position: static !important;
-    }
-}
-
-/* Tablet and Mobile hamburger menu override - must be at end to override earlier styles */
-@media (max-width: 1024px) {
-    .hamburger-menu {
-        display: flex !important;
-    }
-
-    .nav-menu {
-        position: absolute !important;
-        top: 50px !important;
-        right: 0 !important;
-        left: auto !important;
-        width: 160px !important;
-        max-width: 160px !important;
-        background-color: #333 !important;
-        flex-direction: column !important;
-        padding: 8px 0 !important;
-        margin: 0 !important;
-        border-radius: 5px !important;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
-        z-index: 10001 !important;
-        height: auto !important;
-        list-style: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }
-
-    ul.nav-menu.active,
-    .nav-menu.active {
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-    }
-
-    .nav-item {
-        width: 100%;
-        text-align: center;
-        border-bottom: 1px solid #444;
-        margin: 0 !important;
-        display: block !important;
-    }
-
-    .nav-item:last-child {
-        border-bottom: none;
-    }
-
-    .nav-links {
-        display: block !important;
-        width: 100%;
-        padding: 15px 20px !important;
-        color: #fff;
-        font-size: 18px !important;
-        font-weight: 500;
-        height: auto !important;
-    }
-
-    .nav-links:hover {
-        background-color: #444 !important;
-        color: #fff !important;
-    }
-}
+/* Navigation menu styles removed - using common.css to prevent conflicts */
+/* common.css already handles desktop/tablet/mobile navigation properly */
