@@ -698,6 +698,7 @@ class GameResultService
             ->join('equipments as e', 'gre.equipment_id', '=', 'e.id')
             ->select(
                 'gre.equipment_id',
+                'e.item_grade',
                 DB::raw('MAX(e.name) as name'), // ✅ `GROUP BY` 없이 가져오기
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -744,7 +745,7 @@ class GameResultService
             $data[$key] = [
                 'equipmentId' => $item->equipment_id,
                 'itemGrade' => $item->item_grade,
-                'name' => $item->name . ' (' . $item->item_grade . ')', // 이름에 등급 표시
+                'name' => $item->name,
                 'gameCount' => $item->game_count,
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
