@@ -717,6 +717,7 @@ class GameResultService
             ->whereIn('e.item_grade', ['Epic'])
             ->groupBy(
                 'gre.equipment_id',
+                'e.item_grade',
             )
             ->orderBy('game_count', 'desc');
 
