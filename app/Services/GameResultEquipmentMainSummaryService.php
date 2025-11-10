@@ -53,6 +53,7 @@ class GameResultEquipmentMainSummaryService
                 ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'].$tier['tierNumber'];
+                echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
                 $gameResults = $this->gameResultService->getGameResultEquipmentMain([
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,

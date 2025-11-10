@@ -848,7 +848,6 @@ class GameResultService
 
         // 성능 점수 계산
         $performanceScore = (
-                $top1Score * 0.2 +
                 $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
@@ -868,7 +867,7 @@ class GameResultService
         $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($performanceScore * 1.2 + $pickRateScore * 2.7 + $synergy) / 2;
+        $metaScore = $performanceScore * 0.6 + $pickRateScore * 4.2 + $synergy * 0.6;
 
         // 디버깅용 변수 재할당
         $P_raw = $performanceScore / $lowPickPenalty;
@@ -959,7 +958,6 @@ class GameResultService
 
         // 성능 점수 계산
         $performanceScore = (
-            $top1Score * 0.2 +
             $endGameScore * 0.2 +
             $top2Score * 0.2 +
             $top4Score * 0.2 +
@@ -979,7 +977,7 @@ class GameResultService
         $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($performanceScore * 1.2 + $pickRateScore * 3.6 + $synergy) / 2;
+        $metaScore = $performanceScore * 0.6 + $pickRateScore * 4.2 + $synergy * 0.6;
 
         // 티어 분류
         $metaTier = match (true) {
