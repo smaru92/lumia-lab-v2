@@ -222,7 +222,8 @@ class GameResultEquipmentMainSummaryService
             if ($value != 0) {
                 if ($isPercentage) {
                     $displayValue = $value;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
+                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
@@ -243,7 +244,8 @@ class GameResultEquipmentMainSummaryService
             if ($valueByLv != 0) {
                 if ($isPercentage) {
                     $displayValue = $valueByLv;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
+                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
