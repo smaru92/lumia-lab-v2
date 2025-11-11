@@ -294,9 +294,9 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             if ($value !== null && floatval($value) != 0.0) {
                 $ratioKeywords = ['ratio', 'cooldown', 'steal', 'critical'];
                 $decimalKeyword = ['move_speed'];
-                if (array_filter($ratioKeywords, fn($word) => str_contains($value, $word))) {
+                if (array_filter($ratioKeywords, fn($word) => str_contains($key, $word))) {
                     $value = number_format($value * 100) . '%';
-                } elseif (array_filter($decimalKeyword, fn($word) => str_contains($value, $word))) {
+                } elseif (array_filter($decimalKeyword, fn($word) => str_contains($key, $word))) {
                     $value = number_format($value, 2);
                 } else {
                     $value = number_format($value, 2);
