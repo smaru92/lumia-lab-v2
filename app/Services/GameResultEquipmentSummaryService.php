@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\GameResultEquipmentSummary;
 use App\Traits\ErDevTrait;
+use Illuminate\Support\Facades\DB;
 
 class GameResultEquipmentSummaryService extends BaseSummaryService
 {
