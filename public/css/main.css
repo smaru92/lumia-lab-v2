@@ -90,6 +90,7 @@ body {
 .table-wrapper {
     width: 100%;
     overflow-x: auto;
+    overflow-y: visible; /* 툴팁이 세로로 잘리지 않도록 */
     -webkit-overflow-scrolling: touch;
 }
 

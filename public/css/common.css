@@ -541,6 +541,57 @@
     }
 }
 
+/* Tooltip Styles */
+.tooltip-wrap {
+    position: relative;
+    display: inline-block;
+    overflow: visible !important; /* 툴팁이 잘리지 않도록 */
+}
+
+.tooltip-wrap .tooltip-text {
+    visibility: hidden;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    font-size: 12px;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px 12px;
+    position: fixed; /* absolute 대신 fixed 사용 */
+    z-index: 10000;
+    white-space: normal;
+    min-width: 200px;
+    max-width: 300px;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    line-height: 1.5;
+    transform: translate(-50%, -100%);
+    margin-top: -10px; /* 아이콘과의 간격 */
+}
+
+.tooltip-wrap:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 툴팁 화살표 */
+.tooltip-wrap .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+}
+
+/* 아이콘 컨테이너가 툴팁을 가리지 않도록 */
+.icon-container.tooltip-wrap {
+    overflow: visible !important;
+}
+
 /* Mobile specific (599px and below) */
 @media (max-width: 599px) {
     .hide-on-mobile {

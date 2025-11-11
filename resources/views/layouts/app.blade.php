@@ -104,6 +104,19 @@
                 }
             });
         });
+
+        // Equipment tooltip positioning
+        const tooltipWraps = document.querySelectorAll('.tooltip-wrap');
+        tooltipWraps.forEach(wrap => {
+            wrap.addEventListener('mouseenter', function(e) {
+                const tooltip = this.querySelector('.tooltip-text');
+                if (tooltip) {
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                    tooltip.style.top = (rect.top - 10) + 'px';
+                }
+            });
+        });
     });
     </script>
 </body>

@@ -338,6 +338,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial trait filter application on page load
     filterTraits();
 
+    // --- Tooltip positioning logic ---
+    const tooltipWraps = document.querySelectorAll('.tooltip-wrap');
+    tooltipWraps.forEach(wrap => {
+        wrap.addEventListener('mouseenter', function(e) {
+            const tooltip = this.querySelector('.tooltip-text');
+            if (tooltip) {
+                const rect = this.getBoundingClientRect();
+                tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                tooltip.style.top = (rect.top - 10) + 'px';
+            }
+        });
+    });
+
     // --- Tier Info Toggle Logic ---
     const toggleTierInfoButton = document.getElementById('toggle-tier-info');
     const tierInfoContainer = document.getElementById('tier-info-container');

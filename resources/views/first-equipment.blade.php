@@ -94,11 +94,32 @@
                                 // $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png'); // 장비 페이지에서는 불필요
                                 // $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
                             @endphp
-                            <div class="icon-container">
+                            <div class="icon-container tooltip-wrap">
                                 <img src="{{ $equipmentIconPath }}"
                                      alt="{{ $item->equipment_name }}"
                                      class="equipment-icon"
                                      onerror="this.onerror=null; this.src='{{ $defaultEquipmentIconPath }}';">
+                                <span class="tooltip-text">
+                                    @php
+                                        $hasStats = isset($item->equipment_stats) && is_array($item->equipment_stats) && count($item->equipment_stats) > 0;
+                                        $hasSkills = isset($item->equipment_skills) && is_array($item->equipment_skills) && count($item->equipment_skills) > 0;
+                                    @endphp
+                                    @if($hasStats)
+                                        @foreach($item->equipment_stats as $stat)
+                                            {{ $stat['text'] }}: {{ $stat['value'] }}<br>
+                                        @endforeach
+                                    @else
+                                        장비 정보 없음
+                                    @endif
+                                    @if($hasSkills)
+                                        <br>
+                                        @foreach($item->equipment_skills as $skill)
+                                            <strong style="color: #ffd700;">{{ $skill['name'] }}</strong><br>
+                                            {{ $skill['description'] }}<br>
+                                            @if(!$loop->last)<br>@endif
+                                        @endforeach
+                                    @endif
+                                </span>
                             </div>
                             {{-- Display name and weapon on separate lines --}}
                             <div class="equipment-name-weapon">

@@ -66,6 +66,11 @@ select {
     min-width: 120px; /* Ensure select boxes have minimum width */
     max-width: 300px; /* Max width for select */
 }
+.table-wrapper {
+    overflow-y: visible; /* Allow tooltips to overflow vertically */
+    overflow-x: auto; /* Horizontal scroll for wide tables */
+    width: 100%;
+}
 table {
     width: 100%;
     border-collapse: collapse;
@@ -176,15 +181,14 @@ tr:hover {
     font-size: 11px; /* Smaller tooltip font */
     text-align: left;
     border-radius: 6px;
-    padding: 6px; /* Adjusted padding */
-    position: absolute;
-    z-index: 1000; /* Ensure tooltip is above table header */
-    bottom: 125%; /* 위쪽에 표시 */
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
+    padding: 8px; /* Increased padding for better readability */
+    position: fixed;
+    z-index: 10000; /* Very high z-index to appear above everything */
+    white-space: pre-line; /* Allow line breaks */
+    max-width: 400px; /* Set max width for long descriptions */
     opacity: 0;
     transition: opacity 0.2s;
+    pointer-events: none; /* Don't interfere with mouse events */
 }
 
 .tooltip-wrap:hover .tooltip-text {
@@ -363,7 +367,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     width: 50px; /* Set container width to 50px */
     height: 50px; /* Set container height to 50px */
     flex-shrink: 0; /* Prevent container from shrinking */
-    overflow: hidden; /* Hide overflowing parts of the image */
+    overflow: visible !important; /* Allow tooltips to show outside */
     border-radius: 4px; /* Optional: slightly rounded corners for the container */
 }
 
