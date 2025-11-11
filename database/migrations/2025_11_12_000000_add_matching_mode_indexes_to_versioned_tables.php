@@ -57,14 +57,15 @@ return new class extends Migration
      */
     private function getVersionedTables(string $pattern): array
     {
-        $databaseName = env('DB_DATABASE');
-        $tables = DB::select("SHOW TABLES LIKE ?", [$pattern]);
+        // SHOW TABLES LIKE는 prepared statement를 지원하지 않으므로 직접 문자열 결합
+        $tables = DB::select("SHOW TABLES LIKE '{$pattern}'");
 
-        $columnName = "Tables_in_{$databaseName}";
         $tableNames = [];
 
         foreach ($tables as $table) {
-            $tableNames[] = $table->$columnName;
+            // stdClass를 배열로 변환하여 첫 번째 값 가져오기
+            $tableArray = (array) $table;
+            $tableNames[] = reset($tableArray);
         }
 
         return $tableNames;
