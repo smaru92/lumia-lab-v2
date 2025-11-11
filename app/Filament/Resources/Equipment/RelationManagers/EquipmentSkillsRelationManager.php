@@ -65,7 +65,7 @@ class EquipmentSkillsRelationManager extends RelationManager
             ])
             ->headerActions([
                 AttachAction::make()
-                    ->recordSelectOptionsQuery(fn ($query) => $query)
+                    ->recordSelectOptionsQuery(fn ($query) => $query->orderBy('name', 'asc'))
                     ->recordTitle(function ($record) {
                         $gradeText = match($record->grade) {
                             'Epic' => '영웅',
@@ -75,10 +75,10 @@ class EquipmentSkillsRelationManager extends RelationManager
                         };
 
                         if ($gradeText) {
-                            return "{$record->id} - [{$gradeText}] {$record->name}";
+                            return "[{$gradeText}] {$record->name}";
                         }
 
-                        return "{$record->id} - {$record->name}";
+                        return $record->name;
                     })
                     ->preloadRecordSelect(),
             ])

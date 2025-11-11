@@ -5,9 +5,7 @@ namespace App\Filament\Resources\VersionHistories;
 use App\Filament\Resources\VersionHistories\Pages\CreateVersionHistory;
 use App\Filament\Resources\VersionHistories\Pages\EditVersionHistory;
 use App\Filament\Resources\VersionHistories\Pages\ListVersionHistories;
-use App\Filament\Resources\VersionHistories\Pages\ViewVersionHistory;
 use App\Filament\Resources\VersionHistories\Schemas\VersionHistoryForm;
-use App\Filament\Resources\VersionHistories\Schemas\VersionHistoryInfolist;
 use App\Filament\Resources\VersionHistories\Tables\VersionHistoriesTable;
 use App\Models\VersionHistory;
 use BackedEnum;
@@ -27,14 +25,10 @@ class VersionHistoryResource extends Resource
         return VersionHistoryForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return VersionHistoryInfolist::configure($schema);
-    }
-
     public static function table(Table $table): Table
     {
-        return VersionHistoriesTable::configure($table);
+        return VersionHistoriesTable::configure($table)
+            ->recordUrl(fn ($record) => self::getUrl('edit', ['record' => $record]));
     }
 
     public static function getRelations(): array
@@ -49,7 +43,6 @@ class VersionHistoryResource extends Resource
         return [
             'index' => ListVersionHistories::route('/'),
             'create' => CreateVersionHistory::route('/create'),
-            'view' => ViewVersionHistory::route('/{record}'),
             'edit' => EditVersionHistory::route('/{record}/edit'),
         ];
     }

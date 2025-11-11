@@ -31,7 +31,8 @@ class EquipmentSkillResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return EquipmentSkillTable::configure($table);
+        return EquipmentSkillTable::configure($table)
+            ->recordUrl(fn ($record) => self::getUrl('edit', ['record' => $record]));
     }
 
     public static function getPages(): array
