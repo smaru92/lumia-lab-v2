@@ -543,32 +543,34 @@
                     @php
                         $equipmentId = $firstItem->equipment_id;
                     @endphp
-                    <div class="tooltip-wrap" style="display: flex; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
                         @if($preequipmentName != $equipmentName)
-                            <img src="{{ asset('storage/Equipment/' . $equipmentId . '.png') }}" alt="Equipment Icon" class="equipment-icon">
+                            <div class="icon-container tooltip-wrap">
+                                <img src="{{ asset('storage/Equipment/' . $equipmentId . '.png') }}" alt="Equipment Icon" class="equipment-icon">
+                                <span class="tooltip-text">
+                                    @php
+                                        $hasStats = isset($firstItem->equipment_stats) && is_array($firstItem->equipment_stats) && count($firstItem->equipment_stats) > 0;
+                                        $hasSkills = isset($firstItem->equipment_skills) && is_array($firstItem->equipment_skills) && count($firstItem->equipment_skills) > 0;
+                                    @endphp
+                                    @if($hasStats)
+                                        @foreach($firstItem->equipment_stats as $equipmentStat)
+                                            {{ $equipmentStat['text'] }}: {{ $equipmentStat['value'] }}<br>
+                                        @endforeach
+                                    @else
+                                        장비 정보 없음
+                                    @endif
+                                    @if($hasSkills)
+                                        <br>
+                                        @foreach($firstItem->equipment_skills as $skill)
+                                            <strong style="color: #ffd700;">{{ $skill['name'] }}</strong><br>
+                                            {{ $skill['description'] }}<br>
+                                            @if(!$loop->last)<br>@endif
+                                        @endforeach
+                                    @endif
+                                </span>
+                            </div>
                         @endif
                         {{ $preequipmentName == $equipmentName ? '' : $equipmentName }}
-                        <span class="tooltip-text">
-                            @php
-                                $hasStats = isset($firstItem->equipment_stats) && is_array($firstItem->equipment_stats) && count($firstItem->equipment_stats) > 0;
-                                $hasSkills = isset($firstItem->equipment_skills) && is_array($firstItem->equipment_skills) && count($firstItem->equipment_skills) > 0;
-                            @endphp
-                            @if($hasStats)
-                                @foreach($firstItem->equipment_stats as $equipmentStat)
-                                    {{ $equipmentStat['text'] }}: {{ $equipmentStat['value'] }}<br>
-                                @endforeach
-                            @else
-                                장비 정보 없음
-                            @endif
-                            @if($hasSkills)
-                                <br>
-                                @foreach($firstItem->equipment_skills as $skill)
-                                    <strong style="color: #ffd700;">{{ $skill['name'] }}</strong><br>
-                                    {{ $skill['description'] }}<br>
-                                    @if(!$loop->last)<br>@endif
-                                @endforeach
-                            @endif
-                        </span>
                     </div>
                 </td>
                 <td>{{ $byEquipmentTotal[$firstItem->equipment_id] }}</td>
