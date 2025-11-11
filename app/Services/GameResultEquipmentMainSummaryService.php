@@ -222,8 +222,7 @@ class GameResultEquipmentMainSummaryService
             if ($value != 0) {
                 if ($isPercentage) {
                     $displayValue = $value;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
-                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
