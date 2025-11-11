@@ -207,14 +207,17 @@ class GameResultFirstEquipmentMainSummaryService
 
             // 백분율 스탯 확인
             $isPercentage = strpos($key, 'ratio') !== false ||
-                           $key === 'critical_strike_chance' ||
-                           $key === 'cooldown_reduction' ||
-                           $key === 'unique_cooldown_limit' ||
-                           $key === 'life_steal' ||
-                           $key === 'normal_life_steal' ||
-                           $key === 'skill_life_steal' ||
-                           $key === 'unique_life_steal' ||
-                           $key === 'unique_tenacity';
+                $key === 'critical_strike_chance' ||
+                $key === 'critical_strike_damage' ||
+                $key === 'cooldown_reduction' ||
+                $key === 'unique_cooldown_limit' ||
+                $key === 'penetration_defense' ||
+                $key === 'unique_penetration_defense' ||
+                $key === 'life_steal' ||
+                $key === 'normal_life_steal' ||
+                $key === 'skill_life_steal' ||
+                $key === 'unique_life_steal' ||
+                $key === 'unique_tenacity';
 
             // 기본 스탯
             if ($value != 0) {
