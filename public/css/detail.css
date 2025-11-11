@@ -184,11 +184,12 @@ tr:hover {
     padding: 8px; /* Increased padding for better readability */
     position: fixed;
     z-index: 10000; /* Very high z-index to appear above everything */
-    white-space: pre-line; /* Allow line breaks */
+    white-space: normal; /* Allow line breaks */
     max-width: 400px; /* Set max width for long descriptions */
     opacity: 0;
     transition: opacity 0.2s;
     pointer-events: none; /* Don't interfere with mouse events */
+    line-height: 1.5; /* Match common.css line height */
 }
 
 .tooltip-wrap:hover .tooltip-text {
