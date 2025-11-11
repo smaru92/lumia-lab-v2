@@ -230,16 +230,16 @@ class GameResultEquipmentMainSummaryService
             // 레벨당 증가 스탯 (별도 행으로)
             if ($valueByLv != 0) {
                 if ($isPercentage) {
-                    $displayValue = $value;
+                    $displayValue = $valueByLv;
                     if ($key != 'cooldown_reduction') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
                 } elseif($key == 'move_speed') {
-                    $displayValue = number_format($value, 2);
+                    $displayValue = number_format($valueByLv, 2);
                 } else {
-                    $displayValue = number_format($value, 1);
+                    $displayValue = number_format($valueByLv, 1);
                 }
 
                 $stats[] = [
