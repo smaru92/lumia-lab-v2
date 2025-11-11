@@ -206,9 +206,17 @@ class GameResultFirstEquipmentMainSummaryService
 
             // 기본 스탯
             if ($value != 0) {
-                $displayValue = number_format($value, 1);
                 if ($isPercentage) {
+                    $displayValue = $value;
+                    if ($key != 'cooldown_reduction') {
+                        $displayValue *= 100;
+                    }
+                    $displayValue = number_format($displayValue);
                     $displayValue .= '%';
+                } elseif($key == 'move_speed') {
+                    $displayValue = number_format($value, 2);
+                } else {
+                    $displayValue = number_format($value, 1);
                 }
 
                 $stats[] = [
@@ -219,9 +227,17 @@ class GameResultFirstEquipmentMainSummaryService
 
             // 레벨당 증가 스탯 (별도 행으로)
             if ($valueByLv != 0) {
-                $displayValue = number_format($valueByLv, 1);
                 if ($isPercentage) {
+                    $displayValue = $value;
+                    if ($key != 'cooldown_reduction') {
+                        $displayValue *= 100;
+                    }
+                    $displayValue = number_format($displayValue);
                     $displayValue .= '%';
+                } elseif($key == 'move_speed') {
+                    $displayValue = number_format($value, 2);
+                } else {
+                    $displayValue = number_format($value, 1);
                 }
 
                 $stats[] = [
