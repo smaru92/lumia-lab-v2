@@ -30,7 +30,7 @@
             </div>
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <label for="input-pick-rate" style="margin-bottom: 5px;"><strong>최소 픽률(%)</strong></label>
-                <input type="number" id="input-pick-rate" min="0" max="100" step="0.01" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
+                <input type="number" id="input-pick-rate" min="0" max="100" step="0.1" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
             </div>
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <label for="sel-item-type2" style="margin-bottom: 5px;"><strong>아이템 부위</strong></label>
