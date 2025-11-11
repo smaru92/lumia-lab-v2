@@ -274,7 +274,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             $valueByLv = $equipment->{$key . '_by_lv'} ?? 0;
 
             // 백분율 스탯 확인
-            $isPercentage = strpos($key, 'ratio') !== false ||
+            $isPercentage = (strpos($key, 'ratio') !== false ||
                 $key === 'critical_strike_chance' ||
                 $key === 'critical_strike_damage' ||
                 $key === 'cooldown_reduction' ||
@@ -283,14 +283,15 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
                 $key === 'normal_life_steal' ||
                 $key === 'skill_life_steal' ||
                 $key === 'unique_life_steal' ||
-                $key === 'unique_tenacity';
+                $key === 'unique_tenacity') &&
+                $key !== 'penetration_defense' &&
+                $key !== 'unique_penetration_defense';
 
             // 기본 스탯
             if ($value != 0) {
                 if ($isPercentage) {
                     $displayValue = $value;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
-                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
@@ -313,8 +314,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             if ($valueByLv != 0) {
                 if ($isPercentage) {
                     $displayValue = $valueByLv;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
-                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
