@@ -24,7 +24,7 @@ body {
 
 .navbar {
     background-color: #333;
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
     position: fixed;
     top: 0;
@@ -76,11 +76,22 @@ body {
 .container {
     width: 100%;
     max-width: 1200px;
-    margin: 20px auto; /* Body padding handles space from navbar */
+    margin: 20px auto;
     background: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.container > * {
+    width: 100%;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible; /* 툴팁이 세로로 잘리지 않도록 */
+    -webkit-overflow-scrolling: touch;
 }
 
 h2 {
@@ -108,10 +119,12 @@ select, input[type="number"] {
 }
 
 table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     background: #fff;
     border: 1px solid #ddd;
+    margin: 0 auto;
     /* overflow: hidden; /* Removing this to prevent clipping sticky header/shadows */
 }
 
@@ -138,6 +151,7 @@ th {
     font-weight: bold;
     position: relative;
     cursor: pointer;
+    overflow: visible; /* 툴팁이 잘리지 않도록 */
 }
 
 th:hover {
@@ -474,7 +488,7 @@ body > .tier-tooltip {
 }
 
 /* Mobile Responsive Styles */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 599px) {
     body {
         padding-top: 50px;
     }
@@ -997,13 +1011,13 @@ body > .tier-tooltip {
 /* Info icon tooltip styles */
 .info-icon {
     display: inline-block;
-    margin-left: 4px;
     font-size: 12px;
     color: #666;
     cursor: help;
-    vertical-align: super;
     font-weight: normal;
     position: relative;
+    margin: 0;
+    padding: 0;
 }
 
 .info-icon:hover {
@@ -1013,55 +1027,128 @@ body > .tier-tooltip {
 .info-icon::after {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: 125%;
+    top: 125%; /* bottom → top으로 변경 (아래에 표시) */
     left: 50%;
     transform: translateX(-50%);
     background-color: #333;
     color: white;
     padding: 8px 12px;
     border-radius: 4px;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 280px;
+    width: max-content;
     font-size: 12px;
     font-weight: normal;
+    line-height: 1.4;
+    text-align: center;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
-    z-index: 1000;
+    z-index: 99999;
     pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .info-icon::before {
     content: '';
     position: absolute;
-    bottom: 100%;
+    top: 100%; /* bottom → top으로 변경 (화살표도 아래로) */
     left: 50%;
     transform: translateX(-50%);
     border: 6px solid transparent;
-    border-top-color: #333;
+    border-bottom-color: #333; /* border-top-color → border-bottom-color로 변경 */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
-    z-index: 1000;
+    z-index: 99999;
     pointer-events: none;
 }
 
 .info-icon:hover::after,
-.info-icon:hover::before {
+.info-icon:hover::before,
+.info-icon.tooltip-active::after,
+.info-icon.tooltip-active::before {
     opacity: 1;
     visibility: visible;
 }
 
-/* Hide specific columns in main, equipment, and first-equipment pages - mobile only */
-@media screen and (max-width: 768px) {
-    /* Hide TOP2 (6th column), 막금구승률 (8th column), 평균획득점수 (9th column), 손실확률 (11th column) */
-    #gameTable th:nth-child(6),
-    #gameTable td:nth-child(6),
-    #gameTable th:nth-child(8),
-    #gameTable td:nth-child(8),
-    #gameTable th:nth-child(9),
-    #gameTable td:nth-child(9),
-    #gameTable th:nth-child(11),
-    #gameTable td:nth-child(11) {
-        display: none;
+/* Mobile styles */
+@media screen and (max-width: 599px) {
+    /* Mobile tooltip styles */
+    .info-icon {
+        font-size: 14px;
+        margin: 0;
+        padding: 0;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        position: static;
+    }
+
+    th {
+        overflow: visible !important;
+        position: static !important;
+    }
+
+    th:has(.info-icon) {
+        position: relative !important;
+        z-index: 100 !important;
+    }
+
+    .info-icon::after {
+        position: fixed !important;
+        bottom: auto !important;
+        left: 50% !important;
+        top: 100px !important;
+        transform: translateX(-50%) !important;
+        max-width: 85vw !important;
+        width: auto !important;
+        padding: 14px 18px !important;
+        font-size: 14px !important;
+        z-index: 100000 !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        text-align: center !important;
+        line-height: 1.5 !important;
+        border: 2px solid #555 !important;
+    }
+
+    .info-icon::before {
+        position: fixed !important;
+        bottom: auto !important;
+        left: 50% !important;
+        top: 92px !important;
+        transform: translateX(-50%) !important;
+        z-index: 100000 !important;
+        border-width: 8px !important;
+        border-style: solid !important;
+        border-color: transparent transparent #333 transparent !important;
+    }
+
+    /* Make tooltip work on touch devices */
+    .info-icon:active::after,
+    .info-icon:active::before,
+    .info-icon.tooltip-active::after,
+    .info-icon.tooltip-active::before {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    /* Ensure table and containers don't clip tooltip */
+    .container {
+        overflow: visible !important;
+    }
+
+    table {
+        overflow: visible !important;
+    }
+
+    thead {
+        overflow: visible !important;
+        position: relative !important;
+        z-index: 100 !important;
+    }
+
+    thead tr {
+        position: static !important;
     }
 }

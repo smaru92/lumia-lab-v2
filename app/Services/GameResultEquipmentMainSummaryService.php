@@ -53,6 +53,7 @@ class GameResultEquipmentMainSummaryService
                 ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'].$tier['tierNumber'];
+                echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
                 $gameResults = $this->gameResultService->getGameResultEquipmentMain([
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,
@@ -87,6 +88,7 @@ class GameResultEquipmentMainSummaryService
                         'top4_count_percent' => $gameResult['top4CountPercent'],
                         'endgame_win_percent' => $gameResult['endgameWinPercent'],
                         'avg_mmr_gain' => $gameResult['avgMmrGain'],
+                        'avg_team_kill_score' => $gameResult['avgTeamKillScore'],
                         'positive_avg_mmr_gain' => $gameResult['positiveAvgMmrGain'],
                         'negative_avg_mmr_gain' => $gameResult['negativeAvgMmrGain'],
                         'version_season' => $versionSeason,
@@ -124,16 +126,141 @@ class GameResultEquipmentMainSummaryService
     public function getList(array $filters)
     {
         // 장비 페이지용: 랭킹 계산 제거로 성능 최적화
-        return GameResultEquipmentMainSummary::select(
+        $results = GameResultEquipmentMainSummary::select(
             'game_results_equipment_main_summary.*',
             'equipments.item_grade',
-            'equipments.item_type2'
+            'equipments.item_type2',
+            // 장비 스탯 정보 추가
+            'equipments.attack_power', 'equipments.attack_power_by_lv',
+            'equipments.defense', 'equipments.defense_by_lv',
+            'equipments.skill_amp', 'equipments.skill_amp_by_lv',
+            'equipments.skill_amp_ratio', 'equipments.skill_amp_ratio_by_lv',
+            'equipments.adaptive_force', 'equipments.adaptive_force_by_lv',
+            'equipments.max_hp', 'equipments.max_hp_by_lv',
+            'equipments.hp_regen', 'equipments.hp_regen_ratio',
+            'equipments.sp_regen', 'equipments.sp_regen_ratio',
+            'equipments.attack_speed_ratio', 'equipments.attack_speed_ratio_by_lv',
+            'equipments.critical_strike_chance', 'equipments.critical_strike_damage',
+            'equipments.cooldown_reduction',
+            'equipments.life_steal', 'equipments.normal_life_steal', 'equipments.skill_life_steal',
+            'equipments.move_speed', 'equipments.move_speed_ratio', 'equipments.move_speed_out_of_combat',
+            'equipments.penetration_defense', 'equipments.penetration_defense_ratio'
         )
             ->join('equipments', 'equipments.id', '=', 'game_results_equipment_main_summary.equipment_id')
             ->where($filters)
             ->whereIn('equipments.item_grade', ['Legend','Mythic'])
             ->orderBy('meta_score', 'desc')
             ->get();
+
+        // 장비 스탯 정보와 스킬 정보를 배열로 변환하여 추가
+        foreach ($results as $result) {
+            $result->equipment_stats = $this->formatEquipmentStats($result);
+            $result->equipment_skills = $this->getEquipmentSkills($result->equipment_id);
+        }
+
+        return $results;
+    }
+
+    /**
+     * 장비 스탯을 포맷팅하여 반환
+     */
+    private function formatEquipmentStats($equipment): array
+    {
+        $stats = [];
+        $statLabels = [
+            'attack_power' => '공격력',
+            'defense' => '방어력',
+            'skill_amp' => '스킬 증폭',
+            'skill_amp_ratio' => '스킬 증폭',
+            'adaptive_force' => '적응형 능력치',
+            'max_hp' => '최대 체력',
+            'hp_regen' => '체력 재생',
+            'hp_regen_ratio' => '체력 재생',
+            'sp_regen' => '스태미나 재생',
+            'sp_regen_ratio' => '스태미나 재생',
+            'attack_speed_ratio' => '공격 속도',
+            'critical_strike_chance' => '치명타 확률',
+            'critical_strike_damage' => '치명타 피해',
+            'cooldown_reduction' => '쿨다운 감소',
+            'life_steal' => '생명력 흡수',
+            'normal_life_steal' => '기본 공격 생명력 흡수',
+            'skill_life_steal' => '스킬 생명력 흡수',
+            'move_speed' => '이동 속도',
+            'move_speed_ratio' => '이동 속도',
+            'move_speed_out_of_combat' => '비전투 이동 속도',
+            'penetration_defense' => '방어 관통',
+            'penetration_defense_ratio' => '방어 관통',
+        ];
+
+        foreach ($statLabels as $key => $label) {
+            $value = $equipment->$key ?? 0;
+            $valueByLv = $equipment->{$key . '_by_lv'} ?? 0;
+
+            // 백분율 스탯 확인
+            $isPercentage = strpos($key, 'ratio') !== false ||
+                $key === 'critical_strike_chance' ||
+                $key === 'critical_strike_damage' ||
+                $key === 'attack_speed_ratio' ||
+                $key === 'cooldown_reduction' ||
+                $key === 'life_steal' ||
+                $key === 'normal_life_steal' ||
+                $key === 'skill_life_steal';
+
+            // 기본 스탯
+            if ($value != 0) {
+                if ($isPercentage) {
+                    $displayValue = $value;
+                    if ($key != 'cooldown_reduction') {
+                        $displayValue *= 100;
+                    }
+                    $displayValue = number_format($displayValue);
+                    $displayValue .= '%';
+                } elseif($key == 'move_speed') {
+                    $displayValue = number_format($value, 2);
+                } else {
+                    $displayValue = number_format($value, 1);
+                }
+
+                $stats[] = [
+                    'text' => $label,
+                    'value' => $displayValue
+                ];
+            }
+
+            // 레벨당 증가 스탯 (별도 행으로)
+            if ($valueByLv != 0) {
+                $displayValue = number_format($valueByLv, 1);
+                if ($isPercentage) {
+                    $displayValue .= '%';
+                }
+
+                $stats[] = [
+                    'text' => '레벨당 ' . $label,
+                    'value' => '+' . $displayValue
+                ];
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * 장비 스킬 정보를 가져옴
+     */
+    private function getEquipmentSkills($equipmentId): array
+    {
+        $skills = DB::table('equipment_equipment_skill')
+            ->join('equipment_skills', 'equipment_equipment_skill.equipment_skill_id', '=', 'equipment_skills.id')
+            ->where('equipment_equipment_skill.equipment_id', $equipmentId)
+            ->select('equipment_skills.name', 'equipment_skills.description')
+            ->get();
+
+        return $skills->map(function ($skill) {
+            return [
+                'name' => $skill->name,
+                'description' => $skill->description ?? ''
+            ];
+        })->toArray();
     }
 
 }

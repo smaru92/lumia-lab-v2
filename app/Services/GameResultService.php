@@ -451,6 +451,7 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
@@ -492,6 +493,7 @@ class GameResultService
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
                 'avgMmrGain' => round($item->avg_mmr_gain,1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score,2) : 0,
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
@@ -567,6 +569,7 @@ class GameResultService
             ->join('equipments as e', 'gre.equipment_id', '=', 'e.id')
             ->select(
                 'gre.equipment_id',
+                'e.item_grade', // 등급 추가
                 DB::raw('MAX(e.name) as name'), // ✅ `GROUP BY` 없이 가져오기
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -574,6 +577,7 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
@@ -584,6 +588,7 @@ class GameResultService
             ->whereIn('e.item_grade', ['Legend', 'Mythic'])
             ->groupBy(
                 'gre.equipment_id',
+                'e.item_grade' // 등급별로 그룹화
             )
             ->orderBy('game_count', 'desc');
 
@@ -607,14 +612,17 @@ class GameResultService
 
         $data = [];
         foreach ($gameResults as $item) {
-            $key = $item->equipment_id;
+            // 등급별로 분리하기 위해 키에 item_grade 포함
+            $key = $item->equipment_id . '_' . $item->item_grade;
             $data[$key] = [
                 'equipmentId' => $item->equipment_id,
-                'name' => $item->name,
+                'itemGrade' => $item->item_grade,
+                'name' => $item->name, // 이름에 등급 표시
                 'gameCount' => $item->game_count,
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
                 'avgMmrGain' => round($item->avg_mmr_gain,1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score,2) : 0,
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
@@ -690,6 +698,7 @@ class GameResultService
             ->join('equipments as e', 'gre.equipment_id', '=', 'e.id')
             ->select(
                 'gre.equipment_id',
+                'e.item_grade',
                 DB::raw('MAX(e.name) as name'), // ✅ `GROUP BY` 없이 가져오기
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -697,6 +706,7 @@ class GameResultService
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
                 DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
@@ -707,6 +717,7 @@ class GameResultService
             ->whereIn('e.item_grade', ['Epic'])
             ->groupBy(
                 'gre.equipment_id',
+                'e.item_grade',
             )
             ->orderBy('game_count', 'desc');
 
@@ -730,14 +741,17 @@ class GameResultService
 
         $data = [];
         foreach ($gameResults as $item) {
-            $key = $item->equipment_id;
+            // 등급별로 분리하기 위해 키에 item_grade 포함
+            $key = $item->equipment_id . '_' . $item->item_grade;
             $data[$key] = [
                 'equipmentId' => $item->equipment_id,
+                'itemGrade' => $item->item_grade,
                 'name' => $item->name,
                 'gameCount' => $item->game_count,
                 'positiveGameCount' => $item->positive_count,
                 'negativeGameCount' => $item->negative_count,
                 'avgMmrGain' => round($item->avg_mmr_gain,1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score,2) : 0,
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
@@ -830,22 +844,57 @@ class GameResultService
         $stabilityFactor = log(1 + $pickRate) / log(1 + 0.05);   // 5% 이상이면 1.0
         // $stabilityFactor = min($stabilityFactor, 1.0);
 
-        // 픽률 기반 전체 스코어 가중치
-        $pickWeight = log(1 + max($pickRate, 0.01)) ** 0.8;
+        // 픽률 점수: 로그 스케일로 계산 (1% 기준)
+        $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
+        $pickRateScore = max(-5, min(5, $pickRateScore)); // -5~5 범위로 제한
 
-        // P: 성능 점수
-        $P = (
+        // 성능 점수 계산
+        $performanceScore = (
                 $endGameScore * 0.2 +
                 $top2Score * 0.2 +
                 $top4Score * 0.2 +
-                $mmrScore * 3.0
-            ) * $stabilityFactor;
+                $mmrScore * 2.1
+            );
 
-        // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 3.3;
+        // 극저픽 페널티: 1% 미만일 때만 성능 감쇠
+        $lowPickPenalty = 1.0;
+        if ($pickRate < 0.01) {
+            $lowPickPenalty = 0.3 + 0.7 * ($pickRate / 0.01); // 0.1%=0.37, 0.5%=0.65, 1%=1.0
+        }
+        $performanceScore = $performanceScore * $lowPickPenalty;
+
+        // 픽률-성능 곱셈 시너지 (둘 다 좋아야 보너스)
+        $pickNormalized = max(0, min(1, $pickRate / 0.05)); // 5% = 1.0
+        $perfNormalized = max(0, min(1, ($performanceScore + 2) / 4)); // -2~2를 0~1로
+        $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($P * 1.8 + $A) * (0.6 + 0.4 * $pickWeight) * 2;
+        $metaScore = $performanceScore * 0.6 + $pickRateScore * 4.2 + $synergy * 0.6;
+
+        // 디버깅용 변수 재할당
+        $P_raw = $performanceScore / $lowPickPenalty;
+        $P = $performanceScore;
+        $pickAbsoluteScore = $pickRateScore;
+        $performanceNormalized = $perfNormalized;
+
+        // 디버깅용 로그 (특정 케이스만)
+        if (isset($data['characterName']) && in_array($data['characterName'], ['히스이', '케네스'])) {
+            \Log::info("Meta Score Debug - {$data['characterName']}", [
+                'pickRate' => $pickRate,
+                'pickAbsoluteScore' => $pickAbsoluteScore,
+                'pickNormalized' => $pickNormalized,
+                'stabilityFactor' => $stabilityFactor,
+                'P_raw' => $P_raw,
+                'P' => $P,
+                'performanceNormalized' => $performanceNormalized,
+                'synergy' => $synergy,
+                'metaScore' => $metaScore,
+                'avgMmrGain' => $data['avgMmrGain'],
+                'mmrDelta' => $mmrDelta,
+                'mmrScore' => $mmrScore,
+                'top1Score' => $top1Score,
+            ]);
+        }
 
         // 티어 분류
         $metaTier = match (true) {
@@ -900,27 +949,37 @@ class GameResultService
             ? -log(1 + abs($pickDelta))
             : log(1 + $pickDelta);
 
-        // 안정성 계수: 극저픽 캐릭터의 성능 감쇠 (신뢰도)
+        // 픽률 계산 (장비는 /5 적용)
         $pickRate = max($data['gameCountPercent'] / 5 / 100, 0.001); // 최소 0.1%
         $stabilityFactor = log(1 + $pickRate) / log(1 + 0.05);   // 5% 이상이면 1.0
         // $stabilityFactor = min($stabilityFactor, 1.0);
 
-        // 픽률 기반 전체 스코어 가중치
-        $pickWeight = log(1 + max($pickRate, 0.01)) ** 0.8;
+        // 픽률 점수: 로그 스케일로 계산 (1% 기준)
+        $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
+        $pickRateScore = max(-20, min(20, $pickRateScore)); // -5~5 범위로 제한
 
-        // P: 성능 점수
-        $P = (
-                $endGameScore * 0.2 +
-                $top2Score * 0.2 +
-                $top4Score * 0.2 +
-                $mmrScore * 3.0
-            ) * $stabilityFactor;
+        // 성능 점수 계산
+        $performanceScore = (
+            $endGameScore * 0.2 +
+            $top2Score * 0.2 +
+            $top4Score * 0.2 +
+            $mmrScore * 2.1
+        );
 
-        // A: 신뢰도 보정 + 픽률 점수
-        $A = $pickScore * 2.0;
+        // 극저픽 페널티: 1% 미만일 때만 성능 감쇠
+        $lowPickPenalty = 1.0;
+        if ($pickRate < 0.01) {
+            $lowPickPenalty = 0.3 + 0.7 * ($pickRate / 0.01); // 0.1%=0.37, 0.5%=0.65, 1%=1.0
+        }
+        $performanceScore = $performanceScore * $lowPickPenalty;
+
+        // 픽률-성능 곱셈 시너지 (둘 다 좋아야 보너스)
+        $pickNormalized = max(0, min(1, $pickRate / 0.05)); // 5% = 1.0
+        $perfNormalized = max(0, min(1, ($performanceScore + 2) / 4)); // -2~2를 0~1로
+        $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
 
         // 최종 메타 점수
-        $metaScore = ($P * 1.5 + $A) * (0.6 + 0.3 * $pickWeight) * 2;
+        $metaScore = $performanceScore * 0.6 + $pickRateScore * 4.2 + $synergy * 0.6;
 
         // 티어 분류
         $metaTier = match (true) {

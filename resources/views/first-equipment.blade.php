@@ -1,8 +1,6 @@
 @extends('layouts.app')
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('css/main.css') }}">
-@endpush
+@section('title', '초기 장비 통계 | 아글라이아 연구소')
 
 @section('content')
 <div class="container">
@@ -32,7 +30,7 @@
             </div>
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <label for="input-pick-rate" style="margin-bottom: 5px;"><strong>최소 픽률(%)</strong></label>
-                <input type="number" id="input-pick-rate" min="0" max="100" step="0.01" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
+                <input type="number" id="input-pick-rate" min="0" max="100" step="0.1" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
             </div>
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <label for="sel-item-type2" style="margin-bottom: 5px;"><strong>아이템 부위</strong></label>
@@ -57,6 +55,7 @@
         </div>
     </div>
 
+    <div class="table-wrapper">
     <table id="gameTable">
         <thead>
         <tr>
@@ -64,16 +63,14 @@
             <th class="sortable">이름</th>
             <th class="sortable">티어</th>
             <th class="sortable">픽률</th>
+            <th class="sortable">평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
             <th class="sortable">승률</th>
-            <th class="sortable">TOP2</th>
-            <th class="sortable">TOP4</th>
-            <th class="sortable">막금구승률</th>
-            <th class="sortable">
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
-            </th>
-            <th class="sortable">이득확률</th>
-            <th class="sortable">손실확률</th>
+            <th class="sortable hide-on-mobile">TOP2</th>
+            <th class="sortable hide-on-mobile">TOP4</th>
+            <th class="sortable hide-on-mobile hide-on-tablet">막금구승률</th>
+            <th class="sortable hide-on-mobile">평균 TK</th>
+            <th class="sortable hide-on-mobile">이득확률</th>
+            <th class="sortable hide-on-mobile">손실확률</th>
         </tr>
         </thead>
         <tbody>
@@ -97,11 +94,32 @@
                                 // $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png'); // 장비 페이지에서는 불필요
                                 // $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
                             @endphp
-                            <div class="icon-container">
+                            <div class="icon-container tooltip-wrap">
                                 <img src="{{ $equipmentIconPath }}"
                                      alt="{{ $item->equipment_name }}"
                                      class="equipment-icon"
                                      onerror="this.onerror=null; this.src='{{ $defaultEquipmentIconPath }}';">
+                                <span class="tooltip-text">
+                                    @php
+                                        $hasStats = isset($item->equipment_stats) && is_array($item->equipment_stats) && count($item->equipment_stats) > 0;
+                                        $hasSkills = isset($item->equipment_skills) && is_array($item->equipment_skills) && count($item->equipment_skills) > 0;
+                                    @endphp
+                                    @if($hasStats)
+                                        @foreach($item->equipment_stats as $stat)
+                                            {{ $stat['text'] }}: {{ $stat['value'] }}<br>
+                                        @endforeach
+                                    @else
+                                        장비 정보 없음
+                                    @endif
+                                    @if($hasSkills)
+                                        <br>
+                                        @foreach($item->equipment_skills as $skill)
+                                            <strong style="color: #ffd700;">{{ $skill['name'] }}</strong><br>
+                                            {{ $skill['description'] }}<br>
+                                            @if(!$loop->last)<br>@endif
+                                        @endforeach
+                                    @endif
+                                </span>
                             </div>
                             {{-- Display name and weapon on separate lines --}}
                             <div class="equipment-name-weapon">
@@ -122,27 +140,28 @@
                         <div>{{ number_format($item->game_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->game_count }}</div>
                     </td>
+                    <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
                     <td>
                         <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
                         <div  class="sub-stat">{{ $item->top1_count }}</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->top2_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->top2_count }}</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->top4_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->top4_count }}</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile hide-on-tablet">
                         <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     </td>
-                    <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
-                    <td>
+                    <td class="hide-on-mobile number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
                     </td>
-                    <td>
+                    <td class="hide-on-mobile">
                         <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 {{ number_format($item->negative_avg_mmr_gain, 1) }}점</div>
                     </td>
@@ -153,6 +172,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Tier Modal -->

@@ -1,12 +1,14 @@
 @extends('layouts.app')
 
+@section('title', '상세 통계 | 아글라이아 연구소')
+
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/detail.css') }}?v={{ time() }}">
 @endpush
 
 @section('content')
 <div class="container">
-    <h2><a href="/main?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
+    <h2><a href="/character?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
 
     {{-- Keep filters for changing options --}}
     <div class="detail-filter-container">
@@ -41,14 +43,14 @@
             <th>이름</th>
             <th>티어</th>
             <th>픽률</th>
+            <th>
+                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+            </th>
             <th>승률</th>
             <th>TOP2</th>
             <th>TOP4</th>
             <th>막금구승률</th>
-            <th>
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
-            </th>
+            <th>평균 TK</th>
             <th>이득확률</th>
             <th>이득평균점수</th>
             <th>손실확률</th>
@@ -96,6 +98,10 @@
                 <div>{{ number_format($byMain->game_count_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->game_count_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
+            <td class="number">
+                {{ number_format($byMain->avg_mmr_gain, 1) }}
+                <div class="sub-stat">{{ number_format($byMain->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+            </td>
             <td>
                 <div>{{ number_format($byMain->top1_count_percent , 2) }}%</div>
                 <div class="sub-stat">{{ number_format($byMain->top1_count_percent_rank) }} / {{ number_format($byMainCount) }}</div>
@@ -113,8 +119,8 @@
                 <div class="sub-stat">{{ number_format($byMain->endgame_win_percent_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
             <td class="number">
-                {{ number_format($byMain->avg_mmr_gain, 1) }}
-                <div class="sub-stat">{{ number_format($byMain->avg_mmr_gain_rank) }} / {{ number_format($byMainCount) }}</div>
+                {{ number_format($byMain->avg_team_kill_score, 2) }}
+                <div class="sub-stat">{{ number_format($byMain->avg_team_kill_score_rank) }} / {{ number_format($byMainCount) }}</div>
             </td>
             <td>
                 <div>{{ number_format($byMain->positive_game_count_percent , 2) }}%</div>
@@ -146,14 +152,15 @@
                 <th>최소티어</th>
                 <th>티어</th>
                 <th>픽률</th>
-                <th>승률</th>
-                <th>TOP2</th>
-                <th>TOP4</th>
-                <th>막금구승률</th>
                 <th>
                     평균획득점수
                     <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
                 </th>
+                <th>승률</th>
+                <th>TOP2</th>
+                <th>TOP4</th>
+                <th>막금구승률</th>
+                <th>평균 TK</th>
                 <th>이득확률</th>
                 <th>이득평균점수</th>
                 <th>손실확률</th>
@@ -178,6 +185,10 @@
                     <div>{{ number_format($item->game_count_percent , 2) }}%</div>
                     <div class="sub-stat">{{ number_format($item->game_count_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
+                <td class="number">
+                    {{ number_format($item->avg_mmr_gain, 1) }}
+                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
+                </td>
                 <td>
                     <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
                     <div class="sub-stat">{{ number_format($item->top1_count_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
@@ -195,8 +206,8 @@
                     <div class="sub-stat">{{ number_format($item->endgame_win_percent_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td class="number">
-                    {{ number_format($item->avg_mmr_gain, 1) }}
-                    <div class="sub-stat">{{ number_format($item->avg_mmr_gain_rank) }} / {{ number_format($item->rank_count) }}</div>
+                    {{ number_format($item->avg_team_kill_score, 2) }}
+                    <div class="sub-stat">{{ number_format($item->avg_team_kill_score_rank) }} / {{ number_format($item->rank_count) }}</div>
                 </td>
                 <td>
                     <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
@@ -228,10 +239,10 @@
             <th data-sort-index="1" data-sort-type="number">게임순위</th>
             <th data-sort-index="2" data-sort-type="number">비율</th>
             <th data-sort-index="3" data-sort-type="number">
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
             </th>
-            <th data-sort-index="4" data-sort-type="number">이득확률</th>
+{{--            <th data-sort-index="4" data-sort-type="number">평균 TK</th>--}}
+            <th data-sort-index="5" data-sort-type="number">이득확률</th>
             <th data-sort-index="5" data-sort-type="number">이득평균점수</th>
             <th data-sort-index="6" data-sort-type="number">손실확률</th>
             <th data-sort-index="7" data-sort-type="number">손실평균점수</th>
@@ -538,9 +549,25 @@
                         @endif
                         {{ $preequipmentName == $equipmentName ? '' : $equipmentName }}
                         <span class="tooltip-text">
-                            @foreach($firstItem->equipment_stats as $equipmentStat)
-                                {{ $equipmentStat['text'] }} + {{ $equipmentStat['value'] }}<br>
-                            @endforeach
+                            @php
+                                $hasStats = isset($firstItem->equipment_stats) && is_array($firstItem->equipment_stats) && count($firstItem->equipment_stats) > 0;
+                                $hasSkills = isset($firstItem->equipment_skills) && is_array($firstItem->equipment_skills) && count($firstItem->equipment_skills) > 0;
+                            @endphp
+                            @if($hasStats)
+                                @foreach($firstItem->equipment_stats as $equipmentStat)
+                                    {{ $equipmentStat['text'] }}: {{ $equipmentStat['value'] }}<br>
+                                @endforeach
+                            @else
+                                장비 정보 없음
+                            @endif
+                            @if($hasSkills)
+                                <br>
+                                @foreach($firstItem->equipment_skills as $skill)
+                                    <strong style="color: #ffd700;">{{ $skill['name'] }}</strong><br>
+                                    {{ $skill['description'] }}<br>
+                                    @if(!$loop->last)<br>@endif
+                                @endforeach
+                            @endif
                         </span>
                     </div>
                 </td>

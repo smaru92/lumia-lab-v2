@@ -51,7 +51,7 @@ abstract class BaseSummaryService
                     'version_minor' => $versionMinor
                 ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
-                echo $minScore . "\n";
+                echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
                 $minTier = $tier['tier'] . $tier['tierNumber'];
 
                 $gameResults = $this->getGameResults([
@@ -63,7 +63,7 @@ abstract class BaseSummaryService
                 ]);
 
                 $chunkData = [];
-                $chunkSize = 100;
+                $chunkSize = 50; // e2-medium 환경을 위해 50으로 축소
 
                 foreach ($gameResults as $gameResult) {
                     $chunkData[] = $this->transformData($gameResult, $minTier, $minScore, $versionSeason, $versionMajor, $versionMinor);
@@ -77,6 +77,10 @@ abstract class BaseSummaryService
                 if (!empty($chunkData)) {
                     $summaryModel::insert($chunkData);
                 }
+
+                // 티어별 처리 후 메모리 정리
+                unset($chunkData, $gameResults);
+                gc_collect_cycles();
             }
 
             DB::commit();
