@@ -289,11 +289,14 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             if ($value != 0) {
                 if ($isPercentage) {
                     $displayValue = $value;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
+                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
+                } elseif($key == 'penetration_defense' || $key == 'unique_penetration_defense') {
+                    $displayValue = number_format($value, 0);
                 } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
                     $displayValue = number_format($value, 2);
                 } else {
@@ -316,6 +319,8 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
+                } elseif($key == 'penetration_defense' || $key == 'unique_penetration_defense') {
+                    $displayValue = number_format($valueByLv, 0);
                 } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
                     $displayValue = number_format($valueByLv, 2);
                 } else {

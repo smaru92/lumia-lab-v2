@@ -171,14 +171,14 @@ class GameResultFirstEquipmentMainSummaryService
             'attack_power' => '공격력',
             'defense' => '방어력',
             'skill_amp' => '스킬 증폭',
-            'skill_amp_ratio' => '스킬 증폭',
+            'skill_amp_ratio' => '스킬 증폭%',
             'adaptive_force' => '적응형 능력치',
             'max_hp' => '최대 체력',
             'hp_regen' => '체력 재생',
-            'hp_regen_ratio' => '체력 재생',
+            'hp_regen_ratio' => '체력 재생%',
             'sp_regen' => '스태미나 재생',
-            'sp_regen_ratio' => '스태미나 재생',
-            'attack_speed_ratio' => '공격 속도',
+            'sp_regen_ratio' => '스태미나 재생%',
+            'attack_speed_ratio' => '공격 속도%',
             'critical_strike_chance' => '치명타 확률',
             'critical_strike_damage' => '치명타 피해',
             'cooldown_reduction' => '쿨다운 감소',
@@ -186,19 +186,19 @@ class GameResultFirstEquipmentMainSummaryService
             'normal_life_steal' => '기본 공격 생명력 흡수',
             'skill_life_steal' => '스킬 생명력 흡수',
             'move_speed' => '이동 속도',
-            'move_speed_ratio' => '이동 속도',
+            'move_speed_ratio' => '이동 속도%',
             'move_speed_out_of_combat' => '비전투 이동 속도',
             'penetration_defense' => '방어 관통',
-            'penetration_defense_ratio' => '방어 관통',
+            'penetration_defense_ratio' => '방어 관통%',
             'unique_attack_range' => '(고유) 공격 사거리',
-            'unique_hp_healed_increase_ratio' => '(고유) 체력 회복',
+            'unique_hp_healed_increase_ratio' => '(고유) 체력 회복%',
             'unique_cooldown_limit' => '(고유) 최대 쿨다운 감소',
             'unique_tenacity' => '(고유) 강인함',
             'unique_move_speed' => '(고유) 이동 속도',
             'unique_penetration_defense' => '(고유) 방어 관통',
-            'unique_penetration_defense_ratio' => '(고유) 방어 관통',
+            'unique_penetration_defense_ratio' => '(고유) 방어 관통%',
             'unique_life_steal' => '(고유) 체력 흡수',
-            'unique_skill_amp_ratio' => '(고유) 스킬 증폭',
+            'unique_skill_amp_ratio' => '(고유) 스킬 증폭%',
         ];
 
         foreach ($statLabels as $key => $label) {
@@ -227,6 +227,8 @@ class GameResultFirstEquipmentMainSummaryService
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
+                } elseif($key == 'penetration_defense' || $key == 'unique_penetration_defense') {
+                    $displayValue = number_format($value, 0);
                 } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
                     $displayValue = number_format($value, 2);
                 } else {
@@ -243,11 +245,14 @@ class GameResultFirstEquipmentMainSummaryService
             if ($valueByLv != 0) {
                 if ($isPercentage) {
                     $displayValue = $valueByLv;
-                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit' &&
+                        $key != 'penetration_defense_ratio' && $key != 'unique_penetration_defense_ratio') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
+                } elseif($key == 'penetration_defense' || $key == 'unique_penetration_defense') {
+                    $displayValue = number_format($valueByLv, 0);
                 } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
                     $displayValue = number_format($valueByLv, 2);
                 } else {
