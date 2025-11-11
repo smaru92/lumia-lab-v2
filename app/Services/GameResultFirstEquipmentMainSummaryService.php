@@ -211,8 +211,6 @@ class GameResultFirstEquipmentMainSummaryService
                 $key === 'critical_strike_damage' ||
                 $key === 'cooldown_reduction' ||
                 $key === 'unique_cooldown_limit' ||
-                $key === 'penetration_defense' ||
-                $key === 'unique_penetration_defense' ||
                 $key === 'life_steal' ||
                 $key === 'normal_life_steal' ||
                 $key === 'skill_life_steal' ||
