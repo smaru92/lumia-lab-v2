@@ -161,6 +161,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             $item->game_rank_count_percent = $total[$item->equipment_id] ? $item->game_rank_count / $total[$item->equipment_id] * 100 : 0;
             $item->weapon_type = $this->replaceWeaponType($item->weapon_type, 'ko');
             $item->equipment_stats = $this->setEquipmtStat($item);
+            $item->equipment_skills = $this->getEquipmentSkills($item->equipment_id);
             if ($item->item_type1 === 'Weapon') {
                 $itemType = 'Weapon';
             } else {
@@ -176,6 +177,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
                         "item_grade" => $item->item_grade,
                         "equipment_name" => $item->equipment_name,
                         "equipment_stats" => $item->equipment_stats,
+                        "equipment_skills" => $item->equipment_skills,
                         "id" => 0,
                         "equipment_id" => $item->equipment_id,
                         "character_id" => $item->character_id,
@@ -305,6 +307,25 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             }
         }
         return $equipmentStat;
+    }
+
+    /**
+     * 장비 스킬 정보를 가져옴
+     */
+    private function getEquipmentSkills($equipmentId): array
+    {
+        $skills = DB::table('equipment_equipment_skill')
+            ->join('equipment_skills', 'equipment_equipment_skill.equipment_skill_id', '=', 'equipment_skills.id')
+            ->where('equipment_equipment_skill.equipment_id', $equipmentId)
+            ->select('equipment_skills.name', 'equipment_skills.description')
+            ->get();
+
+        return $skills->map(function ($skill) {
+            return [
+                'name' => $skill->name,
+                'description' => $skill->description ?? ''
+            ];
+        })->toArray();
     }
 
 }

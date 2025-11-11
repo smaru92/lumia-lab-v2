@@ -1,220 +1,750 @@
 @extends('layouts.app')
 
+@section('title', '메인 | 아글라이아 연구소')
+
+@push('styles')
+    <style>
+        /* 페이지 링크 카드 스타일 */
+        .page-links-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .page-link-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .page-link-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0);
+            transition: background 0.3s ease;
+        }
+
+        .page-link-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .page-link-card:hover::before {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .page-link-card.character {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        .page-link-card.equipment {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+        }
+
+        .page-link-card.equipment-first {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+        }
+
+        .page-link-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-link-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-link-desc {
+            font-size: 12px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 탭 메뉴 스타일 */
+        .patch-tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .patch-tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .patch-tab-button:hover {
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .patch-tab-button.active {
+            color: #28a745;
+            border-bottom-color: #28a745;
+        }
+
+        .patch-tab-button.active.buffed {
+            color: #28a745;
+            border-bottom-color: #28a745;
+        }
+
+        .patch-tab-button.active.nerfed {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
+        }
+
+        .patch-tab-badge {
+            display: inline-block;
+            background-color: #e0e0e0;
+            color: #666;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
+        .patch-tab-button.active .patch-tab-badge {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .patch-tab-button.active.buffed .patch-tab-badge {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .patch-tab-button.active.nerfed .patch-tab-badge {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .patch-tab-content {
+            display: none;
+        }
+
+        .patch-tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 599px) {
+            .page-links-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .page-link-card {
+                padding: 10px 8px;
+            }
+
+            .page-link-icon {
+                font-size: 20px;
+                margin-bottom: 4px;
+            }
+
+            .page-link-title {
+                font-size: 13px;
+                margin-bottom: 2px;
+            }
+
+            .page-link-desc {
+                font-size: 10px;
+            }
+
+            .patch-tabs {
+                gap: 5px;
+            }
+
+            .patch-tab-button {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 600px) and (max-width: 1024px) {
+            .page-links-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+@endpush
+
 @section('content')
 <div class="container">
-    <h2><a href="/main">게임 통계</a></h2>
-    <div style="margin-bottom: 15px;">
-    <!-- 중앙 정렬 컨테이너 -->
-    <div class="main-filter-container">
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="sel-min-tier" style="margin-bottom: 5px;"><strong>버전</strong></label>
-            <select id="sel-min-tier">
-                @foreach($versions as $version)
-                    <option value="{{ $version }}" {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}>{{ $version }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="sel-version" style="margin-bottom: 5px;"><strong>최소 티어</strong></label>
-            <select id="sel-version">
-                <option value="All" {{ request('min_tier', $defaultTier) === 'All' ? 'selected' : '' }}>전체</option>
-                <option value="Platinum" {{ request('min_tier', $defaultTier) === 'Platinum' ? 'selected' : '' }}>플레티넘</option>
-                <option value="Diamond" {{ request('min_tier', $defaultTier) === 'Diamond' ? 'selected' : '' }}>다이아</option>
-                <option value="Diamond2" {{ request('min_tier', $defaultTier) === 'Diamond2' ? 'selected' : '' }}>다이아2</option>
-                <option value="Meteorite" {{ request('min_tier', $defaultTier) === 'Meteorite' ? 'selected' : '' }}>메테오라이트</option>
-                <option value="Mithril" {{ request('min_tier', $defaultTier) === 'Mithril' ? 'selected' : '' }}>미스릴</option>
-                <option value="Top" {{ request('min_tier', $defaultTier) === 'Top' ? 'selected' : '' }}>최상위큐({{ $topRankScore }}+)</option>
-            </select>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="input-pick-rate" style="margin-bottom: 5px;"><strong>최소 픽률(%)</strong></label>
-            <input type="number" id="input-pick-rate" min="0" max="100" step="0.01" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
-        </div>
+    <!-- 페이지 링크 카드 -->
+    <div class="page-links-container">
+        <a href="/character" class="page-link-card character">
+            <div class="page-link-icon">🎭</div>
+            <div class="page-link-title">캐릭터 통계</div>
+            <div class="page-link-desc">캐릭터별 승률 및 통계</div>
+        </a>
+        <a href="/equipment" class="page-link-card equipment">
+            <div class="page-link-icon">⚔️</div>
+            <div class="page-link-title">장비 통계</div>
+            <div class="page-link-desc">장비 아이템 통계</div>
+        </a>
+        <a href="/equipment-first" class="page-link-card equipment-first">
+            <div class="page-link-icon">🛡️</div>
+            <div class="page-link-title">초기 장비 통계</div>
+            <div class="page-link-desc">초기 장비 아이템 통계</div>
+        </a>
     </div>
 
-    <!-- 하단 컨테이너 -->
-    <div class="bottom-container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <!-- 좌측: 최근 업데이트 일자 -->
-        <div class="update-info" style="font-size: 14px; color: #777; white-space: nowrap;">
-            <strong>최근 업데이트:</strong> {{ $lastUpdate }}
+    <!-- 사이트 안내문구 -->
+    <div class="notice-box" id="noticeBox">
+        <button class="notice-close-btn" id="noticeCloseBtn" aria-label="안내 닫기">&times;</button>
+        <div class="notice-header">
+            <svg class="notice-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="notice-title">안내</h3>
         </div>
-        <!-- 우측: 티어표 보기 버튼 -->
-        <button id="openTierModal" class="tier-modal-btn" style="padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">티어표 보기</button>
+        <ul>
+            <li>본 사이트는 이터널리턴(Eternal Return) 게임의 실험체 및 아이템 통계를 다루는 비공식 사이트입니다.</li>
+            <li>데이터의 완전성과 정확성이 보증되지 않습니다. 사이트 내용을 악용하지 말아 주십시오.</li>
+            <li>데이터 갱신은 1시간~2시간 마다 한번씩 이뤄집니다.</li>
+            <li>이 사이트는 PC 화면 크기에 최적화되어 있습니다. 모바일 환경에서는 일부 기능이 제한될 수 있습니다.</li>
+            <li>사이트 관련 피드백은 <a href="mailto:aglaia.lumia@gmail.com">aglaia.lumia@gmail.com</a>으로 연락주시길 바랍니다.</li>
+        </ul>
     </div>
-</div>
 
-    <table id="gameTable">
-        <thead>
-        <tr>
-            <th>랭크</th> {{-- 정렬 기능 없음 --}}
-            <th class="sortable">이름</th>
-            <th class="sortable">티어</th>
-            <th class="sortable">픽률</th>
-            <th class="sortable">승률</th>
-            <th class="sortable">TOP2</th>
-            <th class="sortable">TOP4</th>
-            <th class="sortable">막금구승률</th>
-            <th class="sortable">
-                평균획득점수
-                <span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
-            </th>
-            <th class="sortable">이득확률</th>
-            <th class="sortable">손실확률</th>
-        </tr>
-        </thead>
-        <tbody>
-        @php
-            $preCharacter = '';
-        @endphp
-        @foreach($data as $item)
-                @php
-                    $characterName = $item->character_name . ' ' . $item->weapon_type
-                @endphp
-                <tr style="cursor: pointer;" data-href="/detail/{{ $item->character_name }}-{{ $item->weapon_type }}?min_tier={{ request('min_tier', $defaultTier) }}&version={{ request('version', $defaultVersion) }}">
-                    <td>{{ $loop->iteration }}</td> {{-- 랭크 번호 표시 --}}
-                    <td class="character-cell">
-                        @if($preCharacter != $characterName)
+    <h2><a href="/">패치노트 영향 분석</a></h2>
+
+    @if($latestVersion && $previousVersion)
+    <div class="version-info-box">
+        <h3>버전 비교</h3>
+        <p>
+            <strong>최신 버전:</strong> {{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}
+            ({{ $latestVersion->start_date->format('Y-m-d') }})
+        </p>
+        <p>
+            <strong>비교 버전:</strong> {{ $previousVersion->version_season }}.{{ $previousVersion->version_major }}.{{ $previousVersion->version_minor }}
+            ({{ $previousVersion->start_date->format('Y-m-d') }})
+        </p>
+        <p class="version-info-note">
+            <small>* 다이아몬드 티어 기준 통계입니다.</small>
+        </p>
+    </div>
+
+    <!-- 탭 메뉴 -->
+    <div class="patch-tabs">
+        <button class="patch-tab-button buffed active" data-tab="buffed">
+            🔼 버프
+            <span class="patch-tab-badge">{{ $buffedCharacters->count() }}</span>
+        </button>
+        <button class="patch-tab-button nerfed" data-tab="nerfed">
+            🔽 너프
+            <span class="patch-tab-badge">{{ $nerfedCharacters->count() }}</span>
+        </button>
+    </div>
+
+    <!-- 버프된 캐릭터 탭 컨텐츠 -->
+    <div id="buffed-tab" class="patch-tab-content active">
+    <div class="section-container">
+        <h3 class="section-title buffed">
+            🔼 버프된 캐릭터 ({{ $buffedCharacters->count() }}개)
+        </h3>
+
+        @if($buffedCharacters->count() > 0)
+        <div class="table-wrapper">
+        <table id="buffedTable" class="patch-table buffed">
+            <thead>
+                <tr>
+                    <th class="text-left">캐릭터</th>
+                    <th class="text-center">티어 변동</th>
+                    <th class="text-center">픽률</th>
+                    <th class="text-center">평균 획득점수</th>
+                    <th class="text-center">승률</th>
+                    <th class="hide-on-mobile text-center">TOP2</th>
+                    <th class="hide-on-mobile text-center">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet text-center">막금구승률</th>
+                    <th class="hide-on-mobile text-center">평균 TK</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($buffedCharacters as $index => $item)
+                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Diamond&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="buffed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
+                    <td>
+                        <div class="character-cell-content">
                             @php
-                                // Format character ID to 3 digits with leading zeros
-                                $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
+                                $formattedCharacterId = str_pad($item['character_id'], 3, '0', STR_PAD_LEFT);
                                 $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
                                 $defaultCharacterIconPath = image_asset('storage/Character/icon/default.png');
-                                $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png');
+                                $weaponType = $item['weapon_type'] ?? 'All';
+                                $weaponTypeEn = $item['weapon_type_en'] ?? $weaponType;
+                                $weaponIconPath = image_asset('storage/Weapon/' . $weaponTypeEn . '.png');
                                 $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
                             @endphp
                             <div class="icon-container">
                                 <img src="{{ $characterIconPath }}"
-                                     alt="{{ $item->character_name }}"
+                                     alt="{{ $item['character_name'] }}"
                                      class="character-icon"
                                      loading="lazy"
                                      onerror="this.onerror=null; this.src='{{ $defaultCharacterIconPath }}';">
-                                @if($item->weapon_type !== 'All')
+                                @if($weaponType !== 'All')
                                 <img src="{{ $weaponIconPath }}"
-                                     alt="{{ $item->weapon_type }}"
+                                     alt="{{ $weaponType }}"
                                      class="weapon-icon"
                                      loading="lazy"
                                      onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                 @endif
                             </div>
-                            {{-- Display name and weapon on separate lines --}}
                             <div class="character-name-weapon">
-                                {{ $item->character_name }}<br>
-                                <small>{{ $item->weapon_type }}</small> {{-- Smaller text for weapon type --}}
+                                {{ $item['character_name'] }}<br>
+                                @if($weaponType && $weaponType !== 'All')
+                                <small>{{ $weaponType }}</small>
+                                @endif
                             </div>
-                        @endif
+                        </div>
                     </td>
-                    <td data-score="{{ $item->meta_score }}">
+                    <td class="text-center">
                         @php
-                            $tier = $item->meta_tier;
-                            $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
+                            $prevTier = $item['previous']->meta_tier;
+                            $latestTier = $item['latest']->meta_tier;
+                            $prevTierClass = 'tier-' . strtolower(str_replace(' ', '-', $prevTier));
+                            $latestTierClass = 'tier-' . strtolower(str_replace(' ', '-', $latestTier));
                         @endphp
-                        <span class="tier-badge {{ $tierClass }}">{{ $tier }}</span>
-                        <div class="sub-stat">{{ number_format($item->meta_score, 2) }}</div>
+                        <div class="tier-change-container">
+                            <span class="tier-badge tier-badge-small {{ $prevTierClass }}">{{ $prevTier }}</span>
+                            <span class="tier-arrow">→</span>
+                            <span class="tier-badge tier-badge-small {{ $latestTierClass }}">{{ $latestTier }}</span>
+                        </div>
+                        <div class="meta-score-detail">
+                            {{ number_format($item['previous']->meta_score, 2) }} → {{ number_format($item['latest']->meta_score, 2) }}
+                        </div>
+                        <div class="meta-score-diff {{ $item['meta_score_diff'] > 0 ? 'positive' : ($item['meta_score_diff'] < 0 ? 'negative' : 'neutral') }}">
+                            {{ $item['meta_score_diff'] > 0 ? '+' : '' }}{{ number_format($item['meta_score_diff'], 2) }}
+                        </div>
                     </td>
-                    <td>
-                        <div>{{ number_format($item->game_count_percent , 2) }}%</div>
-                        <div class="sub-stat">{{ $item->game_count }}</div>
+                    <td class="text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['pick_rate_diff'] > 0 ? 'positive' : ($item['pick_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['pick_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['pick_rate_diff'], 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->game_count_percent, 2) }}% → {{ number_format($item['latest']->game_count_percent, 2) }}%
+                        </div>
                     </td>
-                    <td>
-                        <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
-                        <div  class="sub-stat">{{ $item->top1_count }}</div>
+                    <td class="text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['avg_mmr_gain_diff'] > 0 ? 'positive' : ($item['avg_mmr_gain_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['avg_mmr_gain_diff'] > 0 ? '+' : '' }}{{ number_format($item['avg_mmr_gain_diff'], 1) }}
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->avg_mmr_gain, 1) }} → {{ number_format($item['latest']->avg_mmr_gain, 1) }}
+                        </div>
                     </td>
-                    <td>
-                        <div>{{ number_format($item->top2_count_percent , 2) }}%</div>
-                        <div class="sub-stat">{{ $item->top2_count }}</div>
+                    <td class="text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['win_rate_diff'] > 0 ? 'positive' : ($item['win_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['win_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['win_rate_diff'], 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->top1_count_percent, 2) }}% → {{ number_format($item['latest']->top1_count_percent, 2) }}%
+                        </div>
                     </td>
-                    <td>
-                        <div>{{ number_format($item->top4_count_percent , 2) }}%</div>
-                        <div class="sub-stat">{{ $item->top4_count }}</div>
+                    <td class="hide-on-mobile text-center">
+                        @php
+                            $top2_diff = $item['latest']->top2_count_percent - $item['previous']->top2_count_percent;
+                        @endphp
+                        <div>
+                            <span class="stat-diff {{ $top2_diff > 0 ? 'positive' : ($top2_diff < 0 ? 'negative' : 'neutral') }}">
+                                {{ $top2_diff > 0 ? '+' : '' }}{{ number_format($top2_diff, 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->top2_count_percent, 2) }}% → {{ number_format($item['latest']->top2_count_percent, 2) }}%
+                        </div>
                     </td>
-                    <td>
-                        <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
+                    <td class="hide-on-mobile text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['top4_rate_diff'] > 0 ? 'positive' : ($item['top4_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['top4_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['top4_rate_diff'], 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->top4_count_percent, 2) }}% → {{ number_format($item['latest']->top4_count_percent, 2) }}%
+                        </div>
                     </td>
-                    <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
-                    <td>
-                        <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
-                        <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
+                    <td class="hide-on-mobile hide-on-tablet text-center">
+                        @php
+                            $endgame_diff = $item['latest']->endgame_win_percent - $item['previous']->endgame_win_percent;
+                        @endphp
+                        <div>
+                            <span class="stat-diff {{ $endgame_diff > 0 ? 'positive' : ($endgame_diff < 0 ? 'negative' : 'neutral') }}">
+                                {{ $endgame_diff > 0 ? '+' : '' }}{{ number_format($endgame_diff, 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->endgame_win_percent, 2) }}% → {{ number_format($item['latest']->endgame_win_percent, 2) }}%
+                        </div>
                     </td>
-                    <td>
-                        <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
-                        <div class="sub-stat">평균 {{ number_format($item->negative_avg_mmr_gain, 1) }}점</div>
+                    <td class="hide-on-mobile text-center">
+                        @php
+                            $tk_diff = $item['latest']->avg_team_kill_score - $item['previous']->avg_team_kill_score;
+                        @endphp
+                        <div>
+                            <span class="stat-diff {{ $tk_diff > 0 ? 'positive' : ($tk_diff < 0 ? 'negative' : 'neutral') }}">
+                                {{ $tk_diff > 0 ? '+' : '' }}{{ number_format($tk_diff, 2) }}
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->avg_team_kill_score, 2) }} → {{ number_format($item['latest']->avg_team_kill_score, 2) }}
+                        </div>
                     </td>
                 </tr>
-                @php
-                    $preCharacter = $characterName;
-                @endphp
-            @endforeach
-        </tbody>
-    </table>
-</div>
-
-<!-- Tier Modal -->
-<div id="tierModal" class="modal">
-    <div class="modal-content">
-        <span class="close-button">&times;</span>
-        <h3>티어표</h3>
-        <table class="tier-table">
-            <tbody>
-                @php
-                    $tiers = ['OP', '1', '2', '3', '4', '5', 'RIP'];
-                    $groupedByTier = $data->groupBy('meta_tier');
-                @endphp
-                @foreach($tiers as $tier)
-                    @php
-                        $hasItems = isset($groupedByTier[$tier]) && count($groupedByTier[$tier]) > 0;
-                        $isSpecialTier = in_array($tier, ['OP', 'RIP']); // OP and RIP tiers should be hidden when empty
-                    @endphp
-                    @if($hasItems)
-                        @php
-                            $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
-                        @endphp
-                        <tr>
-                            <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }} ">{{ $tier }}</span></td>
-                            <td>
-                                @foreach($groupedByTier[$tier] as $item)
-                                    <div class="tier-character-icon-container"
-                                         data-pick-rate="{{ $item->game_count_percent }}">
-                                    @php
-                                        $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
-                                        $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
-                                        $defaultCharacterIconPath = image_asset('storage/Character/icon/default.png');
-                                        $weaponIconPath = image_asset('storage/Weapon/' . $item->weapon_type_en . '.png');
-                                        $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
-                                    @endphp
-
-                                    <img src="{{ $characterIconPath }}"
-                                             alt="{{ $item->character_name }}"
-                                             class="tier-character-icon"
-                                             loading="lazy"
-                                             onerror="this.onerror=null; this.src='{{ $defaultCharacterIconPath }}';">
-                                    @if($item->weapon_type !== 'All')
-                                    <img src="{{ $weaponIconPath }}"
-                                             alt="{{ $item->weapon_type }}"
-                                             class="tier-weapon-icon"
-                                             loading="lazy"
-                                             onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
-                                    @endif
-                                    </div>
-                                @endforeach
-                            </td>
-                        </tr>
-                    @elseif(!$isSpecialTier)
-                        {{-- Show empty tier row with proper height only for regular tiers (1,2,3,4,5) --}}
-                        @php
-                            $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-1, tier-2, etc.
-                        @endphp
-                        <tr class="empty-tier-row">
-                            <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }}">{{ $tier }}</span></td>
-                            <td class="empty-tier-content">&nbsp;</td>
-                        </tr>
-                    @endif
                 @endforeach
             </tbody>
         </table>
+        </div>
+        @if($buffedCharacters->count() > 5)
+        <div class="view-all-container">
+            <button id="buffedViewAll" class="view-all-btn">
+                전체보기 ({{ $buffedCharacters->count() }}개)
+            </button>
+        </div>
+        @endif
+        @else
+        <p class="empty-message">
+            버프된 캐릭터가 없습니다.
+        </p>
+        @endif
     </div>
+    </div>
+
+    <!-- 너프된 캐릭터 탭 컨텐츠 -->
+    <div id="nerfed-tab" class="patch-tab-content">
+    <div class="section-container">
+        <h3 class="section-title nerfed">
+            🔽 너프된 캐릭터 ({{ $nerfedCharacters->count() }}개)
+        </h3>
+
+        @if($nerfedCharacters->count() > 0)
+        <div class="table-wrapper">
+        <table id="nerfedTable" class="patch-table nerfed">
+            <thead>
+                <tr>
+                    <th class="text-left">캐릭터</th>
+                    <th class="text-center">티어 변동</th>
+                    <th class="text-center">픽률</th>
+                    <th class="text-center">평균 획득점수</th>
+                    <th class="text-center">승률</th>
+                    <th class="hide-on-mobile text-center">TOP2</th>
+                    <th class="hide-on-mobile text-center">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet text-center">막금구승률</th>
+                    <th class="hide-on-mobile text-center">평균 TK</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($nerfedCharacters as $index => $item)
+                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Diamond&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="nerfed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
+                    <td>
+                        <div class="character-cell-content">
+                            @php
+                                $formattedCharacterId = str_pad($item['character_id'], 3, '0', STR_PAD_LEFT);
+                                $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');
+                                $defaultCharacterIconPath = image_asset('storage/Character/icon/default.png');
+                                $weaponType = $item['weapon_type'] ?? 'All';
+                                $weaponTypeEn = $item['weapon_type_en'] ?? $weaponType;
+                                $weaponIconPath = image_asset('storage/Weapon/' . $weaponTypeEn . '.png');
+                                $defaultWeaponIconPath = image_asset('storage/Weapon/icon/default.png');
+                            @endphp
+                            <div class="icon-container">
+                                <img src="{{ $characterIconPath }}"
+                                     alt="{{ $item['character_name'] }}"
+                                     class="character-icon"
+                                     loading="lazy"
+                                     onerror="this.onerror=null; this.src='{{ $defaultCharacterIconPath }}';">
+                                @if($weaponType !== 'All')
+                                <img src="{{ $weaponIconPath }}"
+                                     alt="{{ $weaponType }}"
+                                     class="weapon-icon"
+                                     loading="lazy"
+                                     onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
+                                @endif
+                            </div>
+                            <div class="character-name-weapon">
+                                {{ $item['character_name'] }}<br>
+                                @if($weaponType && $weaponType !== 'All')
+                                <small>{{ $weaponType }}</small>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        @php
+                            $prevTier = $item['previous']->meta_tier;
+                            $latestTier = $item['latest']->meta_tier;
+                            $prevTierClass = 'tier-' . strtolower(str_replace(' ', '-', $prevTier));
+                            $latestTierClass = 'tier-' . strtolower(str_replace(' ', '-', $latestTier));
+                        @endphp
+                        <div class="tier-change-container">
+                            <span class="tier-badge tier-badge-small {{ $prevTierClass }}">{{ $prevTier }}</span>
+                            <span class="tier-arrow nerfed">→</span>
+                            <span class="tier-badge tier-badge-small {{ $latestTierClass }}">{{ $latestTier }}</span>
+                        </div>
+                        <div class="meta-score-detail">
+                            {{ number_format($item['previous']->meta_score, 2) }} → {{ number_format($item['latest']->meta_score, 2) }}
+                        </div>
+                        <div class="meta-score-diff {{ $item['meta_score_diff'] > 0 ? 'positive' : ($item['meta_score_diff'] < 0 ? 'negative' : 'neutral') }}">
+                            {{ $item['meta_score_diff'] > 0 ? '+' : '' }}{{ number_format($item['meta_score_diff'], 2) }}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['pick_rate_diff'] > 0 ? 'positive' : ($item['pick_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['pick_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['pick_rate_diff'], 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->game_count_percent, 2) }}% → {{ number_format($item['latest']->game_count_percent, 2) }}%
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['avg_mmr_gain_diff'] > 0 ? 'positive' : ($item['avg_mmr_gain_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['avg_mmr_gain_diff'] > 0 ? '+' : '' }}{{ number_format($item['avg_mmr_gain_diff'], 1) }}
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->avg_mmr_gain, 1) }} → {{ number_format($item['latest']->avg_mmr_gain, 1) }}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['win_rate_diff'] > 0 ? 'positive' : ($item['win_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['win_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['win_rate_diff'], 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->top1_count_percent, 2) }}% → {{ number_format($item['latest']->top1_count_percent, 2) }}%
+                        </div>
+                    </td>
+                    <td class="hide-on-mobile text-center">
+                        @php
+                            $top2_diff = $item['latest']->top2_count_percent - $item['previous']->top2_count_percent;
+                        @endphp
+                        <div>
+                            <span class="stat-diff {{ $top2_diff > 0 ? 'positive' : ($top2_diff < 0 ? 'negative' : 'neutral') }}">
+                                {{ $top2_diff > 0 ? '+' : '' }}{{ number_format($top2_diff, 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->top2_count_percent, 2) }}% → {{ number_format($item['latest']->top2_count_percent, 2) }}%
+                        </div>
+                    </td>
+                    <td class="hide-on-mobile text-center">
+                        <div>
+                            <span class="stat-diff {{ $item['top4_rate_diff'] > 0 ? 'positive' : ($item['top4_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
+                                {{ $item['top4_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['top4_rate_diff'], 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->top4_count_percent, 2) }}% → {{ number_format($item['latest']->top4_count_percent, 2) }}%
+                        </div>
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet text-center">
+                        @php
+                            $endgame_diff = $item['latest']->endgame_win_percent - $item['previous']->endgame_win_percent;
+                        @endphp
+                        <div>
+                            <span class="stat-diff {{ $endgame_diff > 0 ? 'positive' : ($endgame_diff < 0 ? 'negative' : 'neutral') }}">
+                                {{ $endgame_diff > 0 ? '+' : '' }}{{ number_format($endgame_diff, 2) }}%
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->endgame_win_percent, 2) }}% → {{ number_format($item['latest']->endgame_win_percent, 2) }}%
+                        </div>
+                    </td>
+                    <td class="hide-on-mobile text-center">
+                        @php
+                            $tk_diff = $item['latest']->avg_team_kill_score - $item['previous']->avg_team_kill_score;
+                        @endphp
+                        <div>
+                            <span class="stat-diff {{ $tk_diff > 0 ? 'positive' : ($tk_diff < 0 ? 'negative' : 'neutral') }}">
+                                {{ $tk_diff > 0 ? '+' : '' }}{{ number_format($tk_diff, 2) }}
+                            </span>
+                        </div>
+                        <div class="stat-detail">
+                            {{ number_format($item['previous']->avg_team_kill_score, 2) }} → {{ number_format($item['latest']->avg_team_kill_score, 2) }}
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        </div>
+        @if($nerfedCharacters->count() > 5)
+        <div class="view-all-container">
+            <button id="nerfedViewAll" class="view-all-btn">
+                전체보기 ({{ $nerfedCharacters->count() }}개)
+            </button>
+        </div>
+        @endif
+        @else
+        <p class="empty-message">
+            너프된 캐릭터가 없습니다.
+        </p>
+        @endif
+    </div>
+    </div>
+
+    @else
+    <div class="no-data-message">
+        <p>비교할 버전 데이터가 없습니다.</p>
+    </div>
+    @endif
 </div>
 @endsection
 
+
 @push('scripts')
-    <script src="{{ asset('js/main.js') }}"></script>
+<script>
+    // 안내문구 닫기 버튼
+    document.addEventListener('DOMContentLoaded', function() {
+        const noticeBox = document.getElementById('noticeBox');
+        const closeBtn = document.getElementById('noticeCloseBtn');
+
+        if (closeBtn && noticeBox) {
+            closeBtn.addEventListener('click', function() {
+                noticeBox.style.display = 'none';
+                // 로컬 스토리지에 닫힌 상태 저장
+                localStorage.setItem('noticeBoxClosed', 'true');
+            });
+
+            // 페이지 로드 시 닫힌 상태 확인
+            if (localStorage.getItem('noticeBoxClosed') === 'true') {
+                noticeBox.style.display = 'none';
+            }
+        }
+
+        // 탭 메뉴 기능
+        const tabButtons = document.querySelectorAll('.patch-tab-button');
+        const tabContents = document.querySelectorAll('.patch-tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+
+                // 모든 탭 버튼에서 active 제거
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+
+                // 모든 탭 컨텐츠 숨기기
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // 클릭한 탭 버튼 활성화
+                this.classList.add('active');
+
+                // 해당 탭 컨텐츠 표시
+                const targetTab = document.getElementById(tabName + '-tab');
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                }
+            });
+        });
+
+        // 캐릭터 행 클릭시 상세 페이지로 이동
+        const rows = document.querySelectorAll('tr[data-href]');
+        rows.forEach(row => {
+            row.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+
+        // 버프된 캐릭터 전체보기 버튼
+        const buffedViewAllBtn = document.getElementById('buffedViewAll');
+        if (buffedViewAllBtn) {
+            buffedViewAllBtn.addEventListener('click', function() {
+                const hiddenRows = document.querySelectorAll('.buffed-row.hidden-row');
+
+                if (hiddenRows.length > 0) {
+                    // 펼치기 - 숨겨진 행이 있으면
+                    hiddenRows.forEach(row => {
+                        row.classList.remove('hidden-row');
+                    });
+                    this.textContent = '접기';
+                    this.classList.add('collapse');
+                } else {
+                    // 접기 - 모두 보이는 상태면
+                    document.querySelectorAll('.buffed-row').forEach((row, index) => {
+                        if (index >= 5) {
+                            row.classList.add('hidden-row');
+                        }
+                    });
+                    this.textContent = '전체보기 ({{ $buffedCharacters->count() }}개)';
+                    this.classList.remove('collapse');
+                }
+            });
+        }
+
+        // 너프된 캐릭터 전체보기 버튼
+        const nerfedViewAllBtn = document.getElementById('nerfedViewAll');
+        if (nerfedViewAllBtn) {
+            nerfedViewAllBtn.addEventListener('click', function() {
+                const hiddenRows = document.querySelectorAll('.nerfed-row.hidden-row');
+
+                if (hiddenRows.length > 0) {
+                    // 펼치기 - 숨겨진 행이 있으면
+                    hiddenRows.forEach(row => {
+                        row.classList.remove('hidden-row');
+                    });
+                    this.textContent = '접기';
+                    this.classList.add('collapse');
+                } else {
+                    // 접기 - 모두 보이는 상태면
+                    document.querySelectorAll('.nerfed-row').forEach((row, index) => {
+                        if (index >= 5) {
+                            row.classList.add('hidden-row');
+                        }
+                    });
+                    this.textContent = '전체보기 ({{ $nerfedCharacters->count() }}개)';
+                    this.classList.remove('collapse');
+                }
+            });
+        }
+    });
+</script>
 @endpush

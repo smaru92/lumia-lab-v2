@@ -55,6 +55,12 @@ class VersionedGameTableManager
                 $table->timestamp('created_at')->nullable();
 
                 $table->unique(['game_id', 'user_id'], 'game_results_game_id_user_id_unique');
+
+                // Summary 쿼리 최적화: matching_mode가 모든 쿼리의 첫 번째 WHERE 조건
+                $table->index(['matching_mode', 'mmr_before', 'character_id'], 'idx_mode_mmr_char');
+                $table->index(['matching_mode', 'character_id', 'weapon_id'], 'idx_mode_char_weapon');
+
+                // 기존 인덱스
                 $table->index(['character_id', 'weapon_id', 'game_rank', 'mmr_gain'], 'idx_game_results_character_weapon_rank');
                 $table->index(['version_season', 'version_major', 'version_minor'], 'idx_game_results_version');
                 $table->index(['character_id', 'game_rank'], 'idx_gr_char_rank_mmr');

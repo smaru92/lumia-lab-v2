@@ -40,7 +40,7 @@ class EquipmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\EquipmentSkillsRelationManager::class,
         ];
     }
 

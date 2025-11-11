@@ -217,7 +217,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     headers?.forEach((header) => {
         header.addEventListener("click", () => {
-            const isAscending = !header.classList.contains("asc");
+            const columnIndex = header.cellIndex;
+            // 이름(1번), 티어(2번) 컬럼은 오름차순 우선, 나머지는 내림차순 우선
+            const isNameOrTierColumn = columnIndex === 1 || columnIndex === 2;
+
+            let isAscending;
+            if (header.classList.contains("active-sort")) {
+                // 이미 정렬된 컬럼을 다시 클릭하면 방향 전환
+                isAscending = !header.classList.contains("asc");
+            } else {
+                // 새로운 컬럼 클릭: 이름/티어는 오름차순, 나머지는 내림차순
+                isAscending = isNameOrTierColumn;
+            }
+
             headers.forEach(h => h.classList.remove("asc", "desc", "active-sort"));
             header.classList.add(isAscending ? "asc" : "desc");
             header.classList.add("active-sort");

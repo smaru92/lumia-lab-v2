@@ -66,6 +66,11 @@ select {
     min-width: 120px; /* Ensure select boxes have minimum width */
     max-width: 300px; /* Max width for select */
 }
+.table-wrapper {
+    overflow-y: visible; /* Allow tooltips to overflow vertically */
+    overflow-x: auto; /* Horizontal scroll for wide tables */
+    width: 100%;
+}
 table {
     width: 100%;
     border-collapse: collapse;
@@ -97,6 +102,7 @@ th {
     background-color: #f4f4f4;
     font-weight: bold;
     position: relative;
+    overflow: visible; /* 툴팁이 잘리지 않도록 */
 }
 th:hover {
     background-color: #e8e8e8;
@@ -175,15 +181,14 @@ tr:hover {
     font-size: 11px; /* Smaller tooltip font */
     text-align: left;
     border-radius: 6px;
-    padding: 6px; /* Adjusted padding */
-    position: absolute;
-    z-index: 1000; /* Ensure tooltip is above table header */
-    bottom: 125%; /* 위쪽에 표시 */
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
+    padding: 8px; /* Increased padding for better readability */
+    position: fixed;
+    z-index: 10000; /* Very high z-index to appear above everything */
+    white-space: pre-line; /* Allow line breaks */
+    max-width: 400px; /* Set max width for long descriptions */
     opacity: 0;
     transition: opacity 0.2s;
+    pointer-events: none; /* Don't interfere with mouse events */
 }
 
 .tooltip-wrap:hover .tooltip-text {
@@ -239,56 +244,7 @@ tr:hover {
 
 /* Responsive adjustments using Media Queries */
 
-.navbar {
-    background-color: #333;
-    overflow: hidden;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 50px; /* Fixed height for navbar */
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-}
-
-.navbar-container {
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    max-width: 1200px;
-    width: 100%;
-}
-
-.nav-menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.nav-item {
-    margin: 0 10px;
-    display: flex;
-    align-items: center;
-}
-
-.nav-links {
-    color: white;
-    text-align: center;
-    padding: 0 16px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.nav-links:hover {
-    background-color: #ddd;
-    color: black;
-}
+/* Navbar styles removed - using common.css instead to prevent conflicts */
 /* Medium screens (tablets, small desktops) */
 @media (min-width: 768px) {
     body {
@@ -411,7 +367,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     width: 50px; /* Set container width to 50px */
     height: 50px; /* Set container height to 50px */
     flex-shrink: 0; /* Prevent container from shrinking */
-    overflow: hidden; /* Hide overflowing parts of the image */
+    overflow: visible !important; /* Allow tooltips to show outside */
     border-radius: 4px; /* Optional: slightly rounded corners for the container */
 }
 
@@ -475,7 +431,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .tier-rip { background-color: #696969; } /* DimGray */
 
 /* Comprehensive mobile improvements for detail page */
-@media (max-width: 767px) {
+@media (max-width: 599px) {
     body {
         padding-top: 60px; /* Account for fixed navbar */
     }
@@ -797,11 +753,11 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 /* Info icon tooltip styles */
 .info-icon {
     display: inline-block;
-    margin-left: 4px;
+    margin: 0;
+    padding: 0;
     font-size: 12px;
     color: #666;
     cursor: help;
-    vertical-align: super;
     font-weight: normal;
     position: relative;
 }
@@ -813,16 +769,20 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .info-icon::after {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: 125%;
+    top: 125%; /* bottom → top으로 변경 (아래에 표시) */
     left: 50%;
     transform: translateX(-50%);
     background-color: #333;
     color: white;
     padding: 8px 12px;
     border-radius: 4px;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 280px;
+    width: max-content;
     font-size: 12px;
     font-weight: normal;
+    line-height: 1.4;
+    text-align: center;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
@@ -850,3 +810,6 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     opacity: 1;
     visibility: visible;
 }
+
+/* Navigation menu styles removed - using common.css to prevent conflicts */
+/* common.css already handles desktop/tablet/mobile navigation properly */

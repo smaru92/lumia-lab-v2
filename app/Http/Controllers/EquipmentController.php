@@ -32,10 +32,28 @@ class EquipmentController
         $defaultVersion = config('erDev.defaultVersion');
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
+
+        // 버전 형식 검증
+        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+            $version = $defaultVersion;
+        }
+
         $version =  explode('.', $version);
         $versionSeason = $version[0];
         $versionMajor = $version[1];
         $versionMinor = $version[2];
+
+        // 추가 검증 - 숫자 범위 확인
+        if (!is_numeric($versionSeason) || !is_numeric($versionMajor) || !is_numeric($versionMinor) ||
+            $versionSeason < 0 || $versionSeason > 999 ||
+            $versionMajor < 0 || $versionMajor > 999 ||
+            $versionMinor < 0 || $versionMinor > 999) {
+            // 잘못된 버전이면 기본값 사용
+            $version =  explode('.', $defaultVersion);
+            $versionSeason = $version[0];
+            $versionMajor = $version[1];
+            $versionMinor = $version[2];
+        }
 
         // 캐시 키 생성
         $cacheKey = "game_equipment_{$minTier}_" . implode('_', $version);
