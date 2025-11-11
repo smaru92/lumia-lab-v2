@@ -5,9 +5,7 @@ namespace App\Filament\Resources\Equipment;
 use App\Filament\Resources\Equipment\Pages\CreateEquipment;
 use App\Filament\Resources\Equipment\Pages\EditEquipment;
 use App\Filament\Resources\Equipment\Pages\ListEquipment;
-use App\Filament\Resources\Equipment\Pages\ViewEquipment;
 use App\Filament\Resources\Equipment\Schemas\EquipmentForm;
-use App\Filament\Resources\Equipment\Schemas\EquipmentInfolist;
 use App\Filament\Resources\Equipment\Tables\EquipmentTable;
 use App\Models\Equipment;
 use BackedEnum;
@@ -27,14 +25,10 @@ class EquipmentResource extends Resource
         return EquipmentForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return EquipmentInfolist::configure($schema);
-    }
-
     public static function table(Table $table): Table
     {
-        return EquipmentTable::configure($table);
+        return EquipmentTable::configure($table)
+            ->recordUrl(fn ($record) => self::getUrl('edit', ['record' => $record]));
     }
 
     public static function getRelations(): array
@@ -49,7 +43,6 @@ class EquipmentResource extends Resource
         return [
             'index' => ListEquipment::route('/'),
             'create' => CreateEquipment::route('/create'),
-            'view' => ViewEquipment::route('/{record}'),
             'edit' => EditEquipment::route('/{record}/edit'),
         ];
     }

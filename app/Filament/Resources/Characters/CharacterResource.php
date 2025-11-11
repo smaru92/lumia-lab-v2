@@ -5,9 +5,7 @@ namespace App\Filament\Resources\Characters;
 use App\Filament\Resources\Characters\Pages\CreateCharacter;
 use App\Filament\Resources\Characters\Pages\EditCharacter;
 use App\Filament\Resources\Characters\Pages\ListCharacters;
-use App\Filament\Resources\Characters\Pages\ViewCharacter;
 use App\Filament\Resources\Characters\Schemas\CharacterForm;
-use App\Filament\Resources\Characters\Schemas\CharacterInfolist;
 use App\Filament\Resources\Characters\Tables\CharactersTable;
 use App\Models\Character;
 use BackedEnum;
@@ -27,14 +25,10 @@ class CharacterResource extends Resource
         return CharacterForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return CharacterInfolist::configure($schema);
-    }
-
     public static function table(Table $table): Table
     {
-        return CharactersTable::configure($table);
+        return CharactersTable::configure($table)
+            ->recordUrl(fn ($record) => self::getUrl('edit', ['record' => $record]));
     }
 
     public static function getRelations(): array
@@ -49,7 +43,6 @@ class CharacterResource extends Resource
         return [
             'index' => ListCharacters::route('/'),
             'create' => CreateCharacter::route('/create'),
-            'view' => ViewCharacter::route('/{record}'),
             'edit' => EditCharacter::route('/{record}/edit'),
         ];
     }
