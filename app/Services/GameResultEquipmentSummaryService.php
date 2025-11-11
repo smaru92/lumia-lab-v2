@@ -223,91 +223,112 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
 
     private function setEquipmtStat($equipment)
     {
-        $fields = [
+        $stats = [];
+        $statLabels = [
             'attack_power' => '공격력',
-            'attack_power_by_lv' => '레벨당 공격력',
             'defense' => '방어력',
-            'defense_by_lv' => '레벨당 방어력',
-            'skill_amp' => '스킬증폭',
-            'skill_amp_by_lv' => '레벨당 스킬증폭',
-            'skill_amp_ratio' => '스킬증폭',
-            'skill_amp_ratio_by_lv' => '레벨당 스킬증폭',
+            'skill_amp' => '스킬 증폭',
+            'skill_amp_ratio' => '스킬 증폭',
             'adaptive_force' => '적응형 능력치',
-            'adaptive_force_by_lv' => '레벨당 적응형 능력치',
-            'max_hp' => '최대체력',
-            'max_hp_by_lv' => '레벨당 최대체력',
-            'mas_sp' => '최대스테미나',
-            'mas_sp_by_lv' => '레벨당 최대스테미나',
-            'hp_regen' => '체력회복',
-            'hp_regen_ratio' => '체력회복',
-            'sp_regen' => '스테미나회복',
-            'sp_regen_ratio' => '스테미나회복',
-            'attack_speed_ratio' => '공격속도',
-            'attack_speed_ratio_by_lv' => '레벨당 공격속도',
-            'critical_strike_chance' => '치명타확률',
-            'critical_strike_damage' => '치명타피해',
-            'prevent_critical_strike_damaged' => '받는 치명타피해감소',
-            'cooldown_reduction' => '쿨다운감소',
-            'cooldown_limit' => '최대쿨다운감소',
-            'life_steal' => '체력흡혈',
-            'normal_life_steal' => '일반공격 체력흡혈',
-            'skill_life_steal' => '스킬 체력흡혈',
-            'move_speed' => '이동속도',
-            'move_speed_ratio' => '이동속도',
-            'move_speed_out_of_combat' => '비전투 이동속도',
-            'sight_range' => '시야',
-            'attack_range' => '공격 사거리',
-            'increase_basic_attack_damage' => '일반공격피해',
-            'increase_basic_attack_damage_by_lv' => '레벨당 일반공격피해',
-            'increase_basic_attack_damage_ratio' => '일반공격피해',
-            'increase_basic_attack_damage_ratio_by_lv' => '레벨당 일반공격피해',
-            'prevent_basic_attack_damaged' => '받는 일반공격피해 감소',
-            'prevent_basic_attack_damaged_by_lv' => '레벨당 받는 일반공격피해 감소',
-            'prevent_basic_attack_damaged_ratio' => '받는 일반공격피해 감소',
-            'prevent_basic_attack_damaged_ratio_by_lv' => '레벨당 받는 일반공격피해 감소',
-            'prevent_skill_damaged' => '받는 스킬피해 감소',
-            'prevent_skill_damaged_by_lv' => '레벨당 받는 스킬피해 감소',
-            'prevent_skill_damaged_ratio' => '받는 스킬피해 감소',
-            'prevent_skill_damaged_ratio_by_lv' => '레벨당 받는 스킬피해 감소',
-            'penetration_defense' => '방어관통',
-            'penetration_defense_ratio' => '방어관통%',
-            'trap_damage_reduce' => '받는 함정피해 감소',
-            'trap_damage_reduce_ratio' => '받는 함정피해 감소',
-            'slow_resist_ratio' => '둔화저항',
-            'hp_healed_increase_ratio' => '체력회복',
-            'healer_give_hp_heal_ratio' => '주는 체력회복',
-            'unique_attack_range' => '(고유)공격 사거리',
-            'unique_hp_healed_increase_ratio' => '(고유)체력회복',
-            'unique_cooldown_limit' => '(고유)최대 쿨다운감소',
-            'unique_tenacity' => '(고유)강인함',
-            'unique_move_speed' => '(고유)이동속도',
-            'unique_penetration_defense' => '(고유)방어관통',
-            'unique_penetration_defense_ratio' => '(고유)방어관통',
-            'unique_life_steal' => '(고유)체력흡혈',
-            'unique_skill_amp_ratio' => '(고유)스킬증폭',
+            'max_hp' => '최대 체력',
+            'hp_regen' => '체력 재생',
+            'hp_regen_ratio' => '체력 재생',
+            'sp_regen' => '스태미나 재생',
+            'sp_regen_ratio' => '스태미나 재생',
+            'attack_speed_ratio' => '공격 속도',
+            'critical_strike_chance' => '치명타 확률',
+            'critical_strike_damage' => '치명타 피해',
+            'cooldown_reduction' => '쿨다운 감소',
+            'life_steal' => '생명력 흡수',
+            'normal_life_steal' => '기본 공격 생명력 흡수',
+            'skill_life_steal' => '스킬 생명력 흡수',
+            'move_speed' => '이동 속도',
+            'move_speed_ratio' => '이동 속도',
+            'move_speed_out_of_combat' => '비전투 이동 속도',
+            'penetration_defense' => '방어 관통',
+            'penetration_defense_ratio' => '방어 관통',
+            'increase_basic_attack_damage' => '일반 공격 피해',
+            'increase_basic_attack_damage_ratio' => '일반 공격 피해',
+            'prevent_basic_attack_damaged' => '받는 일반 공격 피해 감소',
+            'prevent_basic_attack_damaged_ratio' => '받는 일반 공격 피해 감소',
+            'prevent_skill_damaged' => '받는 스킬 피해 감소',
+            'prevent_skill_damaged_ratio' => '받는 스킬 피해 감소',
+            'trap_damage_reduce' => '받는 함정 피해 감소',
+            'trap_damage_reduce_ratio' => '받는 함정 피해 감소',
+            'slow_resist_ratio' => '둔화 저항',
+            'hp_healed_increase_ratio' => '체력 회복',
+            'healer_give_hp_heal_ratio' => '주는 체력 회복',
+            'unique_attack_range' => '(고유) 공격 사거리',
+            'unique_hp_healed_increase_ratio' => '(고유) 체력 회복',
+            'unique_cooldown_limit' => '(고유) 최대 쿨다운 감소',
+            'unique_tenacity' => '(고유) 강인함',
+            'unique_move_speed' => '(고유) 이동 속도',
+            'unique_penetration_defense' => '(고유) 방어 관통',
+            'unique_penetration_defense_ratio' => '(고유) 방어 관통',
+            'unique_life_steal' => '(고유) 체력 흡수',
+            'unique_skill_amp_ratio' => '(고유) 스킬 증폭',
         ];
 
-        $equipmentStat = [];
+        foreach ($statLabels as $key => $label) {
+            $value = $equipment->$key ?? 0;
+            $valueByLv = $equipment->{$key . '_by_lv'} ?? 0;
 
-        foreach ($fields as $key => $label) {
-            $value = $equipment->$key ?? null;
-            if ($value !== null && floatval($value) != 0.0) {
-                $ratioKeywords = ['ratio', 'cooldown', 'steal', 'critical'];
-                $decimalKeyword = ['move_speed'];
-                if (array_filter($ratioKeywords, fn($word) => str_contains($key, $word))) {
-                    $value = number_format($value * 100) . '%';
-                } elseif (array_filter($decimalKeyword, fn($word) => str_contains($key, $word))) {
-                    $value = number_format($value, 2);
+            // 백분율 스탯 확인
+            $isPercentage = strpos($key, 'ratio') !== false ||
+                $key === 'critical_strike_chance' ||
+                $key === 'critical_strike_damage' ||
+                $key === 'cooldown_reduction' ||
+                $key === 'unique_cooldown_limit' ||
+                $key === 'life_steal' ||
+                $key === 'normal_life_steal' ||
+                $key === 'skill_life_steal' ||
+                $key === 'unique_life_steal' ||
+                $key === 'unique_tenacity';
+
+            // 기본 스탯
+            if ($value != 0) {
+                if ($isPercentage) {
+                    $displayValue = $value;
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
+                        $displayValue *= 100;
+                    }
+                    $displayValue = number_format($displayValue);
+                    $displayValue .= '%';
+                } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
+                    $displayValue = number_format($value, 2);
                 } else {
-                    $value = number_format($value, 2);
+                    $displayValue = number_format($value, 1);
                 }
-                $equipmentStat[] = [
+
+                $stats[] = [
                     'text' => $label,
-                    'value' => $value
+                    'value' => '+' . $displayValue
+                ];
+            }
+
+            // 레벨당 증가 스탯 (별도 행으로)
+            if ($valueByLv != 0) {
+                if ($isPercentage) {
+                    $displayValue = $valueByLv;
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
+                        $displayValue *= 100;
+                    }
+                    $displayValue = number_format($displayValue);
+                    $displayValue .= '%';
+                } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
+                    $displayValue = number_format($valueByLv, 2);
+                } else {
+                    $displayValue = number_format($valueByLv, 1);
+                }
+
+                $stats[] = [
+                    'text' => '레벨당 ' . $label,
+                    'value' => '+' . $displayValue
                 ];
             }
         }
-        return $equipmentStat;
+
+        return $stats;
     }
 
     /**

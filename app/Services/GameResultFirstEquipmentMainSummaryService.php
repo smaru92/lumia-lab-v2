@@ -190,6 +190,15 @@ class GameResultFirstEquipmentMainSummaryService
             'move_speed_out_of_combat' => '비전투 이동 속도',
             'penetration_defense' => '방어 관통',
             'penetration_defense_ratio' => '방어 관통',
+            'unique_attack_range' => '(고유) 공격 사거리',
+            'unique_hp_healed_increase_ratio' => '(고유) 체력 회복',
+            'unique_cooldown_limit' => '(고유) 최대 쿨다운 감소',
+            'unique_tenacity' => '(고유) 강인함',
+            'unique_move_speed' => '(고유) 이동 속도',
+            'unique_penetration_defense' => '(고유) 방어 관통',
+            'unique_penetration_defense_ratio' => '(고유) 방어 관통',
+            'unique_life_steal' => '(고유) 체력 흡수',
+            'unique_skill_amp_ratio' => '(고유) 스킬 증폭',
         ];
 
         foreach ($statLabels as $key => $label) {
@@ -200,20 +209,23 @@ class GameResultFirstEquipmentMainSummaryService
             $isPercentage = strpos($key, 'ratio') !== false ||
                            $key === 'critical_strike_chance' ||
                            $key === 'cooldown_reduction' ||
+                           $key === 'unique_cooldown_limit' ||
                            $key === 'life_steal' ||
                            $key === 'normal_life_steal' ||
-                           $key === 'skill_life_steal';
+                           $key === 'skill_life_steal' ||
+                           $key === 'unique_life_steal' ||
+                           $key === 'unique_tenacity';
 
             // 기본 스탯
             if ($value != 0) {
                 if ($isPercentage) {
                     $displayValue = $value;
-                    if ($key != 'cooldown_reduction') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
-                } elseif($key == 'move_speed') {
+                } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
                     $displayValue = number_format($value, 2);
                 } else {
                     $displayValue = number_format($value, 1);
@@ -229,12 +241,12 @@ class GameResultFirstEquipmentMainSummaryService
             if ($valueByLv != 0) {
                 if ($isPercentage) {
                     $displayValue = $valueByLv;
-                    if ($key != 'cooldown_reduction') {
+                    if ($key != 'cooldown_reduction' && $key != 'unique_cooldown_limit') {
                         $displayValue *= 100;
                     }
                     $displayValue = number_format($displayValue);
                     $displayValue .= '%';
-                } elseif($key == 'move_speed') {
+                } elseif($key == 'move_speed' || $key == 'unique_move_speed') {
                     $displayValue = number_format($valueByLv, 2);
                 } else {
                     $displayValue = number_format($valueByLv, 1);
