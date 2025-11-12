@@ -136,32 +136,32 @@
                         <span class="tier-badge {{ $tierClass }}">{{ $tier }}</span>
                         <div class="sub-stat">{{ number_format($item->meta_score, 2) }}</div>
                     </td>
-                    <td>
+                    <td class="number">
                         <div>{{ number_format($item->game_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->game_count }}</div>
                     </td>
                     <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
-                    <td>
+                    <td class="number">
                         <div>{{ number_format($item->top1_count_percent , 2) }}%</div>
                         <div  class="sub-stat">{{ $item->top1_count }}</div>
                     </td>
-                    <td class="hide-on-mobile">
+                    <td class="hide-on-mobile number">
                         <div>{{ number_format($item->top2_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->top2_count }}</div>
                     </td>
-                    <td class="hide-on-mobile">
+                    <td class="hide-on-mobile number">
                         <div>{{ number_format($item->top4_count_percent , 2) }}%</div>
                         <div class="sub-stat">{{ $item->top4_count }}</div>
                     </td>
-                    <td class="hide-on-mobile hide-on-tablet">
+                    <td class="hide-on-mobile hide-on-tablet number">
                         <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     </td>
                     <td class="hide-on-mobile number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
-                    <td class="hide-on-mobile">
+                    <td class="hide-on-mobile number">
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
                     </td>
-                    <td class="hide-on-mobile">
+                    <td class="hide-on-mobile number">
                         <div>{{ number_format($item->negative_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 {{ number_format($item->negative_avg_mmr_gain, 1) }}점</div>
                     </td>
