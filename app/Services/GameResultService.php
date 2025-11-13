@@ -109,6 +109,37 @@ class GameResultService
             // 병렬로 API 요청
             $batchResults = $this->requestGameResultsParallel($gameIdsToFetch);
 
+            // 먼저 배치 내 모든 게임이 완료되었는지 체크 (DB 저장 전에)
+            foreach ($gameIdsToFetch as $checkGameId) {
+                $checkData = $batchResults[$checkGameId] ?? ['code' => 404];
+
+                if ($checkData['code'] === 200 &&
+                    isset($checkData['userGames']) &&
+                    in_array($checkData['userGames'][0]['matchingMode'], [3, 8]) &&
+                    $checkData['userGames'][0]['matchingTeamMode'] === 3) {
+
+                    // gameRank = 1 (1등)이 있는지 확인
+                    $hasWinner = false;
+                    foreach ($checkData['userGames'] as $player) {
+                        if (isset($player['gameRank']) && $player['gameRank'] == 1) {
+                            $hasWinner = true;
+                            break;
+                        }
+                    }
+
+                    // 1등이 없으면 미완료 게임 -> 즉시 중단
+                    if (!$hasWinner) {
+                        Log::channel('fetchGameResultData')->info($checkGameId . ' game not finished (no rank 1) - stop collecting');
+
+                        $batchEndTime = microtime(true);
+                        $batchDuration = round(($batchEndTime - $batchStartTime) * 1000, 2);
+                        Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} Stopped - Duration: {$batchDuration}ms");
+
+                        return $checkGameId - 1;
+                    }
+                }
+            }
+
             // 배치의 첫 번째 게임이 404인 경우, 다음 게임들을 탐색
             $firstBatchGameId = $gameIdsToFetch[0];
             if (($batchResults[$firstBatchGameId]['code'] ?? 404) == 404 && $batchNumber == 1) {
@@ -168,20 +199,7 @@ class GameResultService
                 }
 
                 if ($data['code'] === 200 && in_array($data['userGames'][0]['matchingMode'], [3, 8]) && $data['userGames'][0]['matchingTeamMode'] === 3) {
-                    // gameRank = 1 (1등)이 있는지 확인 (게임이 완전히 끝났는지 체크)
-                    $hasWinner = false;
-                    foreach ($data['userGames'] as $player) {
-                        if (isset($player['gameRank']) && $player['gameRank'] == 1) {
-                            $hasWinner = true;
-                            break;
-                        }
-                    }
-
-                    // 1등이 없으면 게임이 완전히 끝나지 않은 것 -> 전체 수집 중단
-                    if (!$hasWinner) {
-                        Log::channel('fetchGameResultData')->info($resultGameId . ' game not finished (no rank 1) - stop collecting');
-                        return $resultGameId - 1;
-                    }
+                    // 여기까지 왔다면 배치 체크에서 이미 완료된 게임임이 확인됨
 
                     // 첫 번째 저장 시에만 로그 기록
                     if ($firstSavedGameId === null) {
