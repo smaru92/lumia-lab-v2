@@ -37,13 +37,13 @@ class EquipmentInfolist
                 TextEntry::make('skill_amp')
                     ->numeric()
                     ->placeholder('-'),
-                TextEntry::make('skill_amp_by_lv')
+                TextEntry::make('skill_amp_by_level')
                     ->numeric()
                     ->placeholder('-'),
                 TextEntry::make('skill_amp_ratio')
                     ->numeric()
                     ->placeholder('-'),
-                TextEntry::make('skill_amp_ratio_by_lv')
+                TextEntry::make('skill_amp_ratio_by_level')
                     ->numeric()
                     ->placeholder('-'),
                 TextEntry::make('adaptive_force')
@@ -58,10 +58,10 @@ class EquipmentInfolist
                 TextEntry::make('max_hp_by_lv')
                     ->numeric()
                     ->placeholder('-'),
-                TextEntry::make('mas_sp')
+                TextEntry::make('max_sp')
                     ->numeric()
                     ->placeholder('-'),
-                TextEntry::make('mas_sp_by_lv')
+                TextEntry::make('max_sp_by_lv')
                     ->numeric()
                     ->placeholder('-'),
                 TextEntry::make('hp_regen')

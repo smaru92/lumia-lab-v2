@@ -34,13 +34,13 @@ class EquipmentForm
                 TextInput::make('skill_amp')
                     ->numeric()
                     ->default(null),
-                TextInput::make('skill_amp_by_lv')
+                TextInput::make('skill_amp_by_level')
                     ->numeric()
                     ->default(null),
                 TextInput::make('skill_amp_ratio')
                     ->numeric()
                     ->default(null),
-                TextInput::make('skill_amp_ratio_by_lv')
+                TextInput::make('skill_amp_ratio_by_level')
                     ->numeric()
                     ->default(null),
                 TextInput::make('adaptive_force')
@@ -55,10 +55,10 @@ class EquipmentForm
                 TextInput::make('max_hp_by_lv')
                     ->numeric()
                     ->default(null),
-                TextInput::make('mas_sp')
+                TextInput::make('max_sp')
                     ->numeric()
                     ->default(null),
-                TextInput::make('mas_sp_by_lv')
+                TextInput::make('max_sp_by_lv')
                     ->numeric()
                     ->default(null),
                 TextInput::make('hp_regen')
