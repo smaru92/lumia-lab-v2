@@ -144,7 +144,17 @@ class GameResultEquipmentMainSummaryService
             'equipments.cooldown_reduction',
             'equipments.life_steal', 'equipments.normal_life_steal', 'equipments.skill_life_steal',
             'equipments.move_speed', 'equipments.move_speed_ratio', 'equipments.move_speed_out_of_combat',
-            'equipments.penetration_defense', 'equipments.penetration_defense_ratio'
+            'equipments.penetration_defense', 'equipments.penetration_defense_ratio',
+            // 고유 스탯 정보 추가
+            'equipments.unique_attack_range',
+            'equipments.unique_hp_healed_increase_ratio',
+            'equipments.unique_cooldown_limit',
+            'equipments.unique_tenacity',
+            'equipments.unique_move_speed',
+            'equipments.unique_penetration_defense',
+            'equipments.unique_penetration_defense_ratio',
+            'equipments.unique_life_steal',
+            'equipments.unique_skill_amp_ratio'
         )
             ->join('equipments', 'equipments.id', '=', 'game_results_equipment_main_summary.equipment_id')
             ->where($filters)

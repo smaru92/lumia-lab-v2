@@ -20,8 +20,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // 정보 업데이트
-Route::get('/character', [InfoController::class, 'getCharacters']);
-Route::get('/equipment', [InfoController::class, 'getEquipments']);
+Route::get('/character', [InfoController::class, 'getCharacters'])->name('api.character');
+Route::get('/equipment', [InfoController::class, 'getEquipments'])->name('api.equipment');
 Route::get('/item', [InfoController::class, 'getItems']);
 Route::get('/skill', [InfoController::class, 'getSkills']);
 Route::get('/trait', [InfoController::class, 'getTraits']);
