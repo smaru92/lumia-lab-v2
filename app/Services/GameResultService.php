@@ -109,12 +109,42 @@ class GameResultService
             // 병렬로 API 요청
             $batchResults = $this->requestGameResultsParallel($gameIdsToFetch);
 
+            // 배치의 첫 번째 게임이 404인 경우, 다음 게임들을 탐색
+            $firstBatchGameId = $gameIdsToFetch[0];
+            if (($batchResults[$firstBatchGameId]['code'] ?? 404) == 404 && $batchNumber == 1) {
+                // 첫 번째 배치의 첫 게임이 404면 추가 탐색
+                $hasGameId = false;
+                $searchFirstGameId = $firstBatchGameId;
+                $tempGameId = $firstBatchGameId;
+
+                for($k = 1; $k <= $this->searchGameNumber; $k++) {
+                    $tempGameId++;
+                    $tempData = $this->requestGameResult($tempGameId);
+                    if ($tempData['code'] == 200) {
+                        $hasGameId = true;
+                        // 찾은 게임 ID로 배치를 다시 구성
+                        $gameIdsToFetch = [];
+                        for ($j = 0; $j < $batchCount; $j++) {
+                            $gameIdsToFetch[] = $tempGameId + $j;
+                        }
+                        // 새로운 배치로 병렬 요청
+                        $batchResults = $this->requestGameResultsParallel($gameIdsToFetch);
+                        break;
+                    }
+                }
+
+                if (!$hasGameId) {
+                    Log::channel('fetchGameResultData')->info($searchFirstGameId . ' game ID not found');
+                    return $searchFirstGameId - 1;
+                }
+            }
+
             // 각 결과를 순차적으로 처리
             foreach ($gameIdsToFetch as $currentGameId) {
                 $resultGameId = $currentGameId;
                 $data = $batchResults[$currentGameId] ?? ['code' => 404];
 
-                // 게임데이터를 못찾으면 이전데이터로 되돌림
+                // 게임데이터를 못찾으면 다음 게임 탐색 (첫 배치가 아닌 경우)
                 if ($data['code'] == 404) {
                     $hasGameId = false;
                     $searchFirstGameId = $resultGameId;
