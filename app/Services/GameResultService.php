@@ -168,10 +168,19 @@ class GameResultService
                 }
 
                 if ($data['code'] === 200 && in_array($data['userGames'][0]['matchingMode'], [3, 8]) && $data['userGames'][0]['matchingTeamMode'] === 3) {
-                    // 완전히 끝난게임이 아니면 삽입처리 취소 및 game id 시작값으로 초기화
-                    if (count($data['userGames']) <= 18) {
-                        Log::channel('fetchGameResultData')->info($resultGameId . ' game ID not found');
-                        return $gameId;
+                    // gameRank = 1 (1등)이 있는지 확인 (게임이 완전히 끝났는지 체크)
+                    $hasWinner = false;
+                    foreach ($data['userGames'] as $player) {
+                        if (isset($player['gameRank']) && $player['gameRank'] == 1) {
+                            $hasWinner = true;
+                            break;
+                        }
+                    }
+
+                    // 1등이 없으면 게임이 완전히 끝나지 않은 것 -> 전체 수집 중단
+                    if (!$hasWinner) {
+                        Log::channel('fetchGameResultData')->info($resultGameId . ' game not finished (no rank 1) - stop collecting');
+                        return $resultGameId - 1;
                     }
 
                     // 첫 번째 저장 시에만 로그 기록
