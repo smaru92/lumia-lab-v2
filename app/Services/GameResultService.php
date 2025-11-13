@@ -85,8 +85,14 @@ class GameResultService
         $resultGameId = $gameId;
         $firstSavedGameId = null; // 첫 번째 저장된 게임 ID
         $batchSize = 10; // 배치 크기 (e2-medium 스펙 고려)
+        $batchNumber = 0; // 배치 번호
+
+        Log::channel('fetchGameResultData')->info('=== Batch Processing Start ===');
 
         for ($i = 1; $i < $this->fetchGameUnitNumber; $i += $batchSize) {
+            $batchNumber++;
+            $batchStartTime = microtime(true);
+
             // 배치로 처리할 게임 ID 배열 생성
             $gameIdsToFetch = [];
             $batchCount = min($batchSize, $this->fetchGameUnitNumber - $i);
@@ -94,6 +100,11 @@ class GameResultService
             for ($j = 0; $j < $batchCount; $j++) {
                 $gameIdsToFetch[] = $gameId + $i + $j;
             }
+
+            $batchStartId = $gameIdsToFetch[0];
+            $batchEndId = $gameIdsToFetch[count($gameIdsToFetch) - 1];
+
+            Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} Start - Game IDs: {$batchStartId} ~ {$batchEndId}");
 
             // 병렬로 API 요청
             $batchResults = $this->requestGameResultsParallel($gameIdsToFetch);
@@ -332,11 +343,23 @@ class GameResultService
                         // 중복 & 에러 데이터 발생으로 조기종료
                         Log::channel('fetchGameResultData')->info('Error Message : ' . $e->getMessage());
                         Log::channel('fetchGameResultData')->info('E: Error game id : ' . $resultGameId);
+
+                        $batchEndTime = microtime(true);
+                        $batchDuration = round(($batchEndTime - $batchStartTime) * 1000, 2);
+                        Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} Failed - Duration: {$batchDuration}ms");
+
                         return $resultGameId;
                     }
                 }
             }
+
+            // 배치 처리 완료 로그
+            $batchEndTime = microtime(true);
+            $batchDuration = round(($batchEndTime - $batchStartTime) * 1000, 2);
+            Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} End - Duration: {$batchDuration}ms");
         }
+
+        Log::channel('fetchGameResultData')->info('=== Batch Processing Complete ===');
 
         // 마지막 저장된 게임 ID 로그 기록
         if ($firstSavedGameId !== null) {
