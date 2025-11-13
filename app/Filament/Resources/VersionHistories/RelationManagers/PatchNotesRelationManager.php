@@ -87,6 +87,7 @@ class PatchNotesRelationManager extends RelationManager
                         '양손검' => '양손검',
                         '도끼' => '도끼',
                         '창' => '창',
+                        '방망이' => '방망이',
                         '망치' => '망치',
                         '채찍' => '채찍',
                         '암기' => '암기',
