@@ -109,7 +109,8 @@ class GameResultService
             // 병렬로 API 요청
             $batchResults = $this->requestGameResultsParallel($gameIdsToFetch);
 
-            // 먼저 배치 내 모든 게임이 완료되었는지 체크 (DB 저장 전에)
+            // 먼저 배치 내 미완료 게임이 있는지 찾기
+            $stopAtGameId = null;
             foreach ($gameIdsToFetch as $checkGameId) {
                 $checkData = $batchResults[$checkGameId] ?? ['code' => 404];
 
@@ -127,15 +128,11 @@ class GameResultService
                         }
                     }
 
-                    // 1등이 없으면 미완료 게임 -> 즉시 중단
+                    // 1등이 없으면 미완료 게임 -> 이 게임 ID에서 중단 예정
                     if (!$hasWinner) {
-                        Log::channel('fetchGameResultData')->info($checkGameId . ' game not finished (no rank 1) - stop collecting');
-
-                        $batchEndTime = microtime(true);
-                        $batchDuration = round(($batchEndTime - $batchStartTime) * 1000, 2);
-                        Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} Stopped - Duration: {$batchDuration}ms");
-
-                        return $checkGameId - 1;
+                        Log::channel('fetchGameResultData')->info($checkGameId . ' game not finished (no rank 1) - will stop after saving previous games');
+                        $stopAtGameId = $checkGameId;
+                        break; // 더 이상 체크하지 않음
                     }
                 }
             }
@@ -170,8 +167,23 @@ class GameResultService
                 }
             }
 
-            // 각 결과를 순차적으로 처리
+            // 각 결과를 순차적으로 처리 (미완료 게임 이전까지만)
             foreach ($gameIdsToFetch as $currentGameId) {
+                // 미완료 게임에 도달하면 저장 중단하고 반환
+                if ($stopAtGameId !== null && $currentGameId >= $stopAtGameId) {
+                    $batchEndTime = microtime(true);
+                    $batchDuration = round(($batchEndTime - $batchStartTime) * 1000, 2);
+                    Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} Stopped - Duration: {$batchDuration}ms");
+                    Log::channel('fetchGameResultData')->info('=== Batch Processing Stopped ===');
+
+                    // 마지막 저장된 게임 ID 로그
+                    if ($firstSavedGameId !== null) {
+                        Log::channel('fetchGameResultData')->info('E: fetch game id : ' . ($stopAtGameId - 1));
+                    }
+
+                    return $stopAtGameId - 1;
+                }
+
                 $resultGameId = $currentGameId;
                 $data = $batchResults[$currentGameId] ?? ['code' => 404];
 
