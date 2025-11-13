@@ -149,6 +149,7 @@ class GameResultService
                             // 유니온 전용 컬럼
                             'matching_mode' => $item['matchingMode'] ?? null,
                             'union_rank' => $item['squadRumbleRank'] ?? null,
+                            'created_at' => now(),
                         ];
                     }
 
@@ -178,6 +179,7 @@ class GameResultService
                                     'game_result_id' => $gameResultId,
                                     'skill_id' => $skillId ?? null,
                                     'order_level' => $orderLevel,
+                                    'created_at' => now(),
                                 ];
                                 $orderLevel++;
                             }
@@ -189,7 +191,8 @@ class GameResultService
                                 'game_result_id' => $gameResultId,
                                 'equipment_id' => $equipmentId ?? null,
                                 'equipment_grade' => $item['equipmentGrade'][$key] ?? null,
-                                'order_quipment' => 0
+                                'order_quipment' => 0,
+                                'created_at' => now(),
                             ];
                         }
 
@@ -198,7 +201,8 @@ class GameResultService
                             foreach ($equipFirstItem as $equipmentId) {
                                 $firstEquipmentOrders[] = [
                                     'game_result_id' => $gameResultId,
-                                    'equipment_id' => $equipmentId ?? null
+                                    'equipment_id' => $equipmentId ?? null,
+                                    'created_at' => now(),
                                 ];
                             }
                         }
@@ -207,20 +211,23 @@ class GameResultService
                         $traitOrders[] = [
                             'game_result_id' => $gameResultId,
                             'trait_id' => $item['traitFirstCore'] ?? null,
-                            'is_main' => true
+                            'is_main' => true,
+                            'created_at' => now(),
                         ];
                         foreach ($item['traitFirstSub'] as $traitId) {
                             $traitOrders[] = [
                                 'game_result_id' => $gameResultId,
                                 'trait_id' => $traitId ?? null,
-                                'is_main' => false
+                                'is_main' => false,
+                                'created_at' => now(),
                             ];
                         }
                         foreach ($item['traitSecondSub'] as $traitId) {
                             $traitOrders[] = [
                                 'game_result_id' => $gameResultId,
                                 'trait_id' => $traitId ?? null,
-                                'is_main' => false
+                                'is_main' => false,
+                                'created_at' => now(),
                             ];
                         }
                     }
