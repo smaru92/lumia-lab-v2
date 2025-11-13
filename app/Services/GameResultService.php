@@ -38,6 +38,8 @@ class GameResultService
     public function storeGameResult($gameId)
     {
         $resultGameId = $gameId;
+        $firstSavedGameId = null; // 첫 번째 저장된 게임 ID
+
         for ($i = 1; $i < $this->fetchGameUnitNumber; $i++ ) {
             $resultGameId++;
             $data = $this->requestGameResult($resultGameId);
@@ -70,7 +72,12 @@ class GameResultService
                     Log::channel('fetchGameResultData')->info($resultGameId . ' game ID not found');
                     return $gameId;
                 }
-                Log::channel('fetchGameResultData')->info('S: fetch game id : ' . $resultGameId);
+
+                // 첫 번째 저장 시에만 로그 기록
+                if ($firstSavedGameId === null) {
+                    $firstSavedGameId = $resultGameId;
+                    Log::channel('fetchGameResultData')->info('S: fetch game id : ' . $resultGameId);
+                }
 
                 // 첫 번째 플레이어 데이터로 버전 정보 확인 (모든 플레이어가 같은 버전)
                 $firstPlayer = $data['userGames'][0];
@@ -257,9 +264,14 @@ class GameResultService
                     Log::channel('fetchGameResultData')->info('E: Error game id : ' . $resultGameId);
                     return $resultGameId;
                 }
-                Log::channel('fetchGameResultData')->info('E: fetch game id : ' . $resultGameId);
             }
         }
+
+        // 마지막 저장된 게임 ID 로그 기록
+        if ($firstSavedGameId !== null) {
+            Log::channel('fetchGameResultData')->info('E: fetch game id : ' . $resultGameId);
+        }
+
         // 마지막으로 완료 처리된 게임id 리턴
         return $resultGameId;
     }
