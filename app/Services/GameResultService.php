@@ -8,6 +8,7 @@ use App\Models\GameResultFirstEquipmentOrder;
 use App\Models\GameResultSkillOrder;
 use App\Models\GameResultTraitOrder;
 use App\Models\VersionHistory;
+use App\Services\VersionedGameTableManager;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise;
@@ -169,8 +170,13 @@ class GameResultService
 
             // 각 결과를 순차적으로 처리 (미완료 게임 이전까지만)
             foreach ($gameIdsToFetch as $currentGameId) {
-                // 미완료 게임에 도달하면 저장 중단하고 반환
+                // 미완료 게임에 도달하면 해당 게임 이후 데이터 삭제 후 중단
                 if ($stopAtGameId !== null && $currentGameId >= $stopAtGameId) {
+                    Log::channel('fetchGameResultData')->info("Deleting game data from game_id >= {$stopAtGameId}");
+
+                    // 미완료 게임 이후 데이터 삭제
+                    $this->deleteGameResultsFrom($stopAtGameId);
+
                     $batchEndTime = microtime(true);
                     $batchDuration = round(($batchEndTime - $batchStartTime) * 1000, 2);
                     Log::channel('fetchGameResultData')->info("Batch #{$batchNumber} Stopped - Duration: {$batchDuration}ms");
@@ -1227,5 +1233,78 @@ class GameResultService
             'metaTier' => $metaTier,
             'metaScore' => $metaScore,
         ];
+    }
+
+    /**
+     * 특정 게임 ID 이후의 모든 게임 결과 데이터 삭제
+     * @param int $fromGameId
+     * @return void
+     */
+    private function deleteGameResultsFrom(int $fromGameId): void
+    {
+        try {
+            // 모든 버전의 game_results 테이블 찾기
+            $versionHistories = VersionHistory::all();
+
+            foreach ($versionHistories as $version) {
+                $filters = [
+                    'version_season' => $version->version_season,
+                    'version_major' => $version->version_major,
+                    'version_minor' => $version->version_minor,
+                ];
+
+                $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+                $gameResultSkillOrderTableName = VersionedGameTableManager::getTableName('game_result_skill_orders', $filters);
+                $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
+                $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
+                $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
+
+                // 테이블이 존재하는지 확인
+                if (DB::getSchemaBuilder()->hasTable($gameResultTableName)) {
+                    // 해당 게임 ID 이상의 데이터 찾기
+                    $gameResultIds = DB::table($gameResultTableName)
+                        ->where('game_id', '>=', $fromGameId)
+                        ->pluck('id');
+
+                    if ($gameResultIds->isNotEmpty()) {
+                        // 관련 테이블 먼저 삭제
+                        if (DB::getSchemaBuilder()->hasTable($gameResultSkillOrderTableName)) {
+                            DB::table($gameResultSkillOrderTableName)
+                                ->whereIn('game_result_id', $gameResultIds)
+                                ->delete();
+                        }
+
+                        if (DB::getSchemaBuilder()->hasTable($gameResultEquipmentOrderTableName)) {
+                            DB::table($gameResultEquipmentOrderTableName)
+                                ->whereIn('game_result_id', $gameResultIds)
+                                ->delete();
+                        }
+
+                        if (DB::getSchemaBuilder()->hasTable($gameResultFirstEquipmentOrderTableName)) {
+                            DB::table($gameResultFirstEquipmentOrderTableName)
+                                ->whereIn('game_result_id', $gameResultIds)
+                                ->delete();
+                        }
+
+                        if (DB::getSchemaBuilder()->hasTable($gameResultTraitOrderTableName)) {
+                            DB::table($gameResultTraitOrderTableName)
+                                ->whereIn('game_result_id', $gameResultIds)
+                                ->delete();
+                        }
+
+                        // 메인 테이블 삭제
+                        $deletedCount = DB::table($gameResultTableName)
+                            ->where('game_id', '>=', $fromGameId)
+                            ->delete();
+
+                        if ($deletedCount > 0) {
+                            Log::channel('fetchGameResultData')->info("Deleted {$deletedCount} game results from {$gameResultTableName} (game_id >= {$fromGameId})");
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::channel('fetchGameResultData')->error('Error deleting game results: ' . $e->getMessage());
+        }
     }
 }
