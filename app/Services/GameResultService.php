@@ -89,13 +89,13 @@ class GameResultService
 
         Log::channel('fetchGameResultData')->info('=== Batch Processing Start ===');
 
-        for ($i = 1; $i < $this->fetchGameUnitNumber; $i += $batchSize) {
+        for ($i = 1; $i <= $this->fetchGameUnitNumber; $i += $batchSize) {
             $batchNumber++;
             $batchStartTime = microtime(true);
 
             // 배치로 처리할 게임 ID 배열 생성
             $gameIdsToFetch = [];
-            $batchCount = min($batchSize, $this->fetchGameUnitNumber - $i);
+            $batchCount = min($batchSize, $this->fetchGameUnitNumber - $i + 1);
 
             for ($j = 0; $j < $batchCount; $j++) {
                 $gameIdsToFetch[] = $gameId + $i + $j;
