@@ -71,42 +71,61 @@ class GameResultService
                     return $gameId;
                 }
                 Log::channel('fetchGameResultData')->info('S: fetch game id : ' . $resultGameId);
-                foreach ($data['userGames'] as $item) {
-                    // 버전 히스토리 데이터 저장
-                    $latestVersion = VersionHistory::latest('created_at')->first();
-                    // 최신 버전+발생시간을 DB값과 비교하여 다를 경우만 저장
-                    $newEndDate = Carbon::parse($item['startDtm'])->format('Y-m-d');
-                    if (!$latestVersion
-                        || $latestVersion->version_major !== ($item['versionMajor'] ?? null)
-                        || $latestVersion->version_minor !== ($item['versionMinor'] ?? null)
-                    ) {
-                        // 버전 히스토리 기록
-                        VersionHistory::create([
-                            'version_season' => $item['versionSeason'] ?? null,
-                            'version_major' => $item['versionMajor'] ?? null,
-                            'version_minor' => $item['versionMinor'] ?? null,
-                            'start_date' => $newEndDate,
-                            'end_date' => $newEndDate,
-                        ]);
-                    } elseif ($latestVersion->end_at !== $newEndDate) {
-                        VersionHistory::where('id', $latestVersion->id)->update(['end_date' => $newEndDate]);
-                    }
 
-                    $versionedGameTableManager = new VersionedGameTableManager();
-                    $filters = [
-                        'version_season' => $item['versionSeason'] ?? null,
-                        'version_major' => $item['versionMajor'] ?? null,
-                        'version_minor' => $item['versionMinor'] ?? null,
-                    ];
-                    $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
-                    $gameResultSkillOrderTableName = VersionedGameTableManager::getTableName('game_result_skill_orders', $filters);
-                    $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
-                    $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
-                    $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
+                // 첫 번째 플레이어 데이터로 버전 정보 확인 (모든 플레이어가 같은 버전)
+                $firstPlayer = $data['userGames'][0];
 
-                    try {
-                        $versionedGameTableManager->ensureGameResultTableExists($gameResultTableName);
-                        $gameResult = GameResult::withTable($gameResultTableName)->create([
+                // 버전 히스토리 데이터 저장
+                $latestVersion = VersionHistory::latest('created_at')->first();
+                $newEndDate = Carbon::parse($firstPlayer['startDtm'])->format('Y-m-d');
+                if (!$latestVersion
+                    || $latestVersion->version_major !== ($firstPlayer['versionMajor'] ?? null)
+                    || $latestVersion->version_minor !== ($firstPlayer['versionMinor'] ?? null)
+                ) {
+                    // 버전 히스토리 기록
+                    VersionHistory::create([
+                        'version_season' => $firstPlayer['versionSeason'] ?? null,
+                        'version_major' => $firstPlayer['versionMajor'] ?? null,
+                        'version_minor' => $firstPlayer['versionMinor'] ?? null,
+                        'start_date' => $newEndDate,
+                        'end_date' => $newEndDate,
+                    ]);
+                } elseif ($latestVersion->end_date !== $newEndDate) {
+                    VersionHistory::where('id', $latestVersion->id)->update(['end_date' => $newEndDate]);
+                }
+
+                $versionedGameTableManager = new VersionedGameTableManager();
+                $filters = [
+                    'version_season' => $firstPlayer['versionSeason'] ?? null,
+                    'version_major' => $firstPlayer['versionMajor'] ?? null,
+                    'version_minor' => $firstPlayer['versionMinor'] ?? null,
+                ];
+                $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+                $gameResultSkillOrderTableName = VersionedGameTableManager::getTableName('game_result_skill_orders', $filters);
+                $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
+                $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
+                $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
+
+                try {
+                    // 테이블 존재 확인
+                    $versionedGameTableManager->ensureGameResultTableExists($gameResultTableName);
+                    $versionedGameTableManager->ensureGameResultSkillOrderTableExists($gameResultSkillOrderTableName);
+                    $versionedGameTableManager->ensureGameResultEquipmentOrderTableExists($gameResultEquipmentOrderTableName);
+                    $versionedGameTableManager->ensureGameResultFirstEquipmentOrderTableExists($gameResultFirstEquipmentOrderTableName);
+                    $versionedGameTableManager->ensureGameResultTraitOrderTableExists($gameResultTraitOrderTableName);
+
+                    // Bulk Insert를 위한 데이터 배열 준비
+                    $gameResults = [];
+                    $skillOrders = [];
+                    $equipmentOrders = [];
+                    $firstEquipmentOrders = [];
+                    $traitOrders = [];
+
+                    // 트랜잭션 시작
+                    DB::beginTransaction();
+
+                    foreach ($data['userGames'] as $item) {
+                        $gameResults[] = [
                             'game_id' => $resultGameId ?? null,
                             'user_id' => $item['userNum'] ?? null,
                             'mmr_before' => $item['mmrBefore'] ?? null,
@@ -130,76 +149,106 @@ class GameResultService
                             // 유니온 전용 컬럼
                             'matching_mode' => $item['matchingMode'] ?? null,
                             'union_rank' => $item['squadRumbleRank'] ?? null,
-                        ]);
-                        if ($gameResult->id) {
-                            // 스킬 찍은순서 기록
-                            $orderLevel = 1;
+                        ];
+                    }
 
-                            $versionedGameTableManager->ensureGameResultSkillOrderTableExists($gameResultSkillOrderTableName);
+                    // GameResult Bulk Insert
+                    DB::table($gameResultTableName)->insert($gameResults);
 
-                            foreach ($item['skillOrderInfo'] as $key => $item2) {
-                                // 3000000이상 값은 무기스킬
-                                if ($item2 < 3000000) {
-                                    GameResultSkillOrder::withTable($gameResultSkillOrderTableName)->create([
-                                        'game_result_id' => $gameResult->id ?? null,
-                                        'skill_id' => $item2 ?? null,
-                                        'order_level' => $orderLevel,
-                                    ]);
-                                    $orderLevel++;
-                                }
-                            }
+                    // 방금 삽입한 게임 결과들의 ID를 가져오기 (game_id와 user_id 조합으로 조회)
+                    $insertedGameResults = DB::table($gameResultTableName)
+                        ->where('game_id', $resultGameId)
+                        ->get()
+                        ->keyBy('user_id');
 
-                            // 최종 아이템
-                            $versionedGameTableManager->ensureGameResultEquipmentOrderTableExists($gameResultEquipmentOrderTableName);
-                            foreach ($item['equipment'] as $key => $item2) {
-                                GameResultEquipmentOrder::withTable($gameResultEquipmentOrderTableName)->create([
-                                    'game_result_id' => $gameResult->id ?? null,
-                                    'equipment_id' => $item2 ?? null,
-                                    'equipment_grade' => $item['equipmentGrade'][$key] ?? null,
-                                    'order_quipment' => 0
-                                ]);
-                            }
+                    // 각 플레이어의 상세 데이터 수집
+                    foreach ($data['userGames'] as $item) {
+                        $gameResultId = $insertedGameResults[$item['userNum']]->id ?? null;
 
+                        if (!$gameResultId) {
+                            continue;
+                        }
 
-                            // 최초장비 아이템
-                            $versionedGameTableManager->ensureGameResultFirstEquipmentOrderTableExists($gameResultFirstEquipmentOrderTableName);
-                            foreach ($item['equipFirstItemForLog'] as $key => $equipFirstItem) {
-                                foreach($equipFirstItem as $item2) {
-                                    GameResultFirstEquipmentOrder::withTable($gameResultFirstEquipmentOrderTableName)->create([
-                                        'game_result_id' => $gameResult->id ?? null,
-                                        'equipment_id' => $item2 ?? null
-                                    ]);
-                                }
-                            }
-
-                            // 선택한 특성
-                            $versionedGameTableManager->ensureGameResultTraitOrderTableExists($gameResultTraitOrderTableName);
-                            GameResultTraitOrder::withTable($gameResultTraitOrderTableName)->create([
-                                'game_result_id' => $gameResult->id ?? null,
-                                'trait_id' => $item['traitFirstCore'] ?? null,
-                                'is_main' => true
-                            ]);
-                            foreach ($item['traitFirstSub'] as $item2) {
-                                GameResultTraitOrder::withTable($gameResultTraitOrderTableName)->create([
-                                    'game_result_id' => $gameResult->id ?? null,
-                                    'trait_id' => $item2 ?? null,
-                                    'is_main' => false
-                                ]);
-                            }
-                            foreach ($item['traitSecondSub'] as $item2) {
-                                GameResultTraitOrder::withTable($gameResultTraitOrderTableName)->create([
-                                    'game_result_id' => $gameResult->id ?? null,
-                                    'trait_id' => $item2 ?? null,
-                                    'is_main' => false
-                                ]);
+                        // 스킬 찍은순서 기록
+                        $orderLevel = 1;
+                        foreach ($item['skillOrderInfo'] as $skillId) {
+                            // 3000000이상 값은 무기스킬
+                            if ($skillId < 3000000) {
+                                $skillOrders[] = [
+                                    'game_result_id' => $gameResultId,
+                                    'skill_id' => $skillId ?? null,
+                                    'order_level' => $orderLevel,
+                                ];
+                                $orderLevel++;
                             }
                         }
-                    } catch (QueryException $e) {
-                        // 중복 & 에러 데이터 발생으로 조기종료
-                        Log::channel('fetchGameResultData')->info('Error Message : ' . $e->getMessage());
-                        Log::channel('fetchGameResultData')->info('E: Error game id : ' . $resultGameId);
-                        return $resultGameId;
+
+                        // 최종 아이템
+                        foreach ($item['equipment'] as $key => $equipmentId) {
+                            $equipmentOrders[] = [
+                                'game_result_id' => $gameResultId,
+                                'equipment_id' => $equipmentId ?? null,
+                                'equipment_grade' => $item['equipmentGrade'][$key] ?? null,
+                                'order_quipment' => 0
+                            ];
+                        }
+
+                        // 최초장비 아이템
+                        foreach ($item['equipFirstItemForLog'] as $equipFirstItem) {
+                            foreach ($equipFirstItem as $equipmentId) {
+                                $firstEquipmentOrders[] = [
+                                    'game_result_id' => $gameResultId,
+                                    'equipment_id' => $equipmentId ?? null
+                                ];
+                            }
+                        }
+
+                        // 선택한 특성
+                        $traitOrders[] = [
+                            'game_result_id' => $gameResultId,
+                            'trait_id' => $item['traitFirstCore'] ?? null,
+                            'is_main' => true
+                        ];
+                        foreach ($item['traitFirstSub'] as $traitId) {
+                            $traitOrders[] = [
+                                'game_result_id' => $gameResultId,
+                                'trait_id' => $traitId ?? null,
+                                'is_main' => false
+                            ];
+                        }
+                        foreach ($item['traitSecondSub'] as $traitId) {
+                            $traitOrders[] = [
+                                'game_result_id' => $gameResultId,
+                                'trait_id' => $traitId ?? null,
+                                'is_main' => false
+                            ];
+                        }
                     }
+
+                    // 모든 관련 데이터를 Bulk Insert
+                    if (!empty($skillOrders)) {
+                        DB::table($gameResultSkillOrderTableName)->insert($skillOrders);
+                    }
+                    if (!empty($equipmentOrders)) {
+                        DB::table($gameResultEquipmentOrderTableName)->insert($equipmentOrders);
+                    }
+                    if (!empty($firstEquipmentOrders)) {
+                        DB::table($gameResultFirstEquipmentOrderTableName)->insert($firstEquipmentOrders);
+                    }
+                    if (!empty($traitOrders)) {
+                        DB::table($gameResultTraitOrderTableName)->insert($traitOrders);
+                    }
+
+                    // 트랜잭션 커밋
+                    DB::commit();
+
+                } catch (QueryException $e) {
+                    // 트랜잭션 롤백
+                    DB::rollBack();
+                    // 중복 & 에러 데이터 발생으로 조기종료
+                    Log::channel('fetchGameResultData')->info('Error Message : ' . $e->getMessage());
+                    Log::channel('fetchGameResultData')->info('E: Error game id : ' . $resultGameId);
+                    return $resultGameId;
                 }
                 Log::channel('fetchGameResultData')->info('E: fetch game id : ' . $resultGameId);
             }
