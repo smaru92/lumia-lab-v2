@@ -56,7 +56,7 @@ class EquipmentTable
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
-                TextColumn::make('skill_amp_by_lv')
+                TextColumn::make('skill_amp_by_level')
                     ->label('스킬 증폭(레벨당)')
                     ->numeric()
                     ->sortable()
@@ -66,7 +66,7 @@ class EquipmentTable
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
-                TextColumn::make('skill_amp_ratio_by_lv')
+                TextColumn::make('skill_amp_ratio_by_level')
                     ->label('스킬 증폭 비율(레벨당)')
                     ->numeric()
                     ->sortable()
@@ -89,11 +89,11 @@ class EquipmentTable
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('mas_sp')
+                TextColumn::make('max_sp')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('mas_sp_by_lv')
+                TextColumn::make('max_sp_by_lv')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
