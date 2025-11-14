@@ -120,18 +120,24 @@ class GameResultService
                     in_array($checkData['userGames'][0]['matchingMode'], [3, 8]) &&
                     $checkData['userGames'][0]['matchingTeamMode'] === 3) {
 
-                    // gameRank = 1 (1등)이 있는지 확인
+                    // gameRank = 1 (1등)이 있는지 또는 gameRank = 2인 플레이어가 6명 이상인지 확인
                     $hasWinner = false;
+                    $rank2Count = 0;
+
                     foreach ($checkData['userGames'] as $player) {
-                        if (isset($player['gameRank']) && $player['gameRank'] == 1) {
-                            $hasWinner = true;
-                            break;
+                        if (isset($player['gameRank'])) {
+                            if ($player['gameRank'] == 1) {
+                                $hasWinner = true;
+                                break;
+                            } elseif ($player['gameRank'] == 2) {
+                                $rank2Count++;
+                            }
                         }
                     }
 
-                    // 1등이 없으면 미완료 게임 -> 이 게임 ID에서 중단 예정
-                    if (!$hasWinner) {
-                        Log::channel('fetchGameResultData')->info($checkGameId . ' game not finished (no rank 1) - will stop after saving previous games');
+                    // 1등이 있거나 2등이 6명 이상이면 완료된 게임으로 간주
+                    if (!$hasWinner && $rank2Count < 6) {
+                        Log::channel('fetchGameResultData')->info($checkGameId . ' game not finished (no rank 1 and rank 2 count: ' . $rank2Count . ') - will stop after saving previous games');
                         $stopAtGameId = $checkGameId;
                         break; // 더 이상 체크하지 않음
                     }
