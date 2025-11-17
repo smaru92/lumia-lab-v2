@@ -35,6 +35,37 @@ class GameResultService
     }
 
     /**
+     * weapon_type을 결정하는 SQL CASE 문을 생성합니다.
+     * @return string
+     */
+    private function getWeaponTypeCaseStatement(): string
+    {
+        $weaponTypeMapping = config('erDev.characterWeaponTypeMapping', []);
+
+        $caseParts = ["CASE"];
+        $caseParts[] = "WHEN gr.character_id = 27 THEN 'All'";
+
+        // 각 캐릭터별 무기 분류 로직 추가
+        foreach ($weaponTypeMapping as $characterId => $weaponTypes) {
+            $caseParts[] = "WHEN gr.character_id = {$characterId} THEN";
+            $caseParts[] = "CASE";
+
+            foreach ($weaponTypes as $weaponTypeName => $weaponIds) {
+                $weaponIdsStr = implode(', ', $weaponIds);
+                $caseParts[] = "WHEN gr.weapon_id IN ({$weaponIdsStr}) THEN '{$weaponTypeName}'";
+            }
+
+            $caseParts[] = "ELSE e.item_type2";
+            $caseParts[] = "END";
+        }
+
+        $caseParts[] = "ELSE e.item_type2";
+        $caseParts[] = "END";
+
+        return implode("\n                    ", $caseParts);
+    }
+
+    /**
      * 병렬로 여러 게임 결과를 요청 (배치 크기 10개)
      * @param array $gameIds
      * @return array
@@ -487,12 +518,14 @@ class GameResultService
     public function getGameResultByGameRank(array $filters)
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
+
         $result = DB::table($gameResultTableName . ' as gr')
             ->leftJoin('equipments as e', 'gr.weapon_id', '=', 'e.id')
             ->leftJoin('characters as c', 'gr.character_id', '=', 'c.id')
             ->select(
                 DB::raw('MAX(c.name) as name'), // ✅ `GROUP BY` 없이 가져오기
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END AS weapon_type"),
+                DB::raw("{$weaponTypeCaseStmt} AS weapon_type"),
                 'gr.character_id',
                 'gr.game_rank',
                 DB::raw('COUNT(*) as game_rank_count'),
@@ -504,7 +537,7 @@ class GameResultService
             )
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->groupBy('gr.character_id',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END"),
+                DB::raw($weaponTypeCaseStmt),
                 'gr.game_rank');
 
         if (isset($filters['version_major'])) {
@@ -528,6 +561,8 @@ class GameResultService
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
+        $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
+
         $result = DB::table($gameResultEquipmentOrderTableName . ' as gre')
             ->join($gameResultTableName . ' as gr', 'gr.id', '=', 'gre.game_result_id')
             ->join('equipments as e', 'gr.weapon_id', '=', 'e.id')
@@ -535,7 +570,7 @@ class GameResultService
                 'gre.equipment_id',
                 'gr.character_id',
                 'gr.game_rank',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END AS weapon_type"),
+                DB::raw("{$weaponTypeCaseStmt} AS weapon_type"),
                 DB::raw('COUNT(*) as game_rank_count'),
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -546,7 +581,7 @@ class GameResultService
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->groupBy(
                 'gr.character_id',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END"),
+                DB::raw($weaponTypeCaseStmt),
                 'gre.equipment_id',
                 'gr.game_rank'
             );
@@ -574,6 +609,8 @@ class GameResultService
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
+        $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
+
         $result = DB::table($gameResultTraitOrderTableName . ' as grt')
             ->join($gameResultTableName . ' as gr', 'gr.id', '=', 'grt.game_result_id')
             ->join('equipments as e', 'gr.weapon_id', '=', 'e.id')
@@ -582,7 +619,7 @@ class GameResultService
                 'grt.is_main',
                 'gr.character_id',
                 'gr.game_rank',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END AS weapon_type"),
+                DB::raw("{$weaponTypeCaseStmt} AS weapon_type"),
                 DB::raw('COUNT(*) as game_rank_count'),
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -593,7 +630,7 @@ class GameResultService
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->groupBy(
                 'gr.character_id',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END"),
+                DB::raw($weaponTypeCaseStmt),
                 'grt.trait_id',
                 'grt.is_main',
                 'gr.game_rank'
@@ -623,6 +660,8 @@ class GameResultService
     public function getGameResultByTacticalSkill(array $filters): LazyCollection
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
+
         $result = DB::table($gameResultTableName . ' as gr')
             ->join('equipments as e', 'gr.weapon_id', '=', 'e.id')
             ->select(
@@ -630,7 +669,7 @@ class GameResultService
                 'gr.tactical_skill_level',
                 'gr.character_id',
                 'gr.game_rank',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END AS weapon_type"),
+                DB::raw("{$weaponTypeCaseStmt} AS weapon_type"),
                 DB::raw('COUNT(*) as game_rank_count'),
                 DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -641,7 +680,7 @@ class GameResultService
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->groupBy(
                 'gr.character_id',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END"),
+                DB::raw($weaponTypeCaseStmt),
                 'gr.tactical_skill_id',
                 'gr.tactical_skill_level',
                 'gr.game_rank'
@@ -680,13 +719,15 @@ class GameResultService
     public function getGameResultMain(array $filters)
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
+
         $results = DB::table($gameResultTableName . ' as gr')
             ->leftJoin('equipments as e', 'gr.weapon_id', '=', 'e.id')
             ->leftJoin('characters as c', 'gr.character_id', '=', 'c.id')
             ->select(
 
                 DB::raw('MAX(c.name) as name'), // ✅ `GROUP BY` 없이 가져오기
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END AS weapon_type"),
+                DB::raw("{$weaponTypeCaseStmt} AS weapon_type"),
                 'gr.character_id',
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
@@ -703,7 +744,7 @@ class GameResultService
             ->whereNotNull('e.item_type2')
             ->groupBy(
                 'gr.character_id',
-                DB::raw("CASE WHEN gr.character_id = 27 THEN 'All' ELSE e.item_type2 END")
+                DB::raw($weaponTypeCaseStmt)
             )
             ->orderBy('game_count', 'desc');
 

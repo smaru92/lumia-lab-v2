@@ -146,6 +146,18 @@ trait ErDevTrait
                 'ko' => '채찍',
                 'en' => 'Whip'
             ],
+            [
+                'ko' => '데스에더',
+                'en' => 'DeathAdder'
+            ],
+            [
+                'ko' => '블랙맘바',
+                'en' => 'BlackMamba'
+            ],
+            [
+                'ko' => '사이드와인더',
+                'en' => 'SideWinder'
+            ],
        ];
 
        foreach ($weapons as $weapon) {
