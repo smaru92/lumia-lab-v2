@@ -848,13 +848,30 @@ class GameResultService
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
-        $results = DB::table($gameResultEquipmentOrderTableName . ' as gre')
-            ->join($gameResultTableName . ' as gr', 'gr.id', '=', 'gre.game_result_id')
-            ->join('equipments as e', 'gre.equipment_id', '=', 'e.id')
+
+        // 🔥 성능 최적화: WHERE 조건을 먼저 적용하여 JOIN 전 데이터 필터링
+        $results = DB::table($gameResultTableName . ' as gr')
+            ->where('gr.matching_mode', 3) // 랭크모드만 - 첫 번째 조건으로 (인덱스 활용)
+            ->when(isset($filters['version_major']), function($query) use ($filters) {
+                return $query->where('gr.version_major', $filters['version_major']);
+            })
+            ->when(isset($filters['version_minor']), function($query) use ($filters) {
+                return $query->where('gr.version_minor', $filters['version_minor']);
+            })
+            ->when(isset($filters['min_tier']), function($query) use ($filters) {
+                return $query->where('gr.mmr_before', '>=', $filters['min_score']);
+            })
+            ->join($gameResultEquipmentOrderTableName . ' as gre', 'gr.id', '=', 'gre.game_result_id')
+            ->join('equipments as e', function($join) {
+                $join->on('gre.equipment_id', '=', 'e.id')
+                     ->whereNotNull('e.item_type2')
+                     ->whereNotIn('e.item_type1', ['Weapon'])
+                     ->whereIn('e.item_grade', ['Legend', 'Mythic']);
+            })
             ->select(
                 'gre.equipment_id',
-                'e.item_grade', // 등급 추가
-                DB::raw('MAX(e.name) as name'), // ✅ `GROUP BY` 없이 가져오기
+                'e.item_grade',
+                DB::raw('MAX(e.name) as name'),
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
@@ -866,25 +883,9 @@ class GameResultService
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
             )
-            ->where('gr.matching_mode', 3) // 랭크모드만
-            ->whereNotNull('e.item_type2')
-            ->whereNotIn('e.item_type1', ['Weapon'])
-            ->whereIn('e.item_grade', ['Legend', 'Mythic'])
-            ->groupBy(
-                'gre.equipment_id',
-                'e.item_grade' // 등급별로 그룹화
-            )
+            ->groupBy('gre.equipment_id', 'e.item_grade')
             ->orderBy('game_count', 'desc');
 
-        if (isset($filters['version_major'])) {
-            $results = $results->where('gr.version_major', $filters['version_major']);
-        }
-        if (isset($filters['version_minor'])) {
-            $results = $results->where('gr.version_minor', $filters['version_minor']);
-        }
-        if (isset($filters['min_tier'])) {
-            $results = $results->where('gr.mmr_before', '>=', $filters['min_score']);
-        }
         $gameResults = $results->get();
         $total = array();
         $totalAll = 0;
@@ -977,13 +978,30 @@ class GameResultService
     {
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
-        $results = DB::table($gameResultFirstEquipmentOrderTableName . ' as gre')
-            ->join($gameResultTableName . ' as gr', 'gr.id', '=', 'gre.game_result_id')
-            ->join('equipments as e', 'gre.equipment_id', '=', 'e.id')
+
+        // 🔥 성능 최적화: WHERE 조건을 먼저 적용하여 JOIN 전 데이터 필터링
+        $results = DB::table($gameResultTableName . ' as gr')
+            ->where('gr.matching_mode', 3) // 랭크모드만 - 첫 번째 조건으로 (인덱스 활용)
+            ->when(isset($filters['version_major']), function($query) use ($filters) {
+                return $query->where('gr.version_major', $filters['version_major']);
+            })
+            ->when(isset($filters['version_minor']), function($query) use ($filters) {
+                return $query->where('gr.version_minor', $filters['version_minor']);
+            })
+            ->when(isset($filters['min_tier']), function($query) use ($filters) {
+                return $query->where('gr.mmr_before', '>=', $filters['min_score']);
+            })
+            ->join($gameResultFirstEquipmentOrderTableName . ' as gre', 'gr.id', '=', 'gre.game_result_id')
+            ->join('equipments as e', function($join) {
+                $join->on('gre.equipment_id', '=', 'e.id')
+                     ->whereNotNull('e.item_type2')
+                     ->whereNotIn('e.item_type1', ['Weapon'])
+                     ->whereIn('e.item_grade', ['Epic']);
+            })
             ->select(
                 'gre.equipment_id',
                 'e.item_grade',
-                DB::raw('MAX(e.name) as name'), // ✅ `GROUP BY` 없이 가져오기
+                DB::raw('MAX(e.name) as name'),
                 DB::raw('COUNT(*) as game_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
@@ -995,25 +1013,9 @@ class GameResultService
                 DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
                 DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
             )
-            ->where('gr.matching_mode', 3) // 랭크모드만
-            ->whereNotNull('e.item_type2')
-            ->whereNotIn('e.item_type1', ['Weapon'])
-            ->whereIn('e.item_grade', ['Epic'])
-            ->groupBy(
-                'gre.equipment_id',
-                'e.item_grade',
-            )
+            ->groupBy('gre.equipment_id', 'e.item_grade')
             ->orderBy('game_count', 'desc');
 
-        if (isset($filters['version_major'])) {
-            $results = $results->where('gr.version_major', $filters['version_major']);
-        }
-        if (isset($filters['version_minor'])) {
-            $results = $results->where('gr.version_minor', $filters['version_minor']);
-        }
-        if (isset($filters['min_tier'])) {
-            $results = $results->where('gr.mmr_before', '>=', $filters['min_score']);
-        }
         $gameResults = $results->get();
         $total = array();
         $totalAll = 0;

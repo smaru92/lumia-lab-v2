@@ -34,16 +34,12 @@ class GameResultFirstEquipmentMainSummaryService
 
         $tiers = $this->tierRange;
 
-        // ✅ **트랜잭션 시작**
-        DB::beginTransaction();
         try {
-            // ✅ **기존 데이터 삭제**
+            // 🔥 성능 최적화: 한 번에 기존 데이터 삭제 (트랜잭션 밖에서)
             GameResultFirstEquipmentMainSummary::where('version_season', $versionSeason)
                 ->where('version_major', $versionMajor)
                 ->where('version_minor', $versionMinor)
                 ->delete();
-
-            $bulkInsertData = [];
 
             foreach ($tiers as $tier) {
                 $versionFilters = [
@@ -54,6 +50,8 @@ class GameResultFirstEquipmentMainSummaryService
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'].$tier['tierNumber'];
                 echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
+
+                $startTime = microtime(true);
                 $gameResults = $this->gameResultService->getGameResultFirstEquipmentMain([
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,
@@ -61,11 +59,16 @@ class GameResultFirstEquipmentMainSummaryService
                     'min_tier' => $minTier,
                     'min_score' => $minScore,
                 ]);
+                $queryTime = round((microtime(true) - $startTime) * 1000, 2);
+                Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Query time for {$minTier}: {$queryTime}ms");
 
-                $bulkInsertData = []; // Initialize chunk array inside the tier loop
-                $chunkSize = 100; // Define chunk size
+                // 🔥 성능 최적화: 청크 사이즈 증가 (100 → 1000)
+                $bulkInsertData = [];
+                $chunkSize = 1000;
 
                 $gameResultsCursor = $gameResults['data'];
+                $insertStartTime = microtime(true);
+
                 foreach ($gameResultsCursor as $gameResult) {
                     $bulkInsertData[] = [
                         'equipment_id' => $gameResult['equipmentId'],
@@ -97,28 +100,27 @@ class GameResultFirstEquipmentMainSummaryService
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
-                    // Insert chunk when it reaches the defined size
+
+                    // 🔥 성능 최적화: 더 큰 청크로 insert
                     if (count($bulkInsertData) >= $chunkSize) {
-                        GameResultFirstEquipmentMainSummary::insert($bulkInsertData);
-                        $bulkInsertData = []; // Reset chunk array
+                        DB::table('game_results_first_equipment_main_summary')->insert($bulkInsertData);
+                        $bulkInsertData = [];
                     }
                 }
 
-
                 // Insert any remaining data in the last chunk
                 if (!empty($bulkInsertData)) {
-                    GameResultFirstEquipmentMainSummary::insert($bulkInsertData);
+                    DB::table('game_results_first_equipment_main_summary')->insert($bulkInsertData);
                 }
+
+                $insertTime = round((microtime(true) - $insertStartTime) * 1000, 2);
+                Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Insert time for {$minTier}: {$insertTime}ms");
             }
 
-            // ✅ **트랜잭션 커밋**
-            DB::commit();
             Log::channel('updateGameResultFirstEquipmentMainSummary')->info('E: game equipment main result summary');
         } catch (\Exception $e) {
-            // ❌ **오류 발생 시 롤백**
-            DB::rollBack();
             Log::channel('updateGameResultFirstEquipmentMainSummary')->error('Error: ' . $e->getMessage());
-            Log::channel('updateGameResultFirstEquipmentMainSummary')->error($e->getTraceAsString()); // 💡 스택트레이스 추가
+            Log::channel('updateGameResultFirstEquipmentMainSummary')->error($e->getTraceAsString());
             throw $e;
         }
     }
