@@ -300,6 +300,30 @@ tr:hover { background-color: #e8f4ff; }
     cursor: pointer;
 }
 
+/* Bottom close button for modal */
+.modal-close-btn-bottom {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    margin-top: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.modal-close-btn-bottom:hover {
+    background-color: #0056b3;
+}
+
+.modal-close-btn-bottom:active {
+    background-color: #004085;
+}
+
 .tier-table {
     width: 100%;
     border-collapse: collapse;
@@ -624,14 +648,14 @@ body > .tier-tooltip {
 
     /* Modal adjustments for mobile */
     .modal {
-        padding-top: 20px;
+        padding-top: 60px; /* 네비게이션바 높이(50px) + 여유 공간 */
     }
 
     .modal-content {
         width: 98%;
-        margin: 10px auto;
+        margin: 15px auto; /* 상하 여백 증가 */
         padding: 10px;
-        max-height: 90vh;
+        max-height: 85vh; /* 높이를 줄여서 상단 여백 확보 */
         overflow-y: auto;
         overflow-x: visible; /* Allow tooltips to extend horizontally */
     }
@@ -640,6 +664,7 @@ body > .tier-tooltip {
         font-size: 1.2em;
         margin-bottom: 10px;
         margin-top: 5px;
+        padding-right: 50px; /* 닫기 버튼 공간 확보 */
     }
 
     /* Tier table mobile adjustments */
@@ -693,7 +718,7 @@ body > .tier-tooltip {
         padding: 5px 10px;
         background-color: rgba(255, 255, 255, 0.9);
         border-radius: 4px;
-        z-index: 1000;
+        z-index: 10001; /* 모달 위에 확실히 표시되도록 */
     }
 
     .tier-table {
@@ -795,6 +820,13 @@ body > .tier-tooltip {
     .nav-item {
         margin: 0 5px;
     }
+
+    /* Modal bottom close button mobile adjustments */
+    .modal-close-btn-bottom {
+        padding: 15px 20px;
+        font-size: 18px;
+        margin-top: 15px;
+    }
 }
 
 /* Small phone specific adjustments */
@@ -828,19 +860,24 @@ body > .tier-tooltip {
         height: 100vh;
         margin: 0;
         padding: 5px;
+        padding-top: 60px; /* 네비게이션바 아래에 여유 공간 확보 */
         border-radius: 0;
         position: fixed;
         top: 0;
         left: 0;
         overflow-y: auto;
         overflow-x: visible; /* Allow tooltips to extend horizontally even on very small screens */
+        box-sizing: border-box; /* padding을 높이에 포함 */
     }
 
     .close-button {
         font-size: 28px;
         right: 10px;
-        top: 8px;
+        top: 68px; /* padding-top(60px) + 여유 공간 */
         padding: 3px 8px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 4px;
+        z-index: 10001; /* 모달 위에 확실히 표시되도록 */
     }
 
     /* Tier table very small screen adjustments */
@@ -963,6 +1000,7 @@ body > .tier-tooltip {
     .modal-content h3 {
         font-size: 1em;
         margin-bottom: 8px;
+        padding-right: 45px; /* 닫기 버튼 공간 확보 */
     }
 
     .tier-table .tier-badge {
@@ -1005,6 +1043,13 @@ body > .tier-tooltip {
     .tier-weapon-icon {
         width: 14px;
         height: 14px;
+    }
+
+    /* Modal bottom close button mobile adjustments */
+    .modal-close-btn-bottom {
+        padding: 15px 20px;
+        font-size: 18px;
+        margin-top: 15px;
     }
 }
 
