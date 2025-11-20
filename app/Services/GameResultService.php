@@ -800,7 +800,7 @@ class GameResultService
         }
         $metaStandard['avgMmrGain'] = $metaStandard['avgMmrGain'] / count($data);
         $metaStandard['gameCount'] = $totalAll / count($data);
-        $metaStandard['gameCountPercent'] = (1 / count($data)) * 100 * 1.5;
+        $metaStandard['gameCountPercent'] = (1 / count($data)) * 100 * 1.3;
         $metaStandard['dataCount'] = count($data);
         foreach ($data as $name => $item) {
             $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $totalAll) * 100, 2) : 0;
@@ -929,7 +929,7 @@ class GameResultService
         }
         $metaStandard['avgMmrGain'] = $metaStandard['avgMmrGain'] / count($data);
         $metaStandard['gameCount'] = $totalAll * 4 / count($data);
-        $metaStandard['gameCountPercent'] = (4 / count($data)) * 100 * 1.5;
+        $metaStandard['gameCountPercent'] = (4 / count($data)) * 100 * 1.3;
         $metaStandard['dataCount'] = count($data);
         foreach ($data as $name => $item) {
             $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $totalAll) * 100, 2) : 0;
