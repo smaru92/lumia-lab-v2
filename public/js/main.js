@@ -307,6 +307,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Bottom close button handler
+    const closeModalButtons = document.querySelectorAll('.close-modal');
+    closeModalButtons?.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (tierModal) {
+                tierModal.style.display = 'none';
+            }
+        });
+    });
+
     window.addEventListener('click', (event) => {
         if (event.target === tierModal) {
             tierModal.style.display = 'none';

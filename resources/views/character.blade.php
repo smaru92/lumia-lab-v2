@@ -214,6 +214,7 @@
                 @endforeach
             </tbody>
         </table>
+        <button class="modal-close-btn-bottom close-modal">닫기</button>
     </div>
 </div>
 @endsection
