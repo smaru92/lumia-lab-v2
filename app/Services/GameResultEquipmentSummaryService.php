@@ -138,6 +138,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             ->join('equipments as e', 'e.id', 'game_results_equipment_summary.equipment_id')
             ->join('characters as c', 'c.id', 'game_results_equipment_summary.character_id')
             ->where($filters)
+            ->whereIn('e.item_grade', ['Epic', 'Legend', 'Mythic'])
             ->orderBy('game_rank_count', 'desc')
             ->orderBy('game_results_equipment_summary.game_rank', 'asc')
             ->get();
