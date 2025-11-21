@@ -307,17 +307,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Bottom close button handler
-    const closeModalButtons = document.querySelectorAll('.close-modal');
-    closeModalButtons?.forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Bottom close button handler - use event delegation
+    document.addEventListener('click', (event) => {
+        // Check if clicked element has close-modal class
+        if (event.target.classList.contains('close-modal')) {
             if (tierModal) {
                 tierModal.style.display = 'none';
             }
-        });
-    });
+        }
 
-    window.addEventListener('click', (event) => {
+        // Close modal when clicking outside
         if (event.target === tierModal) {
             tierModal.style.display = 'none';
         }
