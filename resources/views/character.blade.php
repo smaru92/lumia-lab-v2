@@ -220,5 +220,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/main.js') }}"></script>
+    <script src="{{ asset('js/main.js') }}?v={{ time() }}"></script>
 @endpush
