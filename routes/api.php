@@ -25,3 +25,10 @@ Route::get('/equipment', [InfoController::class, 'getEquipments'])->name('api.eq
 Route::get('/item', [InfoController::class, 'getItems']);
 Route::get('/skill', [InfoController::class, 'getSkills']);
 Route::get('/trait', [InfoController::class, 'getTraits']);
+
+// Detail 페이지 Lazy Loading API
+Route::get('/detail/{types}/tiers', [\App\Http\Controllers\CharacterController::class, 'getDetailTiers']);
+Route::get('/detail/{types}/ranks', [\App\Http\Controllers\CharacterController::class, 'getDetailRanks']);
+Route::get('/detail/{types}/tactical-skills', [\App\Http\Controllers\CharacterController::class, 'getDetailTacticalSkills']);
+Route::get('/detail/{types}/equipment', [\App\Http\Controllers\CharacterController::class, 'getDetailEquipment']);
+Route::get('/detail/{types}/traits', [\App\Http\Controllers\CharacterController::class, 'getDetailTraits']);
