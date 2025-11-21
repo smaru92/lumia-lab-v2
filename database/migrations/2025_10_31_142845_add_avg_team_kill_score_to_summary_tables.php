@@ -31,6 +31,15 @@ return new class extends Migration
             $table->decimal('avg_team_kill_score', 10, 3)->nullable()->after('avg_mmr_gain');
         });
 
+        // game_results_rank_summary 테이블에 avg_team_kill_score 추가
+        if (Schema::hasTable('game_results_rank_summary')) {
+            Schema::table('game_results_rank_summary', function (Blueprint $table) {
+                if (!Schema::hasColumn('game_results_rank_summary', 'avg_team_kill_score')) {
+                    $table->decimal('avg_team_kill_score', 10, 3)->nullable()->after('avg_mmr_gain');
+                }
+            });
+        }
+
         // game_results_tactical_skill_summary 테이블에 avg_team_kill_score 추가 (있다면)
         if (Schema::hasTable('game_results_tactical_skill_summary')) {
             Schema::table('game_results_tactical_skill_summary', function (Blueprint $table) {
@@ -70,6 +79,14 @@ return new class extends Migration
         Schema::table('game_results_first_equipment_main_summary', function (Blueprint $table) {
             $table->dropColumn('avg_team_kill_score');
         });
+
+        if (Schema::hasTable('game_results_rank_summary')) {
+            Schema::table('game_results_rank_summary', function (Blueprint $table) {
+                if (Schema::hasColumn('game_results_rank_summary', 'avg_team_kill_score')) {
+                    $table->dropColumn('avg_team_kill_score');
+                }
+            });
+        }
 
         if (Schema::hasTable('game_results_tactical_skill_summary')) {
             Schema::table('game_results_tactical_skill_summary', function (Blueprint $table) {

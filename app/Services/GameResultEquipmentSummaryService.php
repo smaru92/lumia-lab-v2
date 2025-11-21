@@ -39,6 +39,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             'game_rank' => $gameResult->game_rank,
             'game_rank_count' => $gameResult->game_rank_count,
             'avg_mmr_gain' => $gameResult->avg_mmr_gain,
+            'avg_team_kill_score' => $gameResult->avg_team_kill_score ?? null,
             'positive_count' => $gameResult->positive_count,
             'negative_count' => $gameResult->negative_count,
             'positive_avg_mmr_gain' => $gameResult->positive_avg_mmr_gain,
