@@ -125,15 +125,28 @@ class InfoController
             $upsertData[] = $row;
         }
 
+        // ✅ 모든 row를 동일한 컬럼 구조로 정규화
+        $upsertData = array_map(function ($row) use ($columns) {
+            $normalized = [];
+            foreach ($columns as $column) {
+                // created_at, updated_at은 제외 (Laravel이 자동 처리)
+                if (in_array($column, ['created_at', 'updated_at'])) {
+                    continue;
+                }
+                $normalized[$column] = $row[$column] ?? null;
+            }
+            return $normalized;
+        }, $upsertData);
+
         // name 컬럼을 제외한 업데이트 컬럼 목록
         $updateColumns = array_filter($columns, function($column) {
-            return $column !== 'name' && $column !== 'id';
+            return !in_array($column, ['name', 'id', 'created_at', 'updated_at']);
         });
 
         Equipment::upsert(
             $upsertData,
-            ['id'], // unique key
-            $updateColumns // name 제외한 업데이트 컬럼
+            ['id'],
+            array_values($updateColumns) // array_values로 인덱스 재정렬
         );
 
         return response()->json(['msg' => '완료']);
