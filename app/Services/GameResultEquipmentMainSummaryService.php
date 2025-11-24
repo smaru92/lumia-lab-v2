@@ -215,7 +215,7 @@ class GameResultEquipmentMainSummaryService
 
         foreach ($statLabels as $key => $label) {
             $value = $equipment->$key ?? 0;
-            $valueByLv = $equipment->{$key . '_by_lv'} ?? 0;
+            $valueByLv = $equipment->{$key . '_by_lv'} ?? $equipment->{$key . '_by_level'} ?? 0;
 
             // 백분율 스탯 확인
             $isPercentage = (strpos($key, 'ratio') !== false ||
