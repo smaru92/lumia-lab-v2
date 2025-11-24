@@ -144,6 +144,11 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             ->orderBy('game_results_equipment_summary.game_rank', 'asc')
             ->get();
         });
+
+        // 🔥 최적화 1: 장비 ID 수집하여 한 번에 스킬 정보 가져오기 (N+1 쿼리 해결)
+        $equipmentIds = $data->pluck('equipment_id')->unique()->toArray();
+        $equipmentSkillsMap = $this->getEquipmentSkillsBulk($equipmentIds);
+
         $total = array();
         $result = array(
             'Weapon' => array(),
@@ -152,68 +157,78 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             'Arm' => array(),
             'Leg' => array(),
         );
+
+        // 🔥 최적화 2: total 계산 먼저 수행
         foreach ($data as $item) {
             if (!isset($total[$item->equipment_id])) {
                 $total[$item->equipment_id] = 0;
             }
             $total[$item->equipment_id] += $item->game_rank_count;
+        }
+
+        // 메인 처리 루프
+        foreach ($data as $item) {
+            // 퍼센트 계산
             $item->positive_count_percent = $item->game_rank_count ? $item->positive_count / $item->game_rank_count * 100 : 0;
             $item->negative_count_percent = $item->game_rank_count ? $item->negative_count / $item->game_rank_count * 100 : 0;
-        }
-        foreach ($data as $item) {
             $item->game_rank_count_percent = $total[$item->equipment_id] ? $item->game_rank_count / $total[$item->equipment_id] * 100 : 0;
+
             $item->weapon_type = $this->replaceWeaponType($item->weapon_type, 'ko');
             $item->equipment_stats = $this->setEquipmtStat($item);
-            $item->equipment_skills = $this->getEquipmentSkills($item->equipment_id);
+            // 🔥 최적화 3: 미리 로드한 스킬 정보 사용 (N+1 쿼리 해결)
+            $item->equipment_skills = $equipmentSkillsMap[$item->equipment_id] ?? [];
+
             if ($item->item_type1 === 'Weapon') {
                 $itemType = 'Weapon';
             } else {
                 $itemType = $item->item_type2;
             }
+
             if (!isset($result[$itemType][$item->equipment_id])) {
                 $result[$itemType][$item->equipment_id] = array();
+                // 🔥 최적화 4: 빈 랭크 객체 생성 최적화
+                $emptyRankTemplate = [
+                    "character_name" => $item->character_name,
+                    "item_type1" => $item->item_type1,
+                    "item_type2" => $item->item_type2,
+                    "item_grade" => $item->item_grade,
+                    "equipment_name" => $item->equipment_name,
+                    "equipment_stats" => $item->equipment_stats,
+                    "equipment_skills" => $item->equipment_skills,
+                    "id" => 0,
+                    "equipment_id" => $item->equipment_id,
+                    "character_id" => $item->character_id,
+                    "weapon_type" => $item->weapon_type,
+                    "game_rank_count" => 0,
+                    "positive_count" => 0,
+                    "negative_count" => 0,
+                    "avg_mmr_gain" => 0,
+                    "positive_avg_mmr_gain" => 0,
+                    "negative_avg_mmr_gain" => 0,
+                    "min_tier" => $item->min_tier,
+                    "min_score" => $item->min_score,
+                    "version_major" => $item->version_major,
+                    "version_minor" => $item->version_minor,
+                    "created_at" => "0000-00-00 00:00:00",
+                    "updated_at" => "0000-00-00 00:00:00",
+                    "positive_count_percent" => 0,
+                    "negative_count_percent" => 0,
+                    "game_rank_count_percent" => 0,
+                ];
+
                 foreach(range(1, 4) as $rank) {
-                    $result[$itemType][$item->equipment_id][$rank] = (object) [
-                        "character_name" => $item->character_name,
-                        "item_type1" => $item->item_type1,
-                        "item_type2" => $item->item_type2,
-                        "item_grade" => $item->item_grade,
-                        "equipment_name" => $item->equipment_name,
-                        "equipment_stats" => $item->equipment_stats,
-                        "equipment_skills" => $item->equipment_skills,
-                        "id" => 0,
-                        "equipment_id" => $item->equipment_id,
-                        "character_id" => $item->character_id,
-                        "weapon_type" => $item->weapon_type,
-                        "game_rank" => $rank,
-                        "game_rank_count" => 0,
-                        "positive_count" => 0,
-                        "negative_count" => 0,
-                        "avg_mmr_gain" => 0,
-                        "positive_avg_mmr_gain" => 0,
-                        "negative_avg_mmr_gain" => 0,
-                        "min_tier" => $item->min_tier,
-                        "min_score" => $item->min_score,
-                        "version_major" => $item->version_major,
-                        "version_minor" => $item->version_minor,
-                        "created_at" => "0000-00-00 00:00:00",
-                        "updated_at" => "0000-00-00 00:00:00",
-                        "positive_count_percent" => 0,
-                        "negative_count_percent" => 0,
-                        "game_rank_count_percent" => 0,
-                    ];
+                    $emptyRank = $emptyRankTemplate;
+                    $emptyRank['game_rank'] = $rank;
+                    $result[$itemType][$item->equipment_id][$rank] = (object) $emptyRank;
                 }
             }
             $result[$itemType][$item->equipment_id][$item->game_rank] = $item;
-
         }
 
         // Sort each item type by total usage count
         foreach ($result as $itemType => $items) {
             uksort($result[$itemType], function($idA, $idB) use ($total) {
-                $totalA = isset($total[$idA]) ? $total[$idA] : 0;
-                $totalB = isset($total[$idB]) ? $total[$idB] : 0;
-                return $totalB - $totalA;
+                return ($total[$idB] ?? 0) - ($total[$idA] ?? 0);
             });
         }
 
@@ -221,6 +236,36 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             'data' => $result,
             'total' => $total
         ];
+    }
+
+    /**
+     * 여러 장비의 스킬 정보를 한 번에 가져옴 (N+1 쿼리 최적화)
+     */
+    private function getEquipmentSkillsBulk(array $equipmentIds): array
+    {
+        if (empty($equipmentIds)) {
+            return [];
+        }
+
+        $skills = DB::table('equipment_equipment_skill')
+            ->join('equipment_skills', 'equipment_equipment_skill.equipment_skill_id', '=', 'equipment_skills.id')
+            ->whereIn('equipment_equipment_skill.equipment_id', $equipmentIds)
+            ->select('equipment_equipment_skill.equipment_id', 'equipment_skills.name', 'equipment_skills.description')
+            ->get();
+
+        // 장비 ID별로 그룹화
+        $result = [];
+        foreach ($skills as $skill) {
+            if (!isset($result[$skill->equipment_id])) {
+                $result[$skill->equipment_id] = [];
+            }
+            $result[$skill->equipment_id][] = [
+                'name' => $skill->name,
+                'description' => $skill->description ?? ''
+            ];
+        }
+
+        return $result;
     }
 
     private function setEquipmtStat($equipment)
