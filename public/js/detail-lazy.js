@@ -516,13 +516,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 이름 (중복일 경우 표시하지 않음)
                 if (preEquipmentName !== equipmentName) {
+                    // 장비 정보 툴팁 생성
+                    const hasStats = firstItem.equipment_stats && Array.isArray(firstItem.equipment_stats) && firstItem.equipment_stats.length > 0;
+                    const hasSkills = firstItem.equipment_skills && Array.isArray(firstItem.equipment_skills) && firstItem.equipment_skills.length > 0;
+
+                    let tooltipContent = '';
+                    if (hasStats) {
+                        firstItem.equipment_stats.forEach(stat => {
+                            tooltipContent += `${stat.text}: ${stat.value}<br>`;
+                        });
+                    } else {
+                        tooltipContent += '장비 정보 없음';
+                    }
+
+                    if (hasSkills) {
+                        tooltipContent += '<br>';
+                        firstItem.equipment_skills.forEach((skill, idx) => {
+                            tooltipContent += `<strong style="color: #ffd700;">${skill.name}</strong><br>`;
+                            tooltipContent += `${skill.description}<br>`;
+                            if (idx < firstItem.equipment_skills.length - 1) {
+                                tooltipContent += '<br>';
+                            }
+                        });
+                    }
+
                     html += `
                         <td>
                             <div style="display: flex; align-items: center; gap: 5px;">
-                                <img src="/storage/Equipment/${equipmentId}.png"
-                                     alt="${equipmentName}"
-                                     class="equipment-icon"
-                                     onerror="this.onerror=null; this.src='/storage/Equipment/default.png';">
+                                <div class="tooltip-wrap">
+                                    <img src="/storage/Equipment/${equipmentId}.png"
+                                         alt="${equipmentName}"
+                                         class="equipment-icon"
+                                         onerror="this.onerror=null; this.src='/storage/Equipment/default.png';">
+                                    <span class="tooltip-text">${tooltipContent}</span>
+                                </div>
                                 ${equipmentName}
                             </div>
                         </td>
@@ -566,6 +593,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 등급 필터 이벤트 리스너 추가
         setupGradeFilters(element);
+
+        // 툴팁 포지셔닝 이벤트 추가
+        setupTooltips(element);
     }
 
     /**
@@ -767,6 +797,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         isMainCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
         categoryCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+    }
+
+    /**
+     * 툴팁 포지셔닝 설정
+     */
+    function setupTooltips(container) {
+        const tooltipWraps = container.querySelectorAll('.tooltip-wrap');
+        tooltipWraps.forEach(wrap => {
+            wrap.addEventListener('mouseenter', function(e) {
+                const tooltip = this.querySelector('.tooltip-text');
+                if (tooltip) {
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                    tooltip.style.top = (rect.top - 10) + 'px';
+                }
+            });
+        });
     }
 
     /**
