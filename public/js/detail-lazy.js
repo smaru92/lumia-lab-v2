@@ -313,10 +313,28 @@ document.addEventListener('DOMContentLoaded', function() {
             <tbody id="tactical-skill-tbody">
         `;
 
-        // byTacticalSkillData가 객체이므로 Object.values()로 배열로 변환
-        const skillsArray = Array.isArray(byTacticalSkillData) ? byTacticalSkillData : Object.values(byTacticalSkillData);
+        // 전술스킬을 1+2레벨 합계로 정렬
+        let skillsArray = [];
+        for (const skillId in byTacticalSkillData) {
+            const byTacticalSkill = byTacticalSkillData[skillId];
+            // 1+2레벨 합계 계산
+            const totalUses = (byTacticalSkillTotal[skillId] && byTacticalSkillTotal[skillId][1] ? byTacticalSkillTotal[skillId][1] : 0)
+                + (byTacticalSkillTotal[skillId] && byTacticalSkillTotal[skillId][2] ? byTacticalSkillTotal[skillId][2] : 0);
 
-        skillsArray.forEach((byTacticalSkill, skillIndex) => {
+            skillsArray.push({
+                skillId: skillId,
+                data: byTacticalSkill,
+                totalUses: totalUses
+            });
+        }
+
+        // 1+2레벨 합계로 내림차순 정렬
+        skillsArray.sort((a, b) => b.totalUses - a.totalUses);
+
+        let rowIndex = 0;
+        skillsArray.forEach((skillObj) => {
+            const byTacticalSkill = skillObj.data;
+
             // byTacticalSkill이 객체일 경우 Object.values()로 변환
             const skillItems = Array.isArray(byTacticalSkill) ? byTacticalSkill : Object.values(byTacticalSkill);
 
@@ -334,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     : 0;
 
                 html += `
-                    <tr class="tactical-skill-row" ${skillIndex >= 5 ? 'style="display: none;"' : ''}>
+                    <tr class="tactical-skill-row" ${rowIndex >= 5 ? 'style="display: none;"' : ''}>
                         <td>
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <img src="/storage/TacticalSkill/${skillId}.png"
@@ -368,6 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 html += '</tr>';
+                rowIndex++;
             });
         });
 
