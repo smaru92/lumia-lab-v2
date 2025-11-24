@@ -782,15 +782,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(category);
                 const isMainMatch = selectedIsMain.length === 0 || selectedIsMain.includes(isMain);
 
-                // display: none 스타일이 인라인으로 설정되어 있는지 확인
-                const hasHiddenStyle = row.getAttribute('style')?.includes('display: none');
-
                 if (categoryMatch && isMainMatch) {
-                    if (!hasHiddenStyle) {
-                        row.style.display = '';
-                    }
+                    // 필터 조건에 맞으면 표시 (더보기 상태는 유지)
+                    row.classList.remove('filtered-hidden');
                 } else {
-                    row.style.display = 'none';
+                    // 필터 조건에 안 맞으면 숨김
+                    row.classList.add('filtered-hidden');
                 }
             });
         }

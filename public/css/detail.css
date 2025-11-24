@@ -869,3 +869,8 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     color: #c62828;
     margin: 20px 0;
 }
+
+/* 필터로 숨겨진 행 (체크박스 필터용) */
+.filtered-hidden {
+    display: none !important;
+}
