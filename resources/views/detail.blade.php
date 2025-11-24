@@ -180,7 +180,7 @@
 </div>
 
 @push('scripts')
-    <script src="{{ asset('js/detail.js') }}"></script>
-    <script src="{{ asset('js/detail-lazy.js') }}"></script>
+    <script src="{{ asset('js/detail.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/detail-lazy.js') }}?v={{ time() }}"></script>
 @endpush
 @endsection
