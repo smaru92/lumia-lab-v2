@@ -137,7 +137,7 @@ class GameResultEquipmentMainSummaryService
             'equipments.defense', 'equipments.defense_by_lv',
             'equipments.skill_amp', 'equipments.skill_amp_by_level',
             'equipments.skill_amp_ratio', 'equipments.skill_amp_ratio_by_level',
-            'equipments.adaptive_force', 'equipments.adaptive_force_by_lv',
+            'equipments.adaptive_force', 'equipments.adaptive_force_by_level',
             'equipments.max_hp', 'equipments.max_hp_by_lv',
             'equipments.hp_regen', 'equipments.hp_regen_ratio',
             'equipments.sp_regen', 'equipments.sp_regen_ratio',

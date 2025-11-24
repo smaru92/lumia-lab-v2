@@ -46,7 +46,7 @@ class EquipmentForm
                 TextInput::make('adaptive_force')
                     ->numeric()
                     ->default(null),
-                TextInput::make('adaptive_force_by_lv')
+                TextInput::make('adaptive_force_by_level')
                     ->numeric()
                     ->default(null),
                 TextInput::make('max_hp')

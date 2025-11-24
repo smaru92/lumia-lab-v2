@@ -76,7 +76,7 @@ class EquipmentTable
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('adaptive_force_by_lv')
+                TextColumn::make('adaptive_force_by_level')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
