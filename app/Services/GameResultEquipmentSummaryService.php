@@ -82,7 +82,7 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             'e.skill_amp_ratio',
             'e.skill_amp_ratio_by_level',
             'e.adaptive_force',
-            'e.adaptive_force_by_lv',
+            'e.adaptive_force_by_level',
             'e.max_hp',
             'e.max_hp_by_lv',
             'e.max_sp',

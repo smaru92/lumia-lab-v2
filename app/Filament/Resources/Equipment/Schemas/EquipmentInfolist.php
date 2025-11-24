@@ -49,7 +49,7 @@ class EquipmentInfolist
                 TextEntry::make('adaptive_force')
                     ->numeric()
                     ->placeholder('-'),
-                TextEntry::make('adaptive_force_by_lv')
+                TextEntry::make('adaptive_force_by_level')
                     ->numeric()
                     ->placeholder('-'),
                 TextEntry::make('max_hp')

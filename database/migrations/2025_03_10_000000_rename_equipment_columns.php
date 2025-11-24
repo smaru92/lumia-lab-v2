@@ -21,6 +21,9 @@ return new class extends Migration
 
             // skill_amp_ratio_by_lv -> skill_amp_ratio_by_level
             $table->renameColumn('skill_amp_ratio_by_lv', 'skill_amp_ratio_by_level');
+
+            // adaptive_force_by_lv -> adaptive_force_by_level
+            $table->renameColumn('adaptive_force_by_lv', 'adaptive_force_by_level');
         });
     }
 
@@ -35,6 +38,7 @@ return new class extends Migration
             $table->renameColumn('max_sp_by_lv', 'mas_sp_by_lv');
             $table->renameColumn('skill_amp_by_level', 'skill_amp_by_lv');
             $table->renameColumn('skill_amp_ratio_by_level', 'skill_amp_ratio_by_lv');
+            $table->renameColumn('adaptive_force_by_level', 'adaptive_force_by_lv');
         });
     }
 };
