@@ -12,21 +12,21 @@ class ResizeImages extends Command
      *
      * @var string
      */
-    protected $signature = 'images:resize {--scale=0.6 : Scale factor for resizing (default: 0.6 = 60%)}';
+    protected $signature = 'images:resize {--width=80 : Target width in pixels (default: 80px)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Resize images in Character/icon, Equipment, Trait, and TacticalSkill directories';
+    protected $description = 'Resize images in Character/icon, Equipment, Trait, and TacticalSkill directories to a specific width';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $scale = (float) $this->option('scale');
+        $targetWidth = (int) $this->option('width');
 
         $directories = [
             storage_path('app/public/Character/icon'),
@@ -35,7 +35,7 @@ class ResizeImages extends Command
             storage_path('app/public/TacticalSkill'),
         ];
 
-        $this->info("Starting image resize with scale factor: {$scale}");
+        $this->info("Starting image resize to width: {$targetWidth}px");
 
         $totalProcessed = 0;
         $totalFailed = 0;
@@ -86,7 +86,7 @@ class ResizeImages extends Command
                         File::copy($originPath, $targetPath);
 
                         // Then resize the target
-                        $result = $this->resizeImage($targetPath, $scale);
+                        $result = $this->resizeImage($targetPath, $targetWidth);
                         if ($result) {
                             $this->line("✓ Resized: {$filename}");
                             $totalProcessed++;
@@ -116,7 +116,7 @@ class ResizeImages extends Command
                         }
 
                         // Resize image
-                        $result = $this->resizeImage($originalPath, $scale);
+                        $result = $this->resizeImage($originalPath, $targetWidth);
                         if ($result) {
                             $this->line("✓ Resized: {$filename}");
                             $totalProcessed++;
@@ -144,13 +144,13 @@ class ResizeImages extends Command
     }
 
     /**
-     * Resize an image by scale factor
+     * Resize an image to target width (maintaining aspect ratio)
      *
      * @param string $imagePath
-     * @param float $scale
+     * @param int $targetWidth Target width in pixels
      * @return bool
      */
-    private function resizeImage(string $imagePath, float $scale): bool
+    private function resizeImage(string $imagePath, int $targetWidth): bool
     {
         $extension = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
 
@@ -184,9 +184,9 @@ class ResizeImages extends Command
         $originalWidth = imagesx($source);
         $originalHeight = imagesy($source);
 
-        // Calculate new dimensions
-        $newWidth = (int) ($originalWidth * $scale);
-        $newHeight = (int) ($originalHeight * $scale);
+        // Calculate new dimensions (maintaining aspect ratio)
+        $newWidth = $targetWidth;
+        $newHeight = (int) (($originalHeight / $originalWidth) * $targetWidth);
 
         // Create new image
         $resized = imagecreatetruecolor($newWidth, $newHeight);
