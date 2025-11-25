@@ -515,8 +515,10 @@ class GameResultService
     }
 
 
-    public function getGameResultByGameRank(array $filters)
+    public function getGameResultByGameRank(array $filters): LazyCollection
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
 
@@ -550,7 +552,7 @@ class GameResultService
         if (isset($filters['min_tier'])) {
             $result = $result->where('gr.mmr_before', '>=', $filters['min_score']);
         }
-        return $result->get();
+        return $result->cursor(); // Use cursor() instead of get()
     }
 
     /**
@@ -560,6 +562,8 @@ class GameResultService
      */
     public function getGameResultByEquipment(array $filters): LazyCollection
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
         $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
@@ -609,6 +613,8 @@ class GameResultService
      */
     public function getGameResultByTrait(array $filters): LazyCollection
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
         $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
@@ -662,6 +668,8 @@ class GameResultService
      */
     public function getGameResultByTacticalSkill(array $filters): LazyCollection
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
 
@@ -722,6 +730,8 @@ class GameResultService
      */
     public function getGameResultMain(array $filters)
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
 
@@ -829,6 +839,11 @@ class GameResultService
             'total' => $total,
             'data' => $data,
         ];
+
+        // 메모리 정리
+        unset($gameResults, $data, $total);
+        gc_collect_cycles();
+
         return $result;
     }
     /**
@@ -850,6 +865,8 @@ class GameResultService
      */
     public function getGameResultEquipmentMain(array $filters)
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
 
@@ -959,6 +976,11 @@ class GameResultService
             'total' => $total,
             'data' => $data,
         ];
+
+        // 메모리 정리
+        unset($gameResults, $data, $total);
+        gc_collect_cycles();
+
         return $result;
     }
     /**
@@ -980,6 +1002,8 @@ class GameResultService
      */
     public function getGameResultFirstEquipmentMain(array $filters)
     {
+        DB::disableQueryLog(); // 쿼리 로그 비활성화로 메모리 절약
+
         $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
         $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
 
@@ -1089,6 +1113,11 @@ class GameResultService
             'total' => $total,
             'data' => $data,
         ];
+
+        // 메모리 정리
+        unset($gameResults, $data, $total);
+        gc_collect_cycles();
+
         return $result;
     }
 
@@ -1296,8 +1325,8 @@ class GameResultService
     private function deleteGameResultsFrom(int $fromGameId): void
     {
         try {
-            // 모든 버전의 game_results 테이블 찾기
-            $versionHistories = VersionHistory::all();
+            // 버전 히스토리를 cursor()로 읽어서 메모리 최적화
+            $versionHistories = VersionHistory::cursor();
 
             foreach ($versionHistories as $version) {
                 $filters = [
@@ -1314,12 +1343,21 @@ class GameResultService
 
                 // 테이블이 존재하는지 확인
                 if (DB::getSchemaBuilder()->hasTable($gameResultTableName)) {
-                    // 해당 게임 ID 이상의 데이터 찾기
-                    $gameResultIds = DB::table($gameResultTableName)
-                        ->where('game_id', '>=', $fromGameId)
-                        ->pluck('id');
+                    // 청크 단위로 삭제 (메모리 최적화)
+                    $chunkSize = 1000;
+                    $totalDeleted = 0;
 
-                    if ($gameResultIds->isNotEmpty()) {
+                    do {
+                        // 청크로 ID 가져오기
+                        $gameResultIds = DB::table($gameResultTableName)
+                            ->where('game_id', '>=', $fromGameId)
+                            ->limit($chunkSize)
+                            ->pluck('id');
+
+                        if ($gameResultIds->isEmpty()) {
+                            break;
+                        }
+
                         // 관련 테이블 먼저 삭제
                         if (DB::getSchemaBuilder()->hasTable($gameResultSkillOrderTableName)) {
                             DB::table($gameResultSkillOrderTableName)
@@ -1347,12 +1385,19 @@ class GameResultService
 
                         // 메인 테이블 삭제
                         $deletedCount = DB::table($gameResultTableName)
-                            ->where('game_id', '>=', $fromGameId)
+                            ->whereIn('id', $gameResultIds)
                             ->delete();
 
-                        if ($deletedCount > 0) {
-                            Log::channel('fetchGameResultData')->info("Deleted {$deletedCount} game results from {$gameResultTableName} (game_id >= {$fromGameId})");
-                        }
+                        $totalDeleted += $deletedCount;
+
+                        // 메모리 정리
+                        unset($gameResultIds);
+                        gc_collect_cycles();
+
+                    } while ($deletedCount > 0);
+
+                    if ($totalDeleted > 0) {
+                        Log::channel('fetchGameResultData')->info("Deleted {$totalDeleted} game results from {$gameResultTableName} (game_id >= {$fromGameId})");
                     }
                 }
             }
