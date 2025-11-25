@@ -35,10 +35,34 @@ class GameResultTraitSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
         $tiers = $this->tierRange;
 
-        $allInsertData = []; // 모든 insert 데이터를 임시로 모음
-
-        // 트랜잭션 밖에서 데이터 수집 (기존 데이터는 그대로 유지)
         try {
+            // 1단계: 기존 데이터 삭제 (청크 단위)
+            $deleteChunkSize = 5000;
+            $deletedCount = 0;
+
+            Log::channel('updateGameResultTraitSummary')->info('Deleting old records...');
+            do {
+                $deleted = GameResultTraitSummary::where('version_season', $versionSeason)
+                    ->where('version_major', $versionMajor)
+                    ->where('version_minor', $versionMinor)
+                    ->limit($deleteChunkSize)
+                    ->delete();
+
+                $deletedCount += $deleted;
+
+                // 메모리 정리
+                if ($deletedCount % 20000 === 0) {
+                    gc_collect_cycles();
+                }
+            } while ($deleted > 0);
+
+            Log::channel('updateGameResultTraitSummary')->info("Deleted {$deletedCount} old records");
+
+            // 2단계: 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
+            $insertChunkSize = 500;
+            $totalInserted = 0;
+            $batchData = [];
+
             foreach ($tiers as $tier) {
                 echo "game result trait S : {$tier['tier']} {$tier['tierNumber']} \n";
                 $versionFilters = [
@@ -57,7 +81,7 @@ class GameResultTraitSummaryService
                 ]);
 
                 foreach ($gameResultsCursor as $gameResult) {
-                    $allInsertData[] = [
+                    $batchData[] = [
                         'character_id' => $gameResult->character_id,
                         'trait_id' => $gameResult->trait_id,
                         'is_main' => $gameResult->is_main,
@@ -78,6 +102,18 @@ class GameResultTraitSummaryService
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
+
+                    // 일정 크기마다 insert
+                    if (count($batchData) >= $insertChunkSize) {
+                        GameResultTraitSummary::insert($batchData);
+                        $totalInserted += count($batchData);
+                        $batchData = [];
+
+                        // 메모리 정리
+                        if ($totalInserted % 5000 === 0) {
+                            gc_collect_cycles();
+                        }
+                    }
                 }
 
                 // 티어별 처리 후 메모리 정리
@@ -85,33 +121,20 @@ class GameResultTraitSummaryService
                 gc_collect_cycles();
             }
 
-            // 트랜잭션 시작: 빠르게 삭제 후 insert
-            DB::beginTransaction();
-
-            // 기존 데이터 삭제
-            GameResultTraitSummary::where('version_season', $versionSeason)
-                ->where('version_major', $versionMajor)
-                ->where('version_minor', $versionMinor)
-                ->delete();
-
-            // 새 데이터를 chunk로 insert
-            $chunkSize = 100;
-            foreach (array_chunk($allInsertData, $chunkSize) as $chunk) {
-                GameResultTraitSummary::insert($chunk);
+            // 남은 데이터 insert
+            if (!empty($batchData)) {
+                GameResultTraitSummary::insert($batchData);
+                $totalInserted += count($batchData);
             }
 
-            DB::commit();
+            Log::channel('updateGameResultTraitSummary')->info("Inserted {$totalInserted} new records");
             Log::channel('updateGameResultTraitSummary')->info('E: game result tactical_skill summary');
         } catch (\Exception $e) {
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
-            }
             Log::channel('updateGameResultTraitSummary')->error('rank Error: ' . $e->getMessage());
             Log::channel('updateGameResultTraitSummary')->error($e->getTraceAsString());
             throw $e;
         } finally {
             // 메모리 정리
-            unset($allInsertData);
             gc_collect_cycles();
         }
     }
