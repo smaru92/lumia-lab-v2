@@ -192,13 +192,8 @@ class CharacterController extends Controller
             ]);
         }
 
-        // 전체 캐릭터 카운트
-        $byMainFilter = $filters;
-        unset($byMainFilter['character_name']);
-        unset($byMainFilter['weapon_type']);
-        $byMainCount = cache()->remember("game_detail_count_{$types}_{$minTier}_" . implode('_', $version), $cacheDuration, function () use ($byMainFilter) {
-            return $this->mainService->getGameResultSummary($byMainFilter)->count();
-        });
+        // rank_count를 byMain에서 직접 가져오기 (중복 쿼리 제거)
+        $byMainCount = $byMain->rank_count ?? 0;
 
         $data = [
             'minTier' => $minTier,

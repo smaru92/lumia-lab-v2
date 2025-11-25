@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <thead>
                 <tr>
                     <th>순위</th>
-                    <th>픽률</th>
+                    <th>비율</th>
                     <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
                     <th>평균 TK</th>
                     <th>이득확률</th>
