@@ -35,16 +35,10 @@ class GameResultTraitSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
         $tiers = $this->tierRange;
 
-        // ✅ **트랜잭션 시작**
-        DB::beginTransaction();
-        try {
-            // ✅ **기존 데이터 삭제**
-            GameResultTraitSummary::where('version_season', $versionSeason)
-                ->where('version_major', $versionMajor)
-                ->where('version_minor', $versionMinor)
-                ->delete();
-            // Removed the large $bulkInsertData array initialization
+        $allInsertData = []; // 모든 insert 데이터를 임시로 모음
 
+        // 트랜잭션 밖에서 데이터 수집 (기존 데이터는 그대로 유지)
+        try {
             foreach ($tiers as $tier) {
                 echo "game result trait S : {$tier['tier']} {$tier['tierNumber']} \n";
                 $versionFilters = [
@@ -54,7 +48,7 @@ class GameResultTraitSummaryService
                 ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'].$tier['tierNumber'];
-                $gameResultsCursor = $this->gameResultService->getGameResultByTrait([ // Renamed to indicate it's a cursor
+                $gameResultsCursor = $this->gameResultService->getGameResultByTrait([
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,
                     'version_minor' => $versionMinor,
@@ -62,11 +56,8 @@ class GameResultTraitSummaryService
                     'min_score' => $minScore,
                 ]);
 
-                $chunkData = []; // Initialize chunk array inside the tier loop
-                $chunkSize = 100; // Define chunk size
-
-                foreach ($gameResultsCursor as $gameResult) { // Iterate through the cursor
-                    $chunkData[] = [ // Add data to the current chunk
+                foreach ($gameResultsCursor as $gameResult) {
+                    $allInsertData[] = [
                         'character_id' => $gameResult->character_id,
                         'trait_id' => $gameResult->trait_id,
                         'is_main' => $gameResult->is_main,
@@ -87,31 +78,41 @@ class GameResultTraitSummaryService
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
-
-                    // Insert chunk when it reaches the defined size
-                    if (count($chunkData) >= $chunkSize) {
-                        GameResultTraitSummary::insert($chunkData);
-                        $chunkData = []; // Reset chunk array
-                    }
                 }
 
-                // Insert any remaining data in the last chunk
-                if (!empty($chunkData)) {
-                    GameResultTraitSummary::insert($chunkData);
-                }
+                // 티어별 처리 후 메모리 정리
+                unset($gameResultsCursor);
+                gc_collect_cycles();
             }
 
-            // Removed the final bulk insert logic as it's now handled within the loop
+            // 트랜잭션 시작: 빠르게 삭제 후 insert
+            DB::beginTransaction();
 
-            // ✅ **트랜잭션 커밋**
+            // 기존 데이터 삭제
+            GameResultTraitSummary::where('version_season', $versionSeason)
+                ->where('version_major', $versionMajor)
+                ->where('version_minor', $versionMinor)
+                ->delete();
+
+            // 새 데이터를 chunk로 insert
+            $chunkSize = 100;
+            foreach (array_chunk($allInsertData, $chunkSize) as $chunk) {
+                GameResultTraitSummary::insert($chunk);
+            }
+
             DB::commit();
             Log::channel('updateGameResultTraitSummary')->info('E: game result tactical_skill summary');
         } catch (\Exception $e) {
-            // ❌ **오류 발생 시 롤백**
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             Log::channel('updateGameResultTraitSummary')->error('rank Error: ' . $e->getMessage());
-            Log::channel('updateGameResultTraitSummary')->error($e->getTraceAsString()); // 💡 스택트레이스 추가
+            Log::channel('updateGameResultTraitSummary')->error($e->getTraceAsString());
             throw $e;
+        } finally {
+            // 메모리 정리
+            unset($allInsertData);
+            gc_collect_cycles();
         }
     }
 

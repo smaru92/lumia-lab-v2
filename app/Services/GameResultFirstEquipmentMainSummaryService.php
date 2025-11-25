@@ -33,14 +33,10 @@ class GameResultFirstEquipmentMainSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
 
         $tiers = $this->tierRange;
+        $allInsertData = []; // 모든 insert 데이터를 임시로 모음
 
+        // 트랜잭션 밖에서 데이터 수집 (기존 데이터는 그대로 유지)
         try {
-            // 🔥 성능 최적화: 한 번에 기존 데이터 삭제 (트랜잭션 밖에서)
-            GameResultFirstEquipmentMainSummary::where('version_season', $versionSeason)
-                ->where('version_major', $versionMajor)
-                ->where('version_minor', $versionMinor)
-                ->delete();
-
             foreach ($tiers as $tier) {
                 $versionFilters = [
                     'version_season' => $versionSeason,
@@ -62,15 +58,10 @@ class GameResultFirstEquipmentMainSummaryService
                 $queryTime = round((microtime(true) - $startTime) * 1000, 2);
                 Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Query time for {$minTier}: {$queryTime}ms");
 
-                // 🔥 성능 최적화: 청크 사이즈 증가 (100 → 1000)
-                $bulkInsertData = [];
-                $chunkSize = 1000;
-
                 $gameResultsCursor = $gameResults['data'];
-                $insertStartTime = microtime(true);
 
                 foreach ($gameResultsCursor as $gameResult) {
-                    $bulkInsertData[] = [
+                    $allInsertData[] = [
                         'equipment_id' => $gameResult['equipmentId'],
                         'equipment_name' => $gameResult['name'],
                         'meta_tier' => $gameResult['metaTier'],
@@ -100,28 +91,45 @@ class GameResultFirstEquipmentMainSummaryService
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
-
-                    // 🔥 성능 최적화: 더 큰 청크로 insert
-                    if (count($bulkInsertData) >= $chunkSize) {
-                        DB::table('game_results_first_equipment_main_summary')->insert($bulkInsertData);
-                        $bulkInsertData = [];
-                    }
                 }
 
-                // Insert any remaining data in the last chunk
-                if (!empty($bulkInsertData)) {
-                    DB::table('game_results_first_equipment_main_summary')->insert($bulkInsertData);
-                }
-
-                $insertTime = round((microtime(true) - $insertStartTime) * 1000, 2);
-                Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Insert time for {$minTier}: {$insertTime}ms");
+                // 티어별 처리 후 메모리 정리
+                unset($gameResults, $gameResultsCursor);
+                gc_collect_cycles();
             }
 
+            // 트랜잭션 시작: 빠르게 삭제 후 insert
+            DB::beginTransaction();
+            $insertStartTime = microtime(true);
+
+            // 기존 데이터 삭제
+            GameResultFirstEquipmentMainSummary::where('version_season', $versionSeason)
+                ->where('version_major', $versionMajor)
+                ->where('version_minor', $versionMinor)
+                ->delete();
+
+            // 새 데이터를 chunk로 insert
+            $chunkSize = 1000;
+            foreach (array_chunk($allInsertData, $chunkSize) as $chunk) {
+                DB::table('game_results_first_equipment_main_summary')->insert($chunk);
+            }
+
+            $insertTime = round((microtime(true) - $insertStartTime) * 1000, 2);
+            Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Total insert time: {$insertTime}ms");
+
+            DB::commit();
             Log::channel('updateGameResultFirstEquipmentMainSummary')->info('E: game equipment main result summary');
         } catch (\Exception $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             Log::channel('updateGameResultFirstEquipmentMainSummary')->error('Error: ' . $e->getMessage());
             Log::channel('updateGameResultFirstEquipmentMainSummary')->error($e->getTraceAsString());
             throw $e;
+        } finally {
+            // 메모리 정리
+            unset($allInsertData);
+            gc_collect_cycles();
         }
     }
 
