@@ -66,6 +66,7 @@ class EquipmentSkillsRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->recordSelectOptionsQuery(fn ($query) => $query->orderBy('name', 'asc'))
+                    ->recordSelectSearchColumns(['name', 'grade', 'description'])
                     ->recordTitle(function ($record) {
                         $gradeText = match($record->grade) {
                             'Epic' => '영웅',
