@@ -33,10 +33,35 @@ class GameResultEquipmentMainSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
 
         $tiers = $this->tierRange;
-        $allInsertData = []; // 모든 insert 데이터를 임시로 모음
 
-        // 트랜잭션 밖에서 데이터 수집 (기존 데이터는 그대로 유지)
         try {
+            // 1단계: 기존 데이터 삭제 (청크 단위)
+            $deleteChunkSize = 5000;
+            $deletedCount = 0;
+
+            Log::channel('updateGameResultEquipmentMainSummary')->info('Deleting old records...');
+            do {
+                $deleted = GameResultEquipmentMainSummary::where('version_season', $versionSeason)
+                    ->where('version_major', $versionMajor)
+                    ->where('version_minor', $versionMinor)
+                    ->limit($deleteChunkSize)
+                    ->delete();
+
+                $deletedCount += $deleted;
+
+                // 메모리 정리
+                if ($deletedCount % 20000 === 0) {
+                    gc_collect_cycles();
+                }
+            } while ($deleted > 0);
+
+            Log::channel('updateGameResultEquipmentMainSummary')->info("Deleted {$deletedCount} old records");
+
+            // 2단계: 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
+            $insertChunkSize = 500;
+            $totalInserted = 0;
+            $batchData = [];
+
             foreach ($tiers as $tier) {
                 $versionFilters = [
                     'version_season' => $versionSeason,
@@ -61,7 +86,7 @@ class GameResultEquipmentMainSummaryService
                 $gameResultsCursor = $gameResults['data'];
 
                 foreach ($gameResultsCursor as $gameResult) {
-                    $allInsertData[] = [
+                    $batchData[] = [
                         'equipment_id' => $gameResult['equipmentId'],
                         'equipment_name' => $gameResult['name'],
                         'meta_tier' => $gameResult['metaTier'],
@@ -91,6 +116,18 @@ class GameResultEquipmentMainSummaryService
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
+
+                    // 일정 크기마다 insert
+                    if (count($batchData) >= $insertChunkSize) {
+                        DB::table('game_results_equipment_main_summary')->insert($batchData);
+                        $totalInserted += count($batchData);
+                        $batchData = [];
+
+                        // 메모리 정리
+                        if ($totalInserted % 5000 === 0) {
+                            gc_collect_cycles();
+                        }
+                    }
                 }
 
                 // 티어별 처리 후 메모리 정리
@@ -98,37 +135,20 @@ class GameResultEquipmentMainSummaryService
                 gc_collect_cycles();
             }
 
-            // 트랜잭션 시작: 빠르게 삭제 후 insert
-            DB::beginTransaction();
-            $insertStartTime = microtime(true);
-
-            // 기존 데이터 삭제
-            GameResultEquipmentMainSummary::where('version_season', $versionSeason)
-                ->where('version_major', $versionMajor)
-                ->where('version_minor', $versionMinor)
-                ->delete();
-
-            // 새 데이터를 chunk로 insert
-            $chunkSize = 1000;
-            foreach (array_chunk($allInsertData, $chunkSize) as $chunk) {
-                DB::table('game_results_equipment_main_summary')->insert($chunk);
+            // 남은 데이터 insert
+            if (!empty($batchData)) {
+                DB::table('game_results_equipment_main_summary')->insert($batchData);
+                $totalInserted += count($batchData);
             }
 
-            $insertTime = round((microtime(true) - $insertStartTime) * 1000, 2);
-            Log::channel('updateGameResultEquipmentMainSummary')->info("Total insert time: {$insertTime}ms");
-
-            DB::commit();
+            Log::channel('updateGameResultEquipmentMainSummary')->info("Inserted {$totalInserted} new records");
             Log::channel('updateGameResultEquipmentMainSummary')->info('E: game equipment main result summary');
         } catch (\Exception $e) {
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
-            }
             Log::channel('updateGameResultEquipmentMainSummary')->error('Error: ' . $e->getMessage());
             Log::channel('updateGameResultEquipmentMainSummary')->error($e->getTraceAsString());
             throw $e;
         } finally {
             // 메모리 정리
-            unset($allInsertData);
             gc_collect_cycles();
         }
     }
