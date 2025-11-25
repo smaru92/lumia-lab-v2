@@ -36,14 +36,10 @@ abstract class BaseSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
 
         $summaryModel = $this->getSummaryModel();
+        $allInsertData = []; // 모든 insert 데이터를 임시로 모음
 
-        DB::beginTransaction();
+        // 트랜잭션 밖에서 데이터 수집 (기존 데이터는 그대로 유지)
         try {
-            $summaryModel::where('version_season', $versionSeason)
-                ->where('version_major', $versionMajor)
-                ->where('version_minor', $versionMinor)
-                ->delete();
-
             foreach ($this->tierRange as $tier) {
                 $versionFilters = [
                     'version_season' => $versionSeason,
@@ -62,34 +58,43 @@ abstract class BaseSummaryService
                     'min_score' => $minScore,
                 ]);
 
-                $chunkData = [];
-                $chunkSize = 50; // e2-medium 환경을 위해 50으로 축소
-
                 foreach ($gameResults as $gameResult) {
-                    $chunkData[] = $this->transformData($gameResult, $minTier, $minScore, $versionSeason, $versionMajor, $versionMinor);
-
-                    if (count($chunkData) >= $chunkSize) {
-                        $summaryModel::insert($chunkData);
-                        $chunkData = [];
-                    }
-                }
-
-                if (!empty($chunkData)) {
-                    $summaryModel::insert($chunkData);
+                    $allInsertData[] = $this->transformData($gameResult, $minTier, $minScore, $versionSeason, $versionMajor, $versionMinor);
                 }
 
                 // 티어별 처리 후 메모리 정리
-                unset($chunkData, $gameResults);
+                unset($gameResults);
                 gc_collect_cycles();
+            }
+
+            // 트랜잭션 시작: 빠르게 삭제 후 insert
+            DB::beginTransaction();
+
+            // 기존 데이터 삭제
+            $summaryModel::where('version_season', $versionSeason)
+                ->where('version_major', $versionMajor)
+                ->where('version_minor', $versionMinor)
+                ->delete();
+
+            // 새 데이터를 chunk로 insert
+            $chunkSize = 50;
+            foreach (array_chunk($allInsertData, $chunkSize) as $chunk) {
+                $summaryModel::insert($chunk);
             }
 
             DB::commit();
             Log::channel($this->logChannel)->info('E: update summary');
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             Log::channel($this->logChannel)->error('Error: ' . $e->getMessage());
             Log::channel($this->logChannel)->error($e->getTraceAsString());
             throw $e;
+        } finally {
+            // 메모리 정리
+            unset($allInsertData);
+            gc_collect_cycles();
         }
     }
 }
