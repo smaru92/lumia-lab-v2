@@ -11,19 +11,19 @@ class VersionedGameTableManager
         $versionSeason = $filters['version_season'] ?? '';
         $versionMajor = $filters['version_major'] ?? '';
         $versionMinor = $filters['version_minor'] ?? '';
-        
+
         // 버전 정보 검증 - 숫자와 언더스코어만 허용
-        if (!preg_match('/^[0-9_]+$/', $versionSeason) || 
-            !preg_match('/^[0-9_]+$/', $versionMajor) || 
+        if (!preg_match('/^[0-9_]+$/', $versionSeason) ||
+            !preg_match('/^[0-9_]+$/', $versionMajor) ||
             !preg_match('/^[0-9_]+$/', $versionMinor)) {
             throw new \InvalidArgumentException('Invalid version format. Only numbers and underscores are allowed.');
         }
-        
+
         // 테이블명 검증 - 영문자, 숫자, 언더스코어만 허용
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName)) {
             throw new \InvalidArgumentException('Invalid table name format.');
         }
-        
+
         return $tableName . '_v' . $versionSeason . '_' . $versionMajor . '_' . $versionMinor;
     }
     public function ensureGameResultTableExists(string $tableName): void
@@ -32,7 +32,7 @@ class VersionedGameTableManager
             Schema::create($tableName, function (Blueprint $table) {
                 $table->increments('id');
                 $table->integer('game_id')->comment('게임 id');
-                $table->integer('user_id')->comment('유저 id');
+                $table->string('nickname', 100)->comment('플레이어 닉네임');
                 $table->integer('matching_mode')->nullable();
                 $table->integer('mmr_before')->nullable()->comment('게임 시작전 점수');
                 $table->integer('mmr_after')->nullable()->comment('게임 시작후 점수');
@@ -54,19 +54,19 @@ class VersionedGameTableManager
                 $table->integer('version_minor')->comment('버전(마이너)');
                 $table->timestamp('created_at')->nullable();
 
-                $table->unique(['game_id', 'user_id'], 'game_results_game_id_user_id_unique');
+                $table->unique(['game_id', 'nickname'], 'game_results_game_id_nickname_unique');
 
                 // Summary 쿼리 최적화: matching_mode가 모든 쿼리의 첫 번째 WHERE 조건
                 $table->index(['matching_mode', 'mmr_before', 'character_id'], 'idx_mode_mmr_char');
                 $table->index(['matching_mode', 'character_id', 'weapon_id'], 'idx_mode_char_weapon');
 
-                // 기존 인덱스
+                // 최적화된 인덱스 (중복 제거)
+                // idx_game_results_version 삭제 - idx_gr_ver_char_rank_id의 서브셋
+                // idx_gr_char_rank_mmr 삭제 - idx_game_results_character_weapon_rank의 서브셋
+                // idx_gr_version_mmr 삭제 - idx_gr_version_mmr_gain_rank의 서브셋
                 $table->index(['character_id', 'weapon_id', 'game_rank', 'mmr_gain'], 'idx_game_results_character_weapon_rank');
-                $table->index(['version_season', 'version_major', 'version_minor'], 'idx_game_results_version');
-                $table->index(['character_id', 'game_rank'], 'idx_gr_char_rank_mmr');
                 $table->index(['version_season', 'version_major', 'version_minor', 'character_id', 'game_rank', 'id'], 'idx_gr_ver_char_rank_id');
                 $table->index(['version_season', 'version_major', 'version_minor', 'weapon_id', 'character_id', 'game_rank', 'id'], 'idx_gr_ver_weapon_char_rank_id');
-                $table->index(['version_season', 'version_major', 'version_minor', 'mmr_before'], 'idx_gr_version_mmr');
                 $table->index(['version_season', 'version_major', 'version_minor', 'mmr_before', 'mmr_gain', 'game_rank'], 'idx_gr_version_mmr_gain_rank');
             });
         }
@@ -112,8 +112,9 @@ class VersionedGameTableManager
                 $table->integer('order_quipment')->comment('아이템 올린 순서, 현재는 미구현');
                 $table->timestamp('created_at')->nullable();
 
+                // 최적화된 인덱스 (중복 제거)
+                // idx_gre_game_result_id 삭제 - idx_gre_result_equip의 서브셋
                 $table->index(['equipment_id', 'game_result_id'], 'idx_gre_equip_result');
-                $table->index(['game_result_id'], 'idx_gre_game_result_id');
                 $table->index(['game_result_id', 'equipment_id'], 'idx_gre_result_equip');
             });
         }
@@ -128,8 +129,9 @@ class VersionedGameTableManager
                 $table->integer('equipment_id')->comment('장비 id');
                 $table->timestamp('created_at')->nullable();
 
+                // 최적화된 인덱스 (중복 제거)
+                // idx_gre_game_result_id 삭제 - idx_gre_result_equip의 서브셋
                 $table->index(['equipment_id', 'game_result_id'], 'idx_gre_equip_result');
-                $table->index(['game_result_id'], 'idx_gre_game_result_id');
                 $table->index(['game_result_id', 'equipment_id'], 'idx_gre_result_equip');
             });
         }
