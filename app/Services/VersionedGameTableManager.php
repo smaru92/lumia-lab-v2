@@ -32,7 +32,7 @@ class VersionedGameTableManager
             Schema::create($tableName, function (Blueprint $table) {
                 $table->increments('id');
                 $table->integer('game_id')->comment('게임 id');
-                $table->integer('user_id')->comment('유저 id');
+                $table->string('nickname', 100)->comment('플레이어 닉네임');
                 $table->integer('matching_mode')->nullable();
                 $table->integer('mmr_before')->nullable()->comment('게임 시작전 점수');
                 $table->integer('mmr_after')->nullable()->comment('게임 시작후 점수');
@@ -54,7 +54,7 @@ class VersionedGameTableManager
                 $table->integer('version_minor')->comment('버전(마이너)');
                 $table->timestamp('created_at')->nullable();
 
-                $table->unique(['game_id', 'user_id'], 'game_results_game_id_user_id_unique');
+                $table->unique(['game_id', 'nickname'], 'game_results_game_id_nickname_unique');
 
                 // Summary 쿼리 최적화: matching_mode가 모든 쿼리의 첫 번째 WHERE 조건
                 $table->index(['matching_mode', 'mmr_before', 'character_id'], 'idx_mode_mmr_char');

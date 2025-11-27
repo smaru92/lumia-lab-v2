@@ -327,7 +327,7 @@ class GameResultService
                         foreach ($data['userGames'] as $item) {
                             $gameResults[] = [
                                 'game_id' => $resultGameId ?? null,
-                                'user_id' => $item['userNum'] ?? null,
+                                'nickname' => $item['nickname'] ?? null,
                                 'mmr_before' => $item['mmrBefore'] ?? null,
                                 'mmr_after' => $item['mmrAfter'] ?? null,
                                 'mmr_gain' => $item['mmrGainInGame'] ?? null, // 입장료 제외 획득점수
@@ -356,15 +356,15 @@ class GameResultService
                         // GameResult Bulk Insert
                         DB::table($gameResultTableName)->insert($gameResults);
 
-                        // 방금 삽입한 게임 결과들의 ID를 가져오기 (game_id와 user_id 조합으로 조회)
+                        // 방금 삽입한 게임 결과들의 ID를 가져오기 (game_id와 nickname 조합으로 조회)
                         $insertedGameResults = DB::table($gameResultTableName)
                             ->where('game_id', $resultGameId)
                             ->get()
-                            ->keyBy('user_id');
+                            ->keyBy('nickname');
 
                         // 각 플레이어의 상세 데이터 수집
                         foreach ($data['userGames'] as $item) {
-                            $gameResultId = $insertedGameResults[$item['userNum']]->id ?? null;
+                            $gameResultId = $insertedGameResults[$item['nickname']]->id ?? null;
 
                             if (!$gameResultId) {
                                 continue;
