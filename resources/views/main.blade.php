@@ -83,66 +83,73 @@
         /* 탭 메뉴 스타일 */
         .patch-tabs {
             display: flex;
-            border-bottom: 2px solid #e0e0e0;
+            border: 1px solid #444;
+            background-color: #1a1a1a;
             margin-bottom: 20px;
-            gap: 10px;
+            gap: 0;
         }
 
         .patch-tab-button {
             padding: 12px 24px;
-            background: none;
+            background-color: #1a1a1a;
             border: none;
+            border-right: 1px solid #444;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            color: #666;
-            border-bottom: 3px solid transparent;
+            color: #e0e0e0;
+            border-radius: 0;
             transition: all 0.3s ease;
             position: relative;
         }
 
+        .patch-tab-button:last-child {
+            border-right: none;
+        }
+
         .patch-tab-button:hover {
-            color: #333;
-            background-color: #f5f5f5;
+            color: #fff;
+            background-color: #333;
         }
 
         .patch-tab-button.active {
-            color: #28a745;
-            border-bottom-color: #28a745;
+            color: #fff;
+            background-color: #333;
+            border-bottom: 2px solid #fff;
         }
 
         .patch-tab-button.active.buffed {
             color: #28a745;
-            border-bottom-color: #28a745;
+            border-bottom: 2px solid #28a745;
         }
 
         .patch-tab-button.active.nerfed {
             color: #dc3545;
-            border-bottom-color: #dc3545;
+            border-bottom: 2px solid #dc3545;
         }
 
         .patch-tab-badge {
             display: inline-block;
-            background-color: #e0e0e0;
-            color: #666;
+            background-color: #333;
+            color: #ccc;
             padding: 2px 8px;
-            border-radius: 12px;
+            border-radius: 0;
             font-size: 12px;
             margin-left: 6px;
         }
 
         .patch-tab-button.active .patch-tab-badge {
-            background-color: rgba(255, 255, 255, 0.3);
-            color: white;
+            background-color: #444;
+            color: #fff;
         }
 
         .patch-tab-button.active.buffed .patch-tab-badge {
-            background-color: rgba(40, 167, 69, 0.2);
+            background-color: rgba(40, 167, 69, 0.3);
             color: #28a745;
         }
 
         .patch-tab-button.active.nerfed .patch-tab-badge {
-            background-color: rgba(220, 53, 69, 0.2);
+            background-color: rgba(220, 53, 69, 0.3);
             color: #dc3545;
         }
 

@@ -204,17 +204,18 @@ tr:hover {
 /* Tab Styles */
 .tabs {
     overflow: hidden;
-    border: 1px solid #ccc;
-    background-color: #f1f1f1;
+    border: 1px solid #444;
+    background-color: #1a1a1a;
     margin-top: 20px;
     margin-bottom: 0;
     display: flex; /* Use flexbox for tabs */
     flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
 }
 .tabs button {
-    background-color: inherit;
-    /* float: left; Removed float */
+    background-color: #1a1a1a;
+    color: #e0e0e0;
     border: none;
+    border-right: 1px solid #444;
     outline: none;
     cursor: pointer;
     padding: 10px 12px; /* Adjusted padding */
@@ -222,14 +223,19 @@ tr:hover {
     font-size: 1em; /* Responsive font size */
     flex-grow: 1; /* Allow buttons to grow */
     text-align: center; /* Center text */
-    border-bottom: 1px solid #ccc; /* Add bottom border */
+    border-radius: 0; /* 각진 모양 */
+}
+.tabs button:last-child {
+    border-right: none;
 }
 .tabs button:hover {
-    background-color: #ddd;
+    background-color: #333;
+    color: #fff;
 }
 .tabs button.active {
-    background-color: #ccc;
-    border-bottom: 1px solid #ccc; /* Ensure active tab border matches */
+    background-color: #333;
+    color: #fff;
+    border-bottom: 2px solid #fff;
 }
 .tab-content {
     display: none; /* Hide all tab content by default */
@@ -324,18 +330,19 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     max-width: 200px; /* Max width */
     margin: 15px auto; /* Center the button with margin */
     padding: 10px 15px;
-    background-color: #007bff; /* Example blue background */
-    color: white;
-    border: none;
-    border-radius: 5px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 0; /* 각진 모양 */
     cursor: pointer;
     text-align: center;
     font-size: 1em;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .show-more-button:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    background-color: #333;
+    color: #fff;
 }
 
 /* Toggle Button Style */
@@ -343,17 +350,18 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     display: inline-block;
     padding: 6px 12px;
     margin-left: 10px;
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 0; /* 각진 모양 */
     cursor: pointer;
     font-size: 0.85em;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .toggle-button:hover {
-    background-color: #545b62;
+    background-color: #333;
+    color: #fff;
 }
 
 /* Character Cell Styles (Copied from main.css for consistency) */

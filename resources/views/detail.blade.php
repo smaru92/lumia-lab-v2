@@ -172,6 +172,7 @@
     </div>
 
     <!-- Equipment Section with Tabs -->
+    <h3>아이템 통계</h3>
     <div data-lazy-section="equipment">
         <div class="loading-placeholder" style="padding: 20px; text-align: center;">
             <p>로딩 중...</p>

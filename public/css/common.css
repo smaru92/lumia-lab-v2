@@ -444,26 +444,28 @@
 
 .view-all-btn {
     padding: 10px 30px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 0;
     cursor: pointer;
     font-size: 14px;
     font-weight: bold;
-    transition: background-color 0.3s;
+    transition: all 0.3s;
 }
 
 .view-all-btn:hover {
-    background-color: #0056b3;
+    background-color: #333;
+    color: #fff;
 }
 
 .view-all-btn.collapse {
-    background-color: #6c757d;
+    background-color: #333;
+    color: #fff;
 }
 
 .view-all-btn.collapse:hover {
-    background-color: #5a6268;
+    background-color: #444;
 }
 
 /* ==================== TABLET & MOBILE (1024px and below) ==================== */

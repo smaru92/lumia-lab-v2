@@ -606,8 +606,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 탭 메뉴
         html += '<div class="tabs">';
-        html += '<button class="tab-link active" onclick="openTraitTab(event, \'trait-combination-stats\')">특성 조합 통계</button>';
-        html += '<button class="tab-link" onclick="openTraitTab(event, \'trait-individual-stats\')">특성 개별 통계</button>';
+        html += '<button class="tab-link active" onclick="openTraitTab(event, \'trait-combination-stats\')">특성 조합</button>';
+        html += '<button class="tab-link" onclick="openTraitTab(event, \'trait-individual-stats\')">특성 개별</button>';
         html += '</div>';
 
         // 특성 조합 통계 탭 (기본 활성화)
