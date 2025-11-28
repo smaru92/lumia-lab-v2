@@ -711,13 +711,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const trait = traits[traitId];
                 const traitName = trait ? trait.name : `특성 ${traitId}`;
                 const isMain = trait && trait.is_main == 1;
-                const iconSize = isMain ? '32px' : '28px';
+                const iconSize = isMain ? '36px' : '28px';
                 const borderStyle = isMain ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
                 traitIconsHtml += `
                     <div class="tooltip-wrap">
                         <img src="/storage/Trait/${traitId}.png"
                              alt="${traitName}"
-                             class="equipment-icon"
+                             class="trait-combination-icon"
                              style="width: ${iconSize}; height: ${iconSize}; ${borderStyle}"
                              onerror="this.style.display='none'">
                         <span class="tooltip-text">${traitName}${isMain ? ' (메인)' : ' (서브)'}</span>
