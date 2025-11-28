@@ -159,16 +159,19 @@ class PatchComparisonService
                     }
                 }
             } else {
+                // 한글 weapon_type을 영어로 변환하여 매칭
+                $weaponTypeEn = $this->replaceWeaponType($weaponType, 'en');
+
                 // 중복 체크
-                $combinationKey = $characterId . '_' . $weaponType;
+                $combinationKey = $characterId . '_' . $weaponTypeEn;
                 if (isset($processedCombinations[$combinationKey])) {
                     continue;
                 }
                 $processedCombinations[$combinationKey] = true;
 
-                // 특정 weapon_type 통계 찾기
-                $latestStat = $latestStatsForChar->where('weapon_type', $weaponType)->first();
-                $previousStat = $previousStatsForChar->where('weapon_type', $weaponType)->first();
+                // 특정 weapon_type 통계 찾기 (영어로 변환된 값으로 비교)
+                $latestStat = $latestStatsForChar->where('weapon_type', $weaponTypeEn)->first();
+                $previousStat = $previousStatsForChar->where('weapon_type', $weaponTypeEn)->first();
 
                 if (!$latestStat || !$previousStat) {
                     continue;
