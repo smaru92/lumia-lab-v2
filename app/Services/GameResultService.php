@@ -1411,8 +1411,8 @@ class GameResultService
                 'top1Count' => $item->top1_count,
                 'top2Count' => $item->top2_count,
                 'top4Count' => $item->top4_count,
-                'positiveAvgMmrGain' => round($item->avg_positive_mmr_gain ?? 0, 1),
-                'negativeAvgMmrGain' => round($item->avg_negative_mmr_gain ?? 0, 1),
+                'positiveAvgMmrGain' => round($item->positive_avg_mmr_gain ?? 0, 1),
+                'negativeAvgMmrGain' => round($item->negative_avg_mmr_gain ?? 0, 1),
                 'charWeaponKey' => $charWeaponKey,
             ];
         }
