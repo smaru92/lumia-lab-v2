@@ -165,7 +165,7 @@
     </div>
 
     <h3>특성 통계</h3>
-    <div data-lazy-section="traits">
+    <div data-lazy-section="traitStats">
         <div class="loading-placeholder" style="padding: 20px; text-align: center;">
             <p>로딩 중...</p>
         </div>

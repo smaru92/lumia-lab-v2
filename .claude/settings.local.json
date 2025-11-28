@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(php artisan:*)",
+      "Bash(git checkout:*)",
+      "Bash(\"C:\\ondoc\\lumia-lab-v2\\resources\\views\\detail.blade.php.tmp\")"
     ],
     "deny": [],
     "ask": []

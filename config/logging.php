@@ -183,6 +183,13 @@ return [
             'days' => 42,
             'replace_placeholders' => true,
         ],
+        'updateGameResultTraitCombinationSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultTraitCombinationSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
 
     ],
 
