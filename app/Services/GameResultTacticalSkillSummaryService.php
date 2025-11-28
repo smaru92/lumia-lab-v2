@@ -307,9 +307,30 @@ class GameResultTacticalSkillSummaryService
             }
         }
 
-        // 사용수 기준 정렬
-        usort($aggregatedData, function($a, $b) {
-            return $b['game_count'] - $a['game_count'];
+        // 전술스킬별 총 사용수 계산 (Lv1 + Lv2 합계)
+        $skillTotals = [];
+        foreach ($aggregatedData as $item) {
+            $skillId = $item['tactical_skill_id'];
+            if (!isset($skillTotals[$skillId])) {
+                $skillTotals[$skillId] = 0;
+            }
+            $skillTotals[$skillId] += $item['game_count'];
+        }
+
+        // 전술스킬ID 기준 그룹화 후 정렬 (같은 스킬끼리 묶고, 총 사용수 기준 정렬, 그 안에서 레벨 순)
+        usort($aggregatedData, function($a, $b) use ($skillTotals) {
+            // 1차: 전술스킬 총 사용수 기준 내림차순
+            $totalA = $skillTotals[$a['tactical_skill_id']] ?? 0;
+            $totalB = $skillTotals[$b['tactical_skill_id']] ?? 0;
+            if ($totalA !== $totalB) {
+                return $totalB - $totalA;
+            }
+            // 2차: 같은 스킬이면 레벨 순 오름차순
+            if ($a['tactical_skill_id'] === $b['tactical_skill_id']) {
+                return $a['tactical_skill_level'] - $b['tactical_skill_level'];
+            }
+            // 3차: 스킬ID 순
+            return $a['tactical_skill_id'] - $b['tactical_skill_id'];
         });
 
         return [
