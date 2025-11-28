@@ -269,7 +269,7 @@
             ({{ $previousVersion->start_date->format('Y-m-d') }})
         </p>
         <p class="version-info-note">
-            <small>* 메테오라이트 티어 기준 통계입니다.</small>
+            <small>* <strong>메테오라이트</strong> 티어 기준 통계입니다.</small>
         </p>
     </div>
 
