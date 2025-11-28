@@ -684,26 +684,6 @@ document.addEventListener('DOMContentLoaded', function() {
             evt.currentTarget.classList.add('active');
         };
 
-        // 더보기 버튼 이벤트 - 특성 조합
-        const showMoreCombinationsBtn = element.querySelector('#show-more-trait-combinations');
-        if (showMoreCombinationsBtn) {
-            showMoreCombinationsBtn.addEventListener('click', function() {
-                const hiddenRows = element.querySelectorAll('.trait-combination-row[style*="display: none"]');
-                hiddenRows.forEach(row => row.style.display = '');
-                this.style.display = 'none';
-            });
-        }
-
-        // 더보기 버튼 이벤트 - 특성 개별
-        const showMoreTraitsBtn = element.querySelector('#show-more-traits');
-        if (showMoreTraitsBtn) {
-            showMoreTraitsBtn.addEventListener('click', function() {
-                const hiddenRows = element.querySelectorAll('.trait-row[style*="display: none"]');
-                hiddenRows.forEach(row => row.style.display = '');
-                this.style.display = 'none';
-            });
-        }
-
         // 필터 이벤트 설정
         setupTraitFilters(element);
 
@@ -712,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 특성 조합 통계 컨텐츠 생성
+     * 특성 조합 통계 컨텐츠 생성 (상위 12개만 표시)
      */
     function renderTraitCombinationsContent(data) {
         const combinationsData = data.data || [];
@@ -722,13 +702,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return '<p style="text-align: center; color: #999;">집계된 특성 조합 데이터가 없습니다.</p>';
         }
 
+        // 상위 12개만 표시
+        const displayData = combinationsData.slice(0, 12);
+
         let html = '<div class="table-wrapper"><table class="sortable-table">';
         html += `
             <thead>
                 <tr>
                     <th>특성 조합</th>
                     <th>사용수</th>
-                    <th class="hide-on-mobile">평균획득점수</th>
+                    <th>평균획득점수</th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
@@ -741,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <tbody id="trait-combination-tbody">
         `;
 
-        combinationsData.forEach((item, index) => {
+        displayData.forEach((item, index) => {
             const traitIds = item.trait_ids ? item.trait_ids.split(',') : [];
 
             // 특성 정렬: is_main=1 -> 같은 category의 is_main=0 -> 나머지
@@ -794,10 +777,10 @@ document.addEventListener('DOMContentLoaded', function() {
             traitIconsHtml += '</div>';
 
             html += `
-                <tr class="trait-combination-row" ${index >= 10 ? 'style="display: none;"' : ''}>
+                <tr class="trait-combination-row">
                     <td>${traitIconsHtml}</td>
                     <td class="number">${formatNumber(item.game_count)}</td>
-                    <td class="hide-on-mobile number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">${formatNumber(item.avg_mmr_gain, 1)}</td>
                     <td class="number">
                         <div>${formatPercent(item.top1_count_percent)}%</div>
                         <div class="sub-stat">${formatNumber(item.top1_count)}</div>
@@ -826,15 +809,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += '</tbody></table></div>';
 
-        if (combinationsData.length > 10) {
-            html += '<button id="show-more-trait-combinations" class="show-more-button">더보기</button>';
-        }
-
         return html;
     }
 
     /**
-     * 특성 개별 통계 컨텐츠 생성
+     * 특성 개별 통계 컨텐츠 생성 (전체 표시 + 스크롤 영역)
      */
     function renderTraitsContent(data) {
         const aggregatedData = data.aggregatedData || [];
@@ -871,13 +850,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         html += '</div>';
 
-        html += '<div class="table-wrapper"><table class="sortable-table">';
+        // 스크롤 가능한 영역으로 감싸기
+        html += '<div class="trait-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333; border-radius: 4px;">';
+        html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
         html += `
-            <thead>
+            <thead style="position: sticky; top: 0; background: #1a1a1a; z-index: 10;">
                 <tr>
                     <th>특성</th>
                     <th>사용수</th>
-                    <th class="hide-on-mobile">평균획득점수</th>
+                    <th>평균획득점수</th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
@@ -890,6 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <tbody id="trait-tbody">
         `;
 
+        // 전체 데이터 표시 (숨김 없음)
         aggregatedData.forEach((item, index) => {
             const traitId = item.trait_id;
             const isMain = item.is_main ? 1 : 0;
@@ -897,7 +879,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const borderStyle = item.is_main ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
 
             html += `
-                <tr class="trait-row" data-category="${item.trait_category}" data-is-main="${isMain}" ${index >= 10 ? 'style="display: none;"' : ''}>
+                <tr class="trait-row" data-category="${item.trait_category}" data-is-main="${isMain}">
                     <td>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <div class="tooltip-wrap">
@@ -912,7 +894,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </td>
                     <td class="number">${formatNumber(item.game_count)}</td>
-                    <td class="hide-on-mobile number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">${formatNumber(item.avg_mmr_gain, 1)}</td>
                     <td class="number">
                         <div>${formatPercent(item.top1_count_percent)}%</div>
                         <div class="sub-stat">${formatNumber(item.top1_count)}</div>
@@ -939,11 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         });
 
-        html += '</tbody></table></div>';
-
-        if (aggregatedData.length > 10) {
-            html += '<button id="show-more-traits" class="show-more-button">더보기</button>';
-        }
+        html += '</tbody></table></div></div>';
 
         return html;
     }
