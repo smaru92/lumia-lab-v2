@@ -325,11 +325,15 @@ class GameResultService
                         DB::beginTransaction();
 
                         foreach ($data['userGames'] as $item) {
+                            // mmr_before가 null이면 0으로 처리, mmr_after도 계산
+                            $mmrBefore = $item['mmrBefore'] ?? 0;
+                            $mmrAfter = $item['mmrAfter'] ?? ($mmrBefore + ($item['mmrGainInGame'] ?? 0));
+
                             $gameResults[] = [
                                 'game_id' => $resultGameId ?? null,
                                 'nickname' => $item['nickname'] ?? null,
-                                'mmr_before' => $item['mmrBefore'] ?? null,
-                                'mmr_after' => $item['mmrAfter'] ?? null,
+                                'mmr_before' => $mmrBefore,
+                                'mmr_after' => $mmrAfter,
                                 'mmr_gain' => $item['mmrGainInGame'] ?? null, // 입장료 제외 획득점수
                                  // 'mmr_gain' => $item['mmrGain'] ?? null, // 입장료 포함 획득점수
                                 'mmr_cost' => $item['mmrLossEntryCost'] ?? null,
