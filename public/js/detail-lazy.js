@@ -312,130 +312,86 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 전술스킬 통계 렌더링
+     * 전술스킬 통계 렌더링 (특성 통계와 동일한 열 구성)
      */
     function renderTacticalSkillsSection(data, element) {
-        const byTacticalSkillData = data.byTacticalSkillData || {};
-        const byTacticalSkillTotal = data.byTacticalSkillTotal || {};
+        const aggregatedData = data.aggregatedData || [];
 
-        console.log('Tactical skills data structure:', byTacticalSkillData);
+        if (aggregatedData.length === 0) {
+            element.innerHTML = '<p style="text-align: center; color: #999;">집계된 전술스킬 데이터가 없습니다.</p>';
+            return;
+        }
 
-        let html = '<div class="table-wrapper"><table class="sortable-table">';
+        // 스크롤 가능한 영역으로 감싸기
+        let html = '<div class="tactical-skill-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333; border-radius: 4px;">';
+        html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
         html += `
-            <thead>
+            <thead style="position: sticky; top: 0; background: #1a1a1a; z-index: 10;">
                 <tr>
                     <th>이름</th>
-                    <th>레벨</th>
                     <th>사용수</th>
-                    <th>1위율</th>
-                    <th>2위율</th>
-                    <th>3위율</th>
-                    <th>4위율</th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>승률</th>
+                    <th class="hide-on-mobile">TOP2</th>
+                    <th class="hide-on-mobile">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                    <th class="hide-on-mobile">이득확률</th>
+                    <th class="hide-on-mobile">손실확률</th>
                 </tr>
             </thead>
             <tbody id="tactical-skill-tbody">
         `;
 
-        // 전술스킬을 1+2레벨 합계로 정렬
-        let skillsArray = [];
-        for (const skillId in byTacticalSkillData) {
-            const byTacticalSkill = byTacticalSkillData[skillId];
-            // 1+2레벨 합계 계산
-            const totalUses = (byTacticalSkillTotal[skillId] && byTacticalSkillTotal[skillId][1] ? byTacticalSkillTotal[skillId][1] : 0)
-                + (byTacticalSkillTotal[skillId] && byTacticalSkillTotal[skillId][2] ? byTacticalSkillTotal[skillId][2] : 0);
-
-            skillsArray.push({
-                skillId: skillId,
-                data: byTacticalSkill,
-                totalUses: totalUses
-            });
-        }
-
-        // 1+2레벨 합계로 내림차순 정렬
-        skillsArray.sort((a, b) => b.totalUses - a.totalUses);
-
-        let rowIndex = 0;
-        skillsArray.forEach((skillObj) => {
-            const byTacticalSkill = skillObj.data;
-
-            // byTacticalSkill이 객체일 경우 Object.values()로 변환
-            const skillItems = Array.isArray(byTacticalSkill) ? byTacticalSkill : Object.values(byTacticalSkill);
-
-            skillItems.forEach(item => {
-                const ranks = Object.values(item);
-                if (ranks.length === 0) return;
-
-                const firstItem = ranks[0];
-                if (firstItem.game_rank > 4) return;
-
-                const skillId = firstItem.tactical_skill_id;
-                const skillLevel = firstItem.tactical_skill_level;
-                const totalUses = byTacticalSkillTotal[skillId] && byTacticalSkillTotal[skillId][skillLevel]
-                    ? byTacticalSkillTotal[skillId][skillLevel]
-                    : 0;
-
-                html += `
-                    <tr class="tactical-skill-row" ${rowIndex >= 5 ? 'style="display: none;"' : ''}>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <img src="/storage/TacticalSkill/${skillId}.png"
-                                     alt="${firstItem.tactical_skill_name}"
-                                     class="equipment-icon"
-                                     onerror="this.style.display='none'">
-                                ${firstItem.tactical_skill_name}
-                            </div>
-                        </td>
-                        <td style="width: 40px; text-align: center;">${skillLevel}</td>
-                        <td>${totalUses}</td>
-                `;
-
-                [1, 2, 3, 4].forEach(rank => {
-                    const rankData = item[rank];
-                    if (rankData) {
-                        html += `
-                            <td>
-                                <div class="tooltip-wrap">
-                                    ${formatPercent(rankData.game_rank_count_percent)}%
-                                    <span class="tooltip-text">
-                                        게임 수: ${rankData.game_rank_count}<br>
-                                        평균 점수: ${rankData.positive_avg_mmr_gain}
-                                    </span>
-                                </div>
-                            </td>
-                        `;
-                    } else {
-                        html += '<td>-</td>';
-                    }
-                });
-
-                html += '</tr>';
-                rowIndex++;
-            });
+        aggregatedData.forEach((item) => {
+            html += `
+                <tr class="tactical-skill-row">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <img src="/storage/TacticalSkill/${item.tactical_skill_id}.png"
+                                 alt="${item.tactical_skill_name}"
+                                 class="equipment-icon"
+                                 onerror="this.style.display='none'">
+                            ${item.tactical_skill_name} Lv ${item.tactical_skill_level}
+                        </div>
+                    </td>
+                    <td class="number">${formatNumber(item.game_count)}</td>
+                    <td class="number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">
+                        <div>${formatPercent(item.top1_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top1_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top2_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top2_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top4_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top4_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatPercent(item.endgame_win_percent)}%</td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatNumber(item.avg_team_kill_score, 2)}</td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                        <div class="sub-stat">+${formatNumber(item.positive_avg_mmr_gain, 1)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.negative_avg_mmr_gain, 1)}</div>
+                    </td>
+                </tr>
+            `;
         });
 
-        html += '</tbody></table></div>';
-        html += '<button id="show-more-tactical-skills" class="show-more-button">더보기</button>';
+        html += '</tbody></table></div></div>';
         element.innerHTML = html;
-
-        // 더보기 버튼 이벤트
-        const showMoreBtn = element.querySelector('#show-more-tactical-skills');
-        if (showMoreBtn) {
-            showMoreBtn.addEventListener('click', function() {
-                const hiddenRows = element.querySelectorAll('.tactical-skill-row[style*="display: none"]');
-                hiddenRows.forEach(row => row.style.display = '');
-                this.style.display = 'none';
-            });
-        }
     }
 
     /**
-     * 장비 통계 렌더링
+     * 장비 통계 렌더링 (특성 통계와 동일한 열 구성)
      */
     function renderEquipmentSection(data, element) {
-        const byEquipmentData = data.byEquipmentData || {};
-        const byEquipmentTotal = data.byEquipmentTotal || {};
-
-        console.log('Equipment data structure:', byEquipmentData);
+        const aggregatedData = data.aggregatedData || {};
 
         const gradeTranslation = {
             'Mythic': '초월',
@@ -464,13 +420,13 @@ document.addEventListener('DOMContentLoaded', function() {
         types.forEach((type, index) => {
             const tabId = type.toLowerCase() + '-stats';
             const activeClass = index === 0 ? 'active' : '';
-            html += `<button class="tab-link ${activeClass}" onclick="openTab(event, '${tabId}')">${itemTypeTranslation[type]}</button>`;
+            html += `<button class="tab-link ${activeClass}" onclick="openEquipmentTab(event, '${tabId}')">${itemTypeTranslation[type]}</button>`;
         });
         html += '</div>';
 
         // 각 타입별 탭 컨텐츠
         types.forEach((type, typeIndex) => {
-            const equipmentData = byEquipmentData[type] || [];
+            const equipmentList = aggregatedData[type] || [];
             const tabId = type.toLowerCase() + '-stats';
             const activeClass = typeIndex === 0 ? 'active' : '';
 
@@ -489,130 +445,124 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             html += '</div>';
 
-            // 테이블
-            html += '<div class="table-wrapper"><table class="sortable-table">';
+            // 스크롤 가능한 영역으로 감싸기
+            html += '<div class="equipment-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333; border-radius: 4px;">';
+            html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
             html += `
-                <thead>
+                <thead style="position: sticky; top: 0; background: #1a1a1a; z-index: 10;">
                     <tr>
                         <th>등급</th>
                         <th>이름</th>
                         <th>사용수</th>
-                        <th>1위율</th>
-                        <th>2위율</th>
-                        <th>3위율</th>
-                        <th>4위율</th>
+                        <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                        <th>승률</th>
+                        <th class="hide-on-mobile">TOP2</th>
+                        <th class="hide-on-mobile">TOP4</th>
+                        <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                        <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                        <th class="hide-on-mobile">이득확률</th>
+                        <th class="hide-on-mobile">손실확률</th>
                     </tr>
                 </thead>
                 <tbody>
             `;
 
-            let preEquipmentName = '';
-            let equipmentArray = Array.isArray(equipmentData) ? equipmentData : Object.values(equipmentData);
+            equipmentList.forEach(item => {
+                // 장비 정보 툴팁 생성
+                const hasStats = item.equipment_stats && Array.isArray(item.equipment_stats) && item.equipment_stats.length > 0;
+                const hasSkills = item.equipment_skills && Array.isArray(item.equipment_skills) && item.equipment_skills.length > 0;
 
-            // 사용수로 정렬
-            equipmentArray = equipmentArray.sort((a, b) => {
-                const aRanks = Object.values(a);
-                const bRanks = Object.values(b);
-                const aFirstItem = aRanks[0];
-                const bFirstItem = bRanks[0];
-                const aTotalUses = byEquipmentTotal[aFirstItem?.equipment_id] || 0;
-                const bTotalUses = byEquipmentTotal[bFirstItem?.equipment_id] || 0;
-                return bTotalUses - aTotalUses; // 내림차순
-            });
+                let tooltipContent = '';
+                if (hasStats) {
+                    item.equipment_stats.forEach(stat => {
+                        tooltipContent += `${stat.text}: ${stat.value}<br>`;
+                    });
+                } else {
+                    tooltipContent += '장비 정보 없음';
+                }
 
-            equipmentArray.forEach(item => {
-                const ranks = Object.values(item);
-                if (ranks.length === 0) return;
+                if (hasSkills) {
+                    tooltipContent += '<br>';
+                    item.equipment_skills.forEach((skill, idx) => {
+                        tooltipContent += `<strong style="color: #ffd700;">${skill.name}</strong><br>`;
+                        tooltipContent += `${skill.description}<br>`;
+                        if (idx < item.equipment_skills.length - 1) {
+                            tooltipContent += '<br>';
+                        }
+                    });
+                }
 
-                const firstItem = ranks[0];
-                if (firstItem.game_rank > 4) return;
-
-                const equipmentId = firstItem.equipment_id;
-                const equipmentName = firstItem.equipment_name;
-                const itemGrade = firstItem.item_grade;
-                const totalUses = byEquipmentTotal[equipmentId] || 0;
-
-                html += `<tr data-equipment-id="${equipmentId}" data-grade="${itemGrade}">`;
-
-                // 등급 (중복 장비명일 경우 빈칸)
-                html += `<td>${preEquipmentName === equipmentName ? '' : (gradeTranslation[itemGrade] || itemGrade)}</td>`;
-
-                // 이름 (중복일 경우 표시하지 않음)
-                if (preEquipmentName !== equipmentName) {
-                    // 장비 정보 툴팁 생성
-                    const hasStats = firstItem.equipment_stats && Array.isArray(firstItem.equipment_stats) && firstItem.equipment_stats.length > 0;
-                    const hasSkills = firstItem.equipment_skills && Array.isArray(firstItem.equipment_skills) && firstItem.equipment_skills.length > 0;
-
-                    let tooltipContent = '';
-                    if (hasStats) {
-                        firstItem.equipment_stats.forEach(stat => {
-                            tooltipContent += `${stat.text}: ${stat.value}<br>`;
-                        });
-                    } else {
-                        tooltipContent += '장비 정보 없음';
-                    }
-
-                    if (hasSkills) {
-                        tooltipContent += '<br>';
-                        firstItem.equipment_skills.forEach((skill, idx) => {
-                            tooltipContent += `<strong style="color: #ffd700;">${skill.name}</strong><br>`;
-                            tooltipContent += `${skill.description}<br>`;
-                            if (idx < firstItem.equipment_skills.length - 1) {
-                                tooltipContent += '<br>';
-                            }
-                        });
-                    }
-
-                    html += `
+                html += `
+                    <tr data-equipment-id="${item.equipment_id}" data-grade="${item.item_grade}">
+                        <td>${gradeTranslation[item.item_grade] || item.item_grade}</td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <div class="tooltip-wrap">
-                                    <img src="/storage/Equipment/${equipmentId}.png"
-                                         alt="${equipmentName}"
+                                    <img src="/storage/Equipment/${item.equipment_id}.png"
+                                         alt="${item.equipment_name}"
                                          class="equipment-icon"
                                          onerror="this.onerror=null; this.src='/storage/Equipment/default.png';">
                                     <span class="tooltip-text">${tooltipContent}</span>
                                 </div>
-                                ${equipmentName}
+                                ${item.equipment_name}
                             </div>
                         </td>
-                    `;
-                } else {
-                    html += '<td></td>';
-                }
-
-                // 사용수
-                html += `<td>${totalUses}</td>`;
-
-                // 1~4위율
-                [1, 2, 3, 4].forEach(rank => {
-                    const rankData = item[rank];
-                    if (rankData) {
-                        html += `
-                            <td>
-                                <div class="tooltip-wrap">
-                                    ${formatPercent(rankData.game_rank_count_percent)}%
-                                    <span class="tooltip-text">
-                                        게임 수: ${rankData.game_rank_count}<br>
-                                        평균 점수: ${rankData.positive_avg_mmr_gain}
-                                    </span>
-                                </div>
-                            </td>
-                        `;
-                    } else {
-                        html += '<td>-</td>';
-                    }
-                });
-
-                html += '</tr>';
-                preEquipmentName = equipmentName;
+                        <td class="number">${formatNumber(item.game_count)}</td>
+                        <td class="number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                        <td class="number">
+                            <div>${formatPercent(item.top1_count_percent)}%</div>
+                            <div class="sub-stat">${formatNumber(item.top1_count)}</div>
+                        </td>
+                        <td class="hide-on-mobile number">
+                            <div>${formatPercent(item.top2_count_percent)}%</div>
+                            <div class="sub-stat">${formatNumber(item.top2_count)}</div>
+                        </td>
+                        <td class="hide-on-mobile number">
+                            <div>${formatPercent(item.top4_count_percent)}%</div>
+                            <div class="sub-stat">${formatNumber(item.top4_count)}</div>
+                        </td>
+                        <td class="hide-on-mobile hide-on-tablet number">${formatPercent(item.endgame_win_percent)}%</td>
+                        <td class="hide-on-mobile hide-on-tablet number">${formatNumber(item.avg_team_kill_score, 2)}</td>
+                        <td class="hide-on-mobile number">
+                            <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                            <div class="sub-stat">+${formatNumber(item.positive_avg_mmr_gain, 1)}</div>
+                        </td>
+                        <td class="hide-on-mobile number">
+                            <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                            <div class="sub-stat">${formatNumber(item.negative_avg_mmr_gain, 1)}</div>
+                        </td>
+                    </tr>
+                `;
             });
 
-            html += '</tbody></table></div>';
+            html += '</tbody></table></div></div>';
             html += '</div>'; // tab-content 종료
         });
 
         element.innerHTML = html;
+
+        // 장비 탭 전용 함수 등록 (장비 영역 내에서만 탭 전환)
+        window.openEquipmentTab = function(evt, tabName) {
+            // 장비 영역 내의 탭만 제어
+            const equipmentContainer = element;
+            const tabContents = equipmentContainer.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            });
+
+            const tabLinks = equipmentContainer.querySelectorAll('.tab-link');
+            tabLinks.forEach(link => link.classList.remove('active'));
+
+            const targetTab = equipmentContainer.querySelector(`#${tabName}`);
+            if (targetTab) {
+                targetTab.style.display = 'block';
+                targetTab.classList.add('active');
+            }
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+        };
 
         // 등급 필터 이벤트 리스너 추가
         setupGradeFilters(element);
@@ -711,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>특성 조합</th>
                     <th>사용수</th>
-                    <th>평균획득점수</th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
@@ -756,12 +706,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // 특성 아이콘들 생성
-            let traitIconsHtml = '<div class="trait-icons-container" style="display: flex; gap: 4px; align-items: center;">';
+            let traitIconsHtml = '<div class="trait-icons-container" style="display: flex; gap: 2px; align-items: center;">';
             sortedTraitIds.forEach(traitId => {
                 const trait = traits[traitId];
                 const traitName = trait ? trait.name : `특성 ${traitId}`;
                 const isMain = trait && trait.is_main == 1;
-                const iconSize = isMain ? '44px' : '32px';
+                const iconSize = isMain ? '32px' : '28px';
                 const borderStyle = isMain ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
                 traitIconsHtml += `
                     <div class="tooltip-wrap">
@@ -858,7 +808,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>특성</th>
                     <th>사용수</th>
-                    <th>평균획득점수</th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>

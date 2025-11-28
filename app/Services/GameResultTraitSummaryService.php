@@ -27,13 +27,16 @@ class GameResultTraitSummaryService
     public function updateGameResultTraitSummary($versionSeason = null, $versionMajor = null, $versionMinor = null)
     {
         DB::disableQueryLog(); // 쿼리 로그 비활성화
-        Log::channel('updateGameResultTraitSummary')->info('S: game result tactical_skill summary');
+        Log::channel('updateGameResultTraitSummary')->info('S: game result trait summary');
 
         $latestVersion = VersionHistory::latest('created_at')->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
         $tiers = $this->tierRange;
+
+        // 트랜잭션으로 delete와 insert를 묶어서 처리
+        DB::beginTransaction();
 
         try {
             // 1단계: 기존 데이터 삭제 (청크 단위)
@@ -127,10 +130,13 @@ class GameResultTraitSummaryService
                 $totalInserted += count($batchData);
             }
 
+            DB::commit();
+
             Log::channel('updateGameResultTraitSummary')->info("Inserted {$totalInserted} new records");
-            Log::channel('updateGameResultTraitSummary')->info('E: game result tactical_skill summary');
+            Log::channel('updateGameResultTraitSummary')->info('E: game result trait summary');
         } catch (\Exception $e) {
-            Log::channel('updateGameResultTraitSummary')->error('rank Error: ' . $e->getMessage());
+            DB::rollBack();
+            Log::channel('updateGameResultTraitSummary')->error('trait Error: ' . $e->getMessage());
             Log::channel('updateGameResultTraitSummary')->error($e->getTraceAsString());
             throw $e;
         } finally {

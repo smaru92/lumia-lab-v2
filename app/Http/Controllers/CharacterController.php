@@ -337,6 +337,7 @@ class CharacterController extends Controller
             return [
                 'byTacticalSkillData' => $byTacticalSkill['data'],
                 'byTacticalSkillTotal' => $byTacticalSkill['total'],
+                'aggregatedData' => $byTacticalSkill['aggregatedData'] ?? [],
             ];
         });
 
@@ -380,6 +381,7 @@ class CharacterController extends Controller
             return [
                 'byEquipmentData' => $byEquipment['data'],
                 'byEquipmentTotal' => $byEquipment['total'],
+                'aggregatedData' => $byEquipment['aggregatedData'] ?? [],
             ];
         });
 

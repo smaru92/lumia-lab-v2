@@ -36,6 +36,9 @@ class GameResultTraitCombinationSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
         $tiers = $this->tierRange;
 
+        // 트랜잭션으로 delete와 insert를 묶어서 처리
+        DB::beginTransaction();
+
         try {
             // 1단계: 기존 데이터 삭제 (청크 단위)
             $deleteChunkSize = 5000;
@@ -135,9 +138,12 @@ class GameResultTraitCombinationSummaryService
                 $totalInserted += count($batchData);
             }
 
+            DB::commit();
+
             Log::channel($this->logChannel)->info("Inserted {$totalInserted} new records");
             Log::channel($this->logChannel)->info('E: game result trait combination summary');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::channel($this->logChannel)->error('Error: ' . $e->getMessage());
             Log::channel($this->logChannel)->error($e->getTraceAsString());
             throw $e;
