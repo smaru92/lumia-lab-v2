@@ -162,6 +162,10 @@ tr:hover {
     object-fit: cover;
 }
 
+.trait-combination-icon {
+    object-fit: cover;
+}
+
 /* Ensure direct children take appropriate width */
 .data-cell > div,
 .data-cell > span {
