@@ -41,7 +41,8 @@
 - **game_results_equipment_summary**: 장비별 요약
 - **game_results_equipment_main_summary**: 메인 장비 요약
 - **game_results_tactical_skill_summary**: 전술 스킬 요약
-- **game_results_trait_summary**: 특성 요약
+- **game_results_trait_summary**: 특성 요약 (개별 특성)
+- **game_results_trait_combination_summary**: 특성 조합 요약 (캐릭터별 특성 조합 통계)
 - **game_results_first_equipment_main_summary**: 첫 장비 메인 요약
 
 #### 4. 기타
@@ -152,3 +153,63 @@
 1. **터미널 명령어 실행 제한**: 모든 터미널 명령어는 사용자에게 먼저 요청하여 확인 받아야 함
 2. **Filament 버전 주의**: 반드시 Filament 4 문법 사용
 3. **반응형 디자인 필수**: 프론트엔드 작업 시 모바일/태블릿/PC 환경 모두 체크 필수
+
+## 스케줄러 설정 (app/Console/Kernel.php)
+
+### 명령어 실행 주기
+| 명령어 | 실행 주기 | 실행 시간 | 설명 |
+|--------|-----------|-----------|------|
+| `fetch:game-results` | 매분 | - | 게임 결과 수집 |
+| `update:game-results-summary` | 1시간마다 | 매시 0분 | 메인페이지 데이터 |
+| `update:game-results-tactical-skill-summary` | 2시간마다 | 짝수시 10분 | 전술스킬 데이터 |
+| `update:game-results-equipment-main-summary` | 2시간마다 | 짝수시 20분 | 장비 메인 데이터 |
+| `update:game-results-first-equipment-main-summary` | 2시간마다 | 짝수시 30분 | 초반 장비 데이터 |
+| `update:game-results-rank-summary` | 2시간마다 | 짝수시 40분 | 캐릭터별/순위별 데이터 |
+| `update:game-results-trait-summary` | 2시간마다 | 짝수시 50분 | 캐릭터별/특성/순위별 데이터 |
+| `update:game-results-equipment-summary` | 2시간마다 | 홀수시 10분 | 캐릭터별/장비별 데이터 |
+| `update:game-result-trait-combination-summary` | 2시간마다 | 홀수시 30분 | 캐릭터별/특성조합별 데이터 |
+
+**중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
+
+## 환경 변수 (.env)
+
+### 메인페이지/캐릭터페이지 기준 티어
+```
+ER_STAT_DEFALT_TIER=Diamond       # 캐릭터 페이지 기본 티어
+ER_STAT_MAIN_PAGE_TIER=Meteorite  # 메인 페이지 기본 티어
+```
+
+## 최근 변경사항 (2025-11-28)
+
+### 1. 특성 조합 통계 기능 추가
+- **테이블**: `game_results_trait_combination_summary`
+- **모델**: `GameResultTraitCombinationSummary`
+- **서비스**: `GameResultTraitCombinationSummaryService`
+- **명령어**: `update:game-result-trait-combination-summary`
+- **API**: `/api/detail/{types}/trait-combinations`
+- **특징**: 캐릭터별 선택한 특성 조합에 따른 통계 (GROUP_CONCAT으로 trait_ids 정렬 저장)
+
+### 2. 상세페이지 특성 통계 UI 개선
+- 특성 조합 통계 + 특성 개별 통계를 탭 메뉴로 통합
+- 기본 탭: 특성 조합 통계 (상위 12개만 표시)
+- 두 번째 탭: 특성 개별 통계 (전체 표시, 스크롤 영역 max-height: 500px)
+- 아이콘 정렬: 메인 특성 → 같은 카테고리 서브 특성 → 나머지 서브 특성
+- 메인 특성: 큰 아이콘 (44px) + 금색 테두리
+- 서브 특성: 작은 아이콘 (32px)
+- 모바일에서도 평균획득점수 표시
+
+### 3. 게임 결과 저장 시 null 처리
+- `mmr_before`가 null이면 0으로 저장
+- `mmr_after`가 null이면 `mmr_before + mmr_gain`으로 계산하여 저장
+- 위치: `GameResultService::storeGameResult()`
+
+### 4. 인덱스 최적화
+- `game_result_trait_orders` 테이블에 인덱스 추가
+  - `trait_orders_game_result_id_idx` (game_result_id)
+  - `trait_orders_game_result_trait_idx` (game_result_id, trait_id)
+- 버전별 테이블에도 동일 인덱스 적용 (`idx_grt_game_result_trait`)
+
+### 5. 버그 수정
+- 특성 조합 통계 `positive_avg_mmr_gain`, `negative_avg_mmr_gain` 0으로 저장되는 버그
+  - 원인: SQL alias와 PHP 변수명 불일치 (`avg_positive_mmr_gain` vs `positive_avg_mmr_gain`)
+  - 수정: `GameResultService::getGameResultByTraitCombination()` 내 변수명 수정

@@ -244,9 +244,78 @@ class GameResultTacticalSkillSummaryService
             return $totalB - $totalA;
         });
 
+        // 전술스킬별 집계 데이터 생성 (특성 조합 통계와 동일한 형식)
+        $aggregatedData = [];
+        foreach ($result as $skillId => $levelData) {
+            foreach ($levelData as $level => $rankData) {
+                $firstRank = $rankData[1] ?? $rankData[2] ?? $rankData[3] ?? $rankData[4] ?? null;
+                if (!$firstRank) continue;
+
+                $gameCount = 0;
+                $top1Count = 0;
+                $top2Count = 0;
+                $top4Count = 0;
+                $positiveCount = 0;
+                $negativeCount = 0;
+                $totalMmrGain = 0;
+                $totalPositiveMmrGain = 0;
+                $totalNegativeMmrGain = 0;
+                $totalTeamKillScore = 0;
+                $positiveGames = 0;
+                $negativeGames = 0;
+
+                foreach ($rankData as $rank => $item) {
+                    $gameCount += $item->game_rank_count;
+                    if ($rank == 1) $top1Count = $item->game_rank_count;
+                    if ($rank <= 2) $top2Count += $item->game_rank_count;
+                    if ($rank <= 4) $top4Count += $item->game_rank_count;
+                    $positiveCount += $item->positive_count;
+                    $negativeCount += $item->negative_count;
+                    $totalMmrGain += $item->avg_mmr_gain * $item->game_rank_count;
+                    $totalTeamKillScore += ($item->avg_team_kill_score ?? 0) * $item->game_rank_count;
+                    if ($item->positive_count > 0) {
+                        $totalPositiveMmrGain += ($item->positive_avg_mmr_gain ?? 0) * $item->positive_count;
+                        $positiveGames += $item->positive_count;
+                    }
+                    if ($item->negative_count > 0) {
+                        $totalNegativeMmrGain += ($item->negative_avg_mmr_gain ?? 0) * $item->negative_count;
+                        $negativeGames += $item->negative_count;
+                    }
+                }
+
+                $aggregatedData[] = [
+                    'tactical_skill_id' => $skillId,
+                    'tactical_skill_name' => $firstRank->tactical_skill_name,
+                    'tactical_skill_level' => $level,
+                    'game_count' => $gameCount,
+                    'top1_count' => $top1Count,
+                    'top2_count' => $top2Count,
+                    'top4_count' => $top4Count,
+                    'top1_count_percent' => $gameCount > 0 ? round($top1Count / $gameCount * 100, 2) : 0,
+                    'top2_count_percent' => $gameCount > 0 ? round($top2Count / $gameCount * 100, 2) : 0,
+                    'top4_count_percent' => $gameCount > 0 ? round($top4Count / $gameCount * 100, 2) : 0,
+                    'avg_mmr_gain' => $gameCount > 0 ? round($totalMmrGain / $gameCount, 1) : 0,
+                    'avg_team_kill_score' => $gameCount > 0 ? round($totalTeamKillScore / $gameCount, 2) : 0,
+                    'positive_game_count' => $positiveCount,
+                    'negative_game_count' => $negativeCount,
+                    'positive_game_count_percent' => $gameCount > 0 ? round($positiveCount / $gameCount * 100, 2) : 0,
+                    'negative_game_count_percent' => $gameCount > 0 ? round($negativeCount / $gameCount * 100, 2) : 0,
+                    'positive_avg_mmr_gain' => $positiveGames > 0 ? round($totalPositiveMmrGain / $positiveGames, 1) : 0,
+                    'negative_avg_mmr_gain' => $negativeGames > 0 ? round($totalNegativeMmrGain / $negativeGames, 1) : 0,
+                    'endgame_win_percent' => $top2Count > 0 ? round($top1Count / $top2Count * 100, 2) : 0,
+                ];
+            }
+        }
+
+        // 사용수 기준 정렬
+        usort($aggregatedData, function($a, $b) {
+            return $b['game_count'] - $a['game_count'];
+        });
+
         return [
             'data' => $result,
-            'total' => $total
+            'total' => $total,
+            'aggregatedData' => $aggregatedData
         ];
     }
 
