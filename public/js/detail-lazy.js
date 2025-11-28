@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ranks: false,
         tacticalSkills: false,
         equipment: false,
-        traits: false
+        traitStats: false
     };
 
     /**
@@ -70,9 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'equipment':
                     endpoint = `/api/detail/${types}/equipment?version=${version}&min_tier=${minTier}`;
                     break;
-                case 'traits':
-                    endpoint = `/api/detail/${types}/traits?version=${version}&min_tier=${minTier}`;
-                    break;
+                case 'traitStats':
+                    // 특성 통계는 두 API를 병렬로 호출
+                    await loadTraitStats(sectionElement);
+                    return;
             }
 
             const response = await fetch(endpoint);
@@ -134,9 +135,31 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'equipment':
                 renderEquipmentSection(data, element);
                 break;
-            case 'traits':
-                renderTraitsSection(data, element);
-                break;
+        }
+    }
+
+    /**
+     * 특성 통계 (조합 + 개별) 로드
+     */
+    async function loadTraitStats(element) {
+        try {
+            // 두 API를 병렬로 호출
+            const [traitsResponse, combinationsResponse] = await Promise.all([
+                fetch(`/api/detail/${types}/traits?version=${version}&min_tier=${minTier}`),
+                fetch(`/api/detail/${types}/trait-combinations?version=${version}&min_tier=${minTier}`)
+            ]);
+
+            if (!traitsResponse.ok || !combinationsResponse.ok) {
+                throw new Error('API 호출 실패');
+            }
+
+            const traitsData = await traitsResponse.json();
+            const combinationsData = await combinationsResponse.json();
+
+            renderTraitStatsSection(traitsData, combinationsData, element);
+        } catch (error) {
+            console.error('Error loading trait stats:', error);
+            showError(element, `특성 데이터를 불러오는데 실패했습니다: ${error.message}`);
         }
     }
 
@@ -626,28 +649,200 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 특성 통계 렌더링
+     * 특성 통계 (탭 메뉴: 특성 조합 통계 + 특성 개별 통계)
      */
-    function renderTraitsSection(data, element) {
-        const byTraitData = data.byTraitData || {};
-        const byTraitTotal = data.byTraitTotal || {};
+    function renderTraitStatsSection(traitsData, combinationsData, element) {
+        let html = '';
+
+        // 탭 메뉴
+        html += '<div class="tabs">';
+        html += '<button class="tab-link active" onclick="openTraitTab(event, \'trait-combination-stats\')">특성 조합 통계</button>';
+        html += '<button class="tab-link" onclick="openTraitTab(event, \'trait-individual-stats\')">특성 개별 통계</button>';
+        html += '</div>';
+
+        // 특성 조합 통계 탭 (기본 활성화)
+        html += '<div id="trait-combination-stats" class="tab-content active">';
+        html += renderTraitCombinationsContent(combinationsData);
+        html += '</div>';
+
+        // 특성 개별 통계 탭
+        html += '<div id="trait-individual-stats" class="tab-content">';
+        html += renderTraitsContent(traitsData);
+        html += '</div>';
+
+        element.innerHTML = html;
+
+        // 탭 전환 함수를 전역으로 등록
+        window.openTraitTab = function(evt, tabName) {
+            const tabContents = element.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            const tabLinks = element.querySelectorAll('.tab-link');
+            tabLinks.forEach(link => link.classList.remove('active'));
+
+            element.querySelector(`#${tabName}`).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        };
+
+        // 더보기 버튼 이벤트 - 특성 조합
+        const showMoreCombinationsBtn = element.querySelector('#show-more-trait-combinations');
+        if (showMoreCombinationsBtn) {
+            showMoreCombinationsBtn.addEventListener('click', function() {
+                const hiddenRows = element.querySelectorAll('.trait-combination-row[style*="display: none"]');
+                hiddenRows.forEach(row => row.style.display = '');
+                this.style.display = 'none';
+            });
+        }
+
+        // 더보기 버튼 이벤트 - 특성 개별
+        const showMoreTraitsBtn = element.querySelector('#show-more-traits');
+        if (showMoreTraitsBtn) {
+            showMoreTraitsBtn.addEventListener('click', function() {
+                const hiddenRows = element.querySelectorAll('.trait-row[style*="display: none"]');
+                hiddenRows.forEach(row => row.style.display = '');
+                this.style.display = 'none';
+            });
+        }
+
+        // 필터 이벤트 설정
+        setupTraitFilters(element);
+
+        // 툴팁 이벤트 설정
+        setupTooltips(element);
+    }
+
+    /**
+     * 특성 조합 통계 컨텐츠 생성
+     */
+    function renderTraitCombinationsContent(data) {
+        const combinationsData = data.data || [];
+        const traits = data.traits || {};
+
+        if (combinationsData.length === 0) {
+            return '<p style="text-align: center; color: #999;">집계된 특성 조합 데이터가 없습니다.</p>';
+        }
+
+        let html = '<div class="table-wrapper"><table class="sortable-table">';
+        html += `
+            <thead>
+                <tr>
+                    <th>특성 조합</th>
+                    <th>사용수</th>
+                    <th class="hide-on-mobile">평균획득점수</th>
+                    <th>승률</th>
+                    <th class="hide-on-mobile">TOP2</th>
+                    <th class="hide-on-mobile">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                    <th class="hide-on-mobile">이득확률</th>
+                    <th class="hide-on-mobile">손실확률</th>
+                </tr>
+            </thead>
+            <tbody id="trait-combination-tbody">
+        `;
+
+        combinationsData.forEach((item, index) => {
+            const traitIds = item.trait_ids ? item.trait_ids.split(',') : [];
+
+            // 특성 정렬: is_main=1 -> 같은 category의 is_main=0 -> 나머지
+            const sortedTraitIds = [...traitIds].sort((a, b) => {
+                const traitA = traits[a];
+                const traitB = traits[b];
+
+                const isMainA = traitA && traitA.is_main == 1;
+                const isMainB = traitB && traitB.is_main == 1;
+
+                if (isMainA && !isMainB) return -1;
+                if (!isMainA && isMainB) return 1;
+
+                if (!isMainA && !isMainB) {
+                    const mainTrait = traitIds.map(id => traits[id]).find(t => t && t.is_main == 1);
+                    const mainCategory = mainTrait ? mainTrait.category : null;
+
+                    const categoryA = traitA ? traitA.category : null;
+                    const categoryB = traitB ? traitB.category : null;
+
+                    const matchA = categoryA === mainCategory;
+                    const matchB = categoryB === mainCategory;
+
+                    if (matchA && !matchB) return -1;
+                    if (!matchA && matchB) return 1;
+                }
+
+                return 0;
+            });
+
+            // 특성 아이콘들 생성
+            let traitIconsHtml = '<div class="trait-icons-container" style="display: flex; gap: 4px; align-items: center;">';
+            sortedTraitIds.forEach(traitId => {
+                const trait = traits[traitId];
+                const traitName = trait ? trait.name : `특성 ${traitId}`;
+                const isMain = trait && trait.is_main == 1;
+                const iconSize = isMain ? '44px' : '32px';
+                const borderStyle = isMain ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
+                traitIconsHtml += `
+                    <div class="tooltip-wrap">
+                        <img src="/storage/Trait/${traitId}.png"
+                             alt="${traitName}"
+                             class="equipment-icon"
+                             style="width: ${iconSize}; height: ${iconSize}; ${borderStyle}"
+                             onerror="this.style.display='none'">
+                        <span class="tooltip-text">${traitName}${isMain ? ' (메인)' : ' (서브)'}</span>
+                    </div>
+                `;
+            });
+            traitIconsHtml += '</div>';
+
+            html += `
+                <tr class="trait-combination-row" ${index >= 10 ? 'style="display: none;"' : ''}>
+                    <td>${traitIconsHtml}</td>
+                    <td class="number">${formatNumber(item.game_count)}</td>
+                    <td class="hide-on-mobile number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">
+                        <div>${formatPercent(item.top1_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top1_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top2_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top2_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top4_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top4_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatPercent(item.endgame_win_percent)}%</td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatNumber(item.avg_team_kill_score, 2)}</td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                        <div class="sub-stat">+${formatNumber(item.positive_avg_mmr_gain, 1)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.negative_avg_mmr_gain, 1)}</div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div>';
+
+        if (combinationsData.length > 10) {
+            html += '<button id="show-more-trait-combinations" class="show-more-button">더보기</button>';
+        }
+
+        return html;
+    }
+
+    /**
+     * 특성 개별 통계 컨텐츠 생성
+     */
+    function renderTraitsContent(data) {
+        const aggregatedData = data.aggregatedData || [];
         const traitCategories = data.traitCategories || [];
 
-        console.log('Traits data structure:', byTraitData);
-
-        // byTraitData를 배열로 변환하고 사용수로 정렬
-        let traitsArray = Array.isArray(byTraitData) ? byTraitData : Object.values(byTraitData);
-
-        // 사용수로 정렬
-        traitsArray = traitsArray.sort((a, b) => {
-            const aRanks = Object.values(a);
-            const bRanks = Object.values(b);
-            const aFirstItem = aRanks[0];
-            const bFirstItem = bRanks[0];
-            const aTotalUses = byTraitTotal[aFirstItem?.trait_id] || 0;
-            const bTotalUses = byTraitTotal[bFirstItem?.trait_id] || 0;
-            return bTotalUses - aTotalUses; // 내림차순
-        });
+        if (aggregatedData.length === 0) {
+            return '<p style="text-align: center; color: #999;">집계된 특성 데이터가 없습니다.</p>';
+        }
 
         let html = '';
 
@@ -680,85 +875,77 @@ document.addEventListener('DOMContentLoaded', function() {
         html += `
             <thead>
                 <tr>
-                    <th>이름</th>
-                    <th>분류</th>
-                    <th>구분</th>
+                    <th>특성</th>
                     <th>사용수</th>
-                    <th>1위율</th>
-                    <th>2위율</th>
-                    <th>3위율</th>
-                    <th>4위율</th>
+                    <th class="hide-on-mobile">평균획득점수</th>
+                    <th>승률</th>
+                    <th class="hide-on-mobile">TOP2</th>
+                    <th class="hide-on-mobile">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                    <th class="hide-on-mobile">이득확률</th>
+                    <th class="hide-on-mobile">손실확률</th>
                 </tr>
             </thead>
             <tbody id="trait-tbody">
         `;
 
-        traitsArray.forEach((item, traitIndex) => {
-            const ranks = Object.values(item);
-            if (ranks.length === 0) return;
-
-            const firstItem = ranks[0];
-            if (firstItem.game_rank > 4) return;
-
-            const traitId = firstItem.trait_id;
-            const totalUses = byTraitTotal[traitId] || 0;
-            const traitCategory = firstItem.trait_category;
-            const isMain = firstItem.is_main ? 1 : 0;
+        aggregatedData.forEach((item, index) => {
+            const traitId = item.trait_id;
+            const isMain = item.is_main ? 1 : 0;
+            const iconSize = item.is_main ? '36px' : '28px';
+            const borderStyle = item.is_main ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
 
             html += `
-                <tr class="trait-row" data-category="${traitCategory}" data-is-main="${isMain}" ${traitIndex >= 10 ? 'style="display: none;"' : ''}>
+                <tr class="trait-row" data-category="${item.trait_category}" data-is-main="${isMain}" ${index >= 10 ? 'style="display: none;"' : ''}>
                     <td>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <img src="/storage/Trait/${traitId}.png"
-                                 alt="${firstItem.trait_name}"
-                                 class="equipment-icon"
-                                 onerror="this.style.display='none'">
-                            ${firstItem.trait_name}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="tooltip-wrap">
+                                <img src="/storage/Trait/${traitId}.png"
+                                     alt="${item.trait_name}"
+                                     class="equipment-icon"
+                                     style="width: ${iconSize}; height: ${iconSize}; ${borderStyle}"
+                                     onerror="this.style.display='none'">
+                                <span class="tooltip-text">${item.trait_name}${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}</span>
+                            </div>
+                            <span>${item.trait_name}</span>
                         </div>
                     </td>
-                    <td>${traitCategory}</td>
-                    <td>${firstItem.is_main ? '메인' : '서브'}</td>
-                    <td>${totalUses}</td>
+                    <td class="number">${formatNumber(item.game_count)}</td>
+                    <td class="hide-on-mobile number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">
+                        <div>${formatPercent(item.top1_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top1_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top2_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top2_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top4_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top4_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatPercent(item.endgame_win_percent)}%</td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatNumber(item.avg_team_kill_score, 2)}</td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                        <div class="sub-stat">+${formatNumber(item.positive_avg_mmr_gain, 1)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.negative_avg_mmr_gain, 1)}</div>
+                    </td>
+                </tr>
             `;
-
-            [1, 2, 3, 4].forEach(rank => {
-                const rankData = item[rank];
-                if (rankData) {
-                    html += `
-                        <td>
-                            <div class="tooltip-wrap">
-                                ${formatPercent(rankData.game_rank_count_percent)}%
-                                <span class="tooltip-text">
-                                    게임 수: ${rankData.game_rank_count}<br>
-                                    평균 점수: ${rankData.positive_avg_mmr_gain}
-                                </span>
-                            </div>
-                        </td>
-                    `;
-                } else {
-                    html += '<td>-</td>';
-                }
-            });
-
-            html += '</tr>';
         });
 
         html += '</tbody></table></div>';
-        html += '<button id="show-more-traits" class="show-more-button">더보기</button>';
-        element.innerHTML = html;
 
-        // 더보기 버튼 이벤트
-        const showMoreBtn = element.querySelector('#show-more-traits');
-        if (showMoreBtn) {
-            showMoreBtn.addEventListener('click', function() {
-                const hiddenRows = element.querySelectorAll('.trait-row[style*="display: none"]');
-                hiddenRows.forEach(row => row.style.display = '');
-                this.style.display = 'none';
-            });
+        if (aggregatedData.length > 10) {
+            html += '<button id="show-more-traits" class="show-more-button">더보기</button>';
         }
 
-        // 필터 이벤트 설정
-        setupTraitFilters(element);
+        return html;
     }
 
     /**
@@ -783,10 +970,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const isMainMatch = selectedIsMain.length === 0 || selectedIsMain.includes(isMain);
 
                 if (categoryMatch && isMainMatch) {
-                    // 필터 조건에 맞으면 표시 (더보기 상태는 유지)
                     row.classList.remove('filtered-hidden');
                 } else {
-                    // 필터 조건에 안 맞으면 숨김
                     row.classList.add('filtered-hidden');
                 }
             });
