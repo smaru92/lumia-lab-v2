@@ -637,8 +637,8 @@ class GameResultService
                 DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
                 DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
-                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN AVG(gr.mmr_gain + gr.mmr_cost) ELSE 0 END) as avg_positive_mmr_gain'),
-                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN AVG(gr.mmr_gain + gr.mmr_cost) ELSE 0 END) as avg_negative_mmr_gain'),
+                DB::raw('IFNULL(AVG(CASE WHEN gr.mmr_gain + gr.mmr_cost > 0 THEN gr.mmr_gain + gr.mmr_cost END), 0) as positive_avg_mmr_gain'),
+                DB::raw('IFNULL(AVG(CASE WHEN gr.mmr_gain + gr.mmr_cost < 0 THEN gr.mmr_gain + gr.mmr_cost END), 0) as negative_avg_mmr_gain'),
             )
             ->where('gr.matching_mode', 3) // 랭크모드만
             ->groupBy(
