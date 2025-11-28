@@ -32,3 +32,4 @@ Route::get('/detail/{types}/ranks', [\App\Http\Controllers\CharacterController::
 Route::get('/detail/{types}/tactical-skills', [\App\Http\Controllers\CharacterController::class, 'getDetailTacticalSkills']);
 Route::get('/detail/{types}/equipment', [\App\Http\Controllers\CharacterController::class, 'getDetailEquipment']);
 Route::get('/detail/{types}/traits', [\App\Http\Controllers\CharacterController::class, 'getDetailTraits']);
+Route::get('/detail/{types}/trait-combinations', [\App\Http\Controllers\CharacterController::class, 'getDetailTraitCombinations']);

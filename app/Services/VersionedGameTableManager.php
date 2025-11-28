@@ -84,6 +84,7 @@ class VersionedGameTableManager
                 $table->timestamp('created_at')->nullable();
 
                 $table->index(['game_result_id', 'trait_id', 'is_main'], 'idx_grt_game_result_id_trait_main');
+                $table->index(['game_result_id', 'trait_id'], 'idx_grt_game_result_trait');
             });
         }
     }

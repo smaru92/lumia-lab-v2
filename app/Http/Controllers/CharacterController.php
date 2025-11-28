@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\GameResultSummaryService;
+use App\Services\GameResultTraitCombinationSummaryService;
 use App\Services\MainService;
 use App\Services\PerformanceMonitor;
 use App\Services\RankRangeService;
@@ -433,6 +434,66 @@ class CharacterController extends Controller
                 'byTraitData' => $byTrait['data'],
                 'byTraitTotal' => $byTrait['total'],
                 'traitCategories' => $traitCategories,
+                'aggregatedData' => $byTrait['aggregatedData'] ?? [],
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    public function getDetailTraitCombinations(Request $request, $types)
+    {
+        $defaultTier = config('erDev.defaultTier');
+        $defaultVersion = config('erDev.defaultVersion');
+        $minTier = $request->input('min_tier', $defaultTier);
+        $version = $request->input('version', $defaultVersion);
+
+        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+            $version = $defaultVersion;
+        }
+
+        $version = explode('.', $version);
+        $versionSeason = $version[0];
+        $versionMajor = $version[1];
+        $versionMinor = $version[2];
+
+        [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
+        $weaponType = empty($weaponType) ? 'All' : $weaponType;
+
+        $filters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+            'character_name' => $characterName,
+            'weapon_type' => $weaponType,
+            'min_tier' => $minTier,
+        ];
+
+        $cacheKey = "game_detail_trait_combinations_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheDuration = config('erDev.cacheDuration');
+
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+            $service = new GameResultTraitCombinationSummaryService();
+            $result = $service->getDetail($filters);
+
+            // 특성 정보 조회 (아이콘용)
+            $traitIds = [];
+            foreach ($result['data'] as $item) {
+                $ids = explode(',', $item->trait_ids);
+                foreach ($ids as $id) {
+                    if (!in_array($id, $traitIds)) {
+                        $traitIds[] = $id;
+                    }
+                }
+            }
+
+            // 특성 정보 가져오기
+            $traits = \App\Models\GameTrait::whereIn('id', $traitIds)->get()->keyBy('id');
+
+            return [
+                'data' => $result['data'],
+                'total' => $result['total'],
+                'traits' => $traits,
             ];
         });
 

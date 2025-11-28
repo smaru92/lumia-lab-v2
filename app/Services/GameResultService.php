@@ -1318,6 +1318,127 @@ class GameResultService
     }
 
     /**
+     * 캐릭터별, 특성조합별 통계
+     * trait_ids는 정렬된 상태로 반환 (예: "101,205,308")
+     * @param array $filters
+     * @return array
+     */
+    public function getGameResultByTraitCombination(array $filters): array
+    {
+        DB::disableQueryLog();
+
+        $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
+        $weaponTypeCaseStmt = $this->getWeaponTypeCaseStatement();
+
+        // 1. 먼저 game_result_id별로 trait_ids를 집계 (정렬된 상태)
+        $traitCombinationSubQuery = DB::table($gameResultTraitOrderTableName)
+            ->select(
+                'game_result_id',
+                DB::raw('GROUP_CONCAT(trait_id ORDER BY trait_id ASC) as trait_ids')
+            )
+            ->groupBy('game_result_id');
+
+        // 2. 메인 쿼리: 캐릭터별, 무기별, 특성조합별 집계
+        $results = DB::table($gameResultTableName . ' as gr')
+            ->joinSub($traitCombinationSubQuery, 'tc', 'gr.id', '=', 'tc.game_result_id')
+            ->join('equipments as e', 'gr.weapon_id', '=', 'e.id')
+            ->join('characters as c', 'gr.character_id', '=', 'c.id')
+            ->select(
+                'gr.character_id',
+                DB::raw('MAX(c.name) as name'),
+                DB::raw("{$weaponTypeCaseStmt} AS weapon_type"),
+                'tc.trait_ids',
+                DB::raw('COUNT(*) as game_count'),
+                DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
+                DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
+                DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
+                DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
+                DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
+                DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
+            )
+            ->where('gr.matching_mode', 3)
+            ->whereNotNull('e.item_type2')
+            ->groupBy(
+                'gr.character_id',
+                DB::raw($weaponTypeCaseStmt),
+                'tc.trait_ids'
+            )
+            ->orderBy('game_count', 'desc');
+
+        if (isset($filters['version_major'])) {
+            $results = $results->where('gr.version_major', $filters['version_major']);
+        }
+        if (isset($filters['version_minor'])) {
+            $results = $results->where('gr.version_minor', $filters['version_minor']);
+        }
+        if (isset($filters['min_tier'])) {
+            $results = $results->where('gr.mmr_before', '>=', $filters['min_score']);
+        }
+
+        $gameResults = $results->get();
+
+        // 캐릭터+무기별 전체 게임수 계산 (픽률 계산용)
+        $characterTotals = [];
+        $data = [];
+
+        foreach ($gameResults as $item) {
+            $charWeaponKey = $item->character_id . '-' . $item->weapon_type;
+
+            if (!isset($characterTotals[$charWeaponKey])) {
+                $characterTotals[$charWeaponKey] = 0;
+            }
+            $characterTotals[$charWeaponKey] += $item->game_count;
+
+            $key = $charWeaponKey . '-' . $item->trait_ids;
+            $data[$key] = [
+                'characterId' => $item->character_id,
+                'characterName' => $item->name,
+                'weaponType' => $item->weapon_type,
+                'traitIds' => $item->trait_ids,
+                'gameCount' => $item->game_count,
+                'positiveGameCount' => $item->positive_count,
+                'negativeGameCount' => $item->negative_count,
+                'avgMmrGain' => round($item->avg_mmr_gain, 1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score, 2) : 0,
+                'top1Count' => $item->top1_count,
+                'top2Count' => $item->top2_count,
+                'top4Count' => $item->top4_count,
+                'positiveAvgMmrGain' => round($item->avg_positive_mmr_gain ?? 0, 1),
+                'negativeAvgMmrGain' => round($item->avg_negative_mmr_gain ?? 0, 1),
+                'charWeaponKey' => $charWeaponKey,
+            ];
+        }
+
+        // 픽률 계산
+        foreach ($data as $key => &$item) {
+            $charTotal = $characterTotals[$item['charWeaponKey']] ?? 1;
+            $item['gameCountPercent'] = round(($item['gameCount'] / $charTotal) * 100, 2);
+            $item['positiveGameCountPercent'] = $item['gameCount'] ? round(($item['positiveGameCount'] / $item['gameCount']) * 100, 2) : 0;
+            $item['negativeGameCountPercent'] = $item['gameCount'] ? round(($item['negativeGameCount'] / $item['gameCount']) * 100, 2) : 0;
+            $item['top1CountPercent'] = $item['gameCount'] ? round(($item['top1Count'] / $item['gameCount']) * 100, 2) : 0;
+            $item['top2CountPercent'] = $item['gameCount'] ? round(($item['top2Count'] / $item['gameCount']) * 100, 2) : 0;
+            $item['top4CountPercent'] = $item['gameCount'] ? round(($item['top4Count'] / $item['gameCount']) * 100, 2) : 0;
+            $item['endgameWinPercent'] = $item['top2Count'] ? round(($item['top1Count'] / $item['top2Count']) * 100, 2) : 0;
+            unset($item['charWeaponKey']);
+        }
+        unset($item);
+
+        $result = [
+            'data' => array_values($data),
+            'characterTotals' => $characterTotals,
+        ];
+
+        unset($gameResults, $data, $characterTotals);
+        gc_collect_cycles();
+
+        return $result;
+    }
+
+    /**
      * 특정 게임 ID 이후의 모든 게임 결과 데이터 삭제
      * @param int $fromGameId
      * @return void
