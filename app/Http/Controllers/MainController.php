@@ -16,7 +16,7 @@ class MainController extends Controller
 
     public function index(Request $request)
     {
-        $minTier = 'Diamond'; // 다이아몬드 티어 고정
+        $minTier = config('erDev.mainPageTier'); // 환경변수에서 메인페이지 기준티어 가져오기
 
         // 캐시 키 생성
         $cacheKey = "patch_comparison_{$minTier}";
