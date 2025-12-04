@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Element references
     const selMinTier = document.getElementById('sel-min-tier'); // Version filter in main.blade.php & equipment.blade.php
     const selVersion = document.getElementById('sel-version'); // Tier filter in main.blade.php & equipment.blade.php
-    const inputPickRate = document.getElementById('input-pick-rate');
+    const inputMinCount = document.getElementById('input-min-count');
     const gameTable = document.getElementById("gameTable");
     const tableBody = gameTable?.querySelector("tbody");
 
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyAllFilters() {
         if (!tableBody && !tierModal) return;
 
-        const minPickRate = parseFloat(inputPickRate?.value) || 0;
+        const minCount = parseInt(inputMinCount?.value) || 0;
         const selectedGrade = selItemGrade?.value || 'All';
         const selectedType2 = selItemType2?.value || 'All';
 
@@ -83,12 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.querySelectorAll("tr").forEach(row => {
                 let showRow = true;
 
-                if (inputPickRate) {
-                    const pickRateCell = row.cells[3];
-                    if (pickRateCell) {
-                        const pickRateText = pickRateCell.querySelector('div:first-child')?.innerText || '0%';
-                        const pickRateValue = parseFloat(pickRateText.replace(/%/g, ''));
-                        if (!isNaN(pickRateValue) && pickRateValue < minPickRate) {
+                if (inputMinCount) {
+                    const countCell = row.cells[3];
+                    if (countCell) {
+                        const countText = countCell.innerText.trim().replace(/,/g, '');
+                        const countValue = parseInt(countText) || 0;
+                        if (countValue < minCount) {
                             showRow = false;
                         }
                     }
@@ -115,8 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tierModal.querySelectorAll(".tier-character-icon-container").forEach(iconContainer => {
                 let showIcon = true;
 
-                const pickRateValue = parseFloat(iconContainer.dataset.pickRate) || 0;
-                if (pickRateValue < minPickRate) {
+                const gameCountValue = parseInt(iconContainer.dataset.gameCount) || 0;
+                if (gameCountValue < minCount) {
                     showIcon = false;
                 }
 
@@ -194,15 +194,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selVersion) { // For tier
         selVersion.addEventListener('change', updateUrlForVersionAndTier);
     }
-    if (inputPickRate) {
-        inputPickRate.addEventListener('input', () => {
-            localStorage.setItem('pickRateFilter', inputPickRate.value); // Save pick rate
+    if (inputMinCount) {
+        inputMinCount.addEventListener('input', () => {
+            localStorage.setItem('minCountFilter', inputMinCount.value); // Save min count
             applyAllFilters();
         });
-        // Load saved pick rate
-        const savedPickRate = localStorage.getItem('pickRateFilter');
-        if (savedPickRate) {
-            inputPickRate.value = savedPickRate;
+        // Load saved min count
+        const savedMinCount = localStorage.getItem('minCountFilter');
+        if (savedMinCount) {
+            inputMinCount.value = savedMinCount;
         }
     }
     if (selItemGrade) {

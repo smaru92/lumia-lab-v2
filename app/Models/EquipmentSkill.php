@@ -14,6 +14,7 @@ class EquipmentSkill extends Model
     protected $fillable = [
         'name',
         'grade',
+        'sub_category',
         'description',
     ];
 

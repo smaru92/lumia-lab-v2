@@ -28,6 +28,12 @@ class EquipmentSkillForm
                     ->nullable()
                     ->placeholder('등급 선택'),
 
+                TextInput::make('sub_category')
+                    ->label('2차분류')
+                    ->maxLength(255)
+                    ->nullable()
+                    ->placeholder('2차분류 입력'),
+
                 Textarea::make('description')
                     ->label('스킬 설명')
                     ->rows(4)
