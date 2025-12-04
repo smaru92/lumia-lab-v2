@@ -42,6 +42,12 @@ class EquipmentSkillTable
                         default => 'gray',
                     }),
 
+                TextColumn::make('sub_category')
+                    ->label('2차분류')
+                    ->sortable()
+                    ->searchable()
+                    ->placeholder('-'),
+
                 TextColumn::make('description')
                     ->label('스킬 설명')
                     ->limit(50)

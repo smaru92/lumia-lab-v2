@@ -73,15 +73,32 @@ class GameResultEquipmentMainSummaryService
                 echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
 
                 $startTime = microtime(true);
-                $gameResults = $this->gameResultService->getGameResultEquipmentMain([
+
+                // Mythic 등급 처리 (통합 메타스코어)
+                $mythicResults = $this->gameResultService->getGameResultEquipmentMain([
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,
                     'version_minor' => $versionMinor,
                     'min_tier' => $minTier,
                     'min_score' => $minScore,
                 ]);
+
+                // Legend 등급 처리 (장착부위별 메타스코어)
+                $legendResults = $this->gameResultService->getGameResultLegendEquipmentMain([
+                    'version_season' => $versionSeason,
+                    'version_major' => $versionMajor,
+                    'version_minor' => $versionMinor,
+                    'min_tier' => $minTier,
+                    'min_score' => $minScore,
+                ]);
+
+                // 두 결과 병합
+                $gameResults = [
+                    'data' => array_merge($mythicResults['data'] ?? [], $legendResults['data'] ?? []),
+                ];
+
                 $queryTime = round((microtime(true) - $startTime) * 1000, 2);
-                Log::channel('updateGameResultEquipmentMainSummary')->info("Query time for {$minTier}: {$queryTime}ms");
+                Log::channel('updateGameResultEquipmentMainSummary')->info("Query time for {$minTier}: {$queryTime}ms (Mythic + Legend)");
 
                 $gameResultsCursor = $gameResults['data'];
 

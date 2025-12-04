@@ -891,7 +891,7 @@ class GameResultService
                 $join->on('gre.equipment_id', '=', 'e.id')
                      ->whereNotNull('e.item_type2')
                      ->whereNotIn('e.item_type1', ['Weapon'])
-                     ->whereIn('e.item_grade', ['Legend', 'Mythic']);
+                     ->where('e.item_grade', 'Mythic'); // Mythic 등급만 (통합 메타스코어)
             })
             ->select(
                 'gre.equipment_id',
@@ -954,8 +954,8 @@ class GameResultService
             ];
         }
         $metaStandard['avgMmrGain'] = $metaStandard['avgMmrGain'] / count($data);
-        $metaStandard['gameCount'] = $totalAll * 4 / count($data);
-        $metaStandard['gameCountPercent'] = (4 / count($data)) * 100 * 1.3;
+        $metaStandard['gameCount'] = $totalAll / count($data);
+        $metaStandard['gameCountPercent'] = (1 / count($data)) * 100 * 1.3;
         $metaStandard['dataCount'] = count($data);
         foreach ($data as $name => $item) {
             $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $totalAll) * 100, 2) : 0;
@@ -965,7 +965,7 @@ class GameResultService
             $top2CountPercent = $item['top2Count'] ? round(($item['top2Count'] / $total[$name]) * 100, 2) : 0;
             $top4CountPercent = $item['top4Count'] ? round(($item['top4Count'] / $total[$name]) * 100, 2) : 0;
             $endgameWinPercent = $item['top2Count'] ? round(($item['top1Count'] / $item['top2Count']) * 100, 2) : 0;
-            $data[$name]['gameCountPercent'] = $gameCountPercent * 4;
+            $data[$name]['gameCountPercent'] = $gameCountPercent;
             $data[$name]['positiveGameCountPercent'] = $positiveGameCountPercent;
             $data[$name]['negativeGameCountPercent'] = $negativeGameCountPercent;
             $data[$name]['top1CountPercent'] = $top1CountPercent;
@@ -981,7 +981,7 @@ class GameResultService
             'data' => $data,
         ];
 
-        // 메모리 정리
+        // 메모리 정리 (Mythic)
         unset($gameResults, $data, $total);
         gc_collect_cycles();
 
@@ -1091,8 +1091,8 @@ class GameResultService
             ];
         }
         $metaStandard['avgMmrGain'] = $metaStandard['avgMmrGain'] / count($data);
-        $metaStandard['gameCount'] = $totalAll * 4 / count($data);
-        $metaStandard['gameCountPercent'] = (4 / count($data)) * 100;
+        $metaStandard['gameCount'] = $totalAll / count($data);
+        $metaStandard['gameCountPercent'] = (1 / count($data)) * 100;
         $metaStandard['dataCount'] = count($data);
         foreach ($data as $name => $item) {
             $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $totalAll) * 100, 2) : 0;
@@ -1102,7 +1102,7 @@ class GameResultService
             $top2CountPercent = $item['top2Count'] ? round(($item['top2Count'] / $total[$name]) * 100, 2) : 0;
             $top4CountPercent = $item['top4Count'] ? round(($item['top4Count'] / $total[$name]) * 100, 2) : 0;
             $endgameWinPercent = $item['top2Count'] ? round(($item['top1Count'] / $item['top2Count']) * 100, 2) : 0;
-            $data[$name]['gameCountPercent'] = $gameCountPercent * 4;
+            $data[$name]['gameCountPercent'] = $gameCountPercent;
             $data[$name]['positiveGameCountPercent'] = $positiveGameCountPercent;
             $data[$name]['negativeGameCountPercent'] = $negativeGameCountPercent;
             $data[$name]['top1CountPercent'] = $top1CountPercent;
@@ -1120,6 +1120,151 @@ class GameResultService
 
         // 메모리 정리
         unset($gameResults, $data, $total);
+        gc_collect_cycles();
+
+        return $result;
+    }
+
+    /**
+     * Legend 등급 장비 통계 - 장착부위(item_type2)별로 분리하여 메타스코어 계산
+     * @param array $filters
+     * @return array
+     */
+    public function getGameResultLegendEquipmentMain(array $filters)
+    {
+        DB::disableQueryLog();
+
+        $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
+
+        $results = DB::table($gameResultTableName . ' as gr')
+            ->where('gr.matching_mode', 3)
+            ->when(isset($filters['version_major']), function($query) use ($filters) {
+                return $query->where('gr.version_major', $filters['version_major']);
+            })
+            ->when(isset($filters['version_minor']), function($query) use ($filters) {
+                return $query->where('gr.version_minor', $filters['version_minor']);
+            })
+            ->when(isset($filters['min_tier']), function($query) use ($filters) {
+                return $query->where('gr.mmr_before', '>=', $filters['min_score']);
+            })
+            ->join($gameResultEquipmentOrderTableName . ' as gre', 'gr.id', '=', 'gre.game_result_id')
+            ->join('equipments as e', function($join) {
+                $join->on('gre.equipment_id', '=', 'e.id')
+                     ->whereNotNull('e.item_type2')
+                     ->whereNotIn('e.item_type1', ['Weapon'])
+                     ->where('e.item_grade', 'Legend'); // Legend 등급만
+            })
+            ->select(
+                'gre.equipment_id',
+                'e.item_grade',
+                'e.item_type2', // 장착부위 추가
+                DB::raw('MAX(e.name) as name'),
+                DB::raw('COUNT(*) as game_count'),
+                DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
+                DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
+                DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
+                DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
+                DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
+                DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
+            )
+            ->groupBy('gre.equipment_id', 'e.item_grade', 'e.item_type2')
+            ->orderBy('game_count', 'desc');
+
+        $gameResults = $results->get();
+
+        // 장착부위별로 데이터 분리
+        $dataByItemType = [];
+        $totalByItemType = [];
+
+        foreach ($gameResults as $item) {
+            $itemType2 = $item->item_type2;
+            if (!isset($dataByItemType[$itemType2])) {
+                $dataByItemType[$itemType2] = [];
+                $totalByItemType[$itemType2] = 0;
+            }
+
+            $key = $item->equipment_id . '_' . $item->item_grade;
+            $dataByItemType[$itemType2][$key] = [
+                'equipmentId' => $item->equipment_id,
+                'itemGrade' => $item->item_grade,
+                'itemType2' => $item->item_type2,
+                'name' => $item->name,
+                'gameCount' => $item->game_count,
+                'positiveGameCount' => $item->positive_count,
+                'negativeGameCount' => $item->negative_count,
+                'avgMmrGain' => round($item->avg_mmr_gain, 1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score, 2) : 0,
+                'top1Count' => $item->top1_count,
+                'top2Count' => $item->top2_count,
+                'top4Count' => $item->top4_count,
+                'positiveAvgMmrGain' => round($item->avg_positive_mmr_gain, 1),
+                'negativeAvgMmrGain' => round($item->avg_negative_mmr_gain, 1),
+            ];
+            $totalByItemType[$itemType2] += $item->game_count;
+        }
+
+        // 장착부위별로 메타스코어 계산
+        $data = [];
+        foreach ($dataByItemType as $itemType2 => $items) {
+            if (count($items) == 0) {
+                continue;
+            }
+
+            // 해당 장착부위의 메타 기준값 계산
+            $metaStandard = ['avgMmrGain' => 0];
+            foreach ($items as $item) {
+                $metaStandard['avgMmrGain'] += $item['avgMmrGain'];
+            }
+            $metaStandard['avgMmrGain'] = $metaStandard['avgMmrGain'] / count($items);
+            $metaStandard['gameCount'] = $totalByItemType[$itemType2] / count($items);
+            $metaStandard['gameCountPercent'] = (1 / count($items)) * 100; // 장착부위별 분리이므로 *4 불필요
+            $metaStandard['dataCount'] = count($items);
+
+            // 각 장비의 퍼센트 및 메타스코어 계산
+            foreach ($items as $key => $item) {
+                $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $totalByItemType[$itemType2]) * 100, 2) : 0;
+                $positiveGameCountPercent = $item['gameCount'] ? round(($item['positiveGameCount'] / $item['gameCount']) * 100, 2) : 0;
+                $negativeGameCountPercent = $item['gameCount'] ? round(($item['negativeGameCount'] / $item['gameCount']) * 100, 2) : 0;
+                $top1CountPercent = $item['top1Count'] ? round(($item['top1Count'] / $item['gameCount']) * 100, 2) : 0;
+                $top2CountPercent = $item['top2Count'] ? round(($item['top2Count'] / $item['gameCount']) * 100, 2) : 0;
+                $top4CountPercent = $item['top4Count'] ? round(($item['top4Count'] / $item['gameCount']) * 100, 2) : 0;
+                $endgameWinPercent = $item['top2Count'] ? round(($item['top1Count'] / $item['top2Count']) * 100, 2) : 0;
+
+                $itemData = $item;
+                $itemData['gameCountPercent'] = $gameCountPercent; // 장착부위별 분리이므로 *4 불필요
+                $itemData['positiveGameCountPercent'] = $positiveGameCountPercent;
+                $itemData['negativeGameCountPercent'] = $negativeGameCountPercent;
+                $itemData['top1CountPercent'] = $top1CountPercent;
+                $itemData['top2CountPercent'] = $top2CountPercent;
+                $itemData['top4CountPercent'] = $top4CountPercent;
+                $itemData['endgameWinPercent'] = $endgameWinPercent;
+
+                $metaData = $this->getEquipmentMetaDataNew($itemData, $metaStandard);
+                $itemData['metaScore'] = $metaData['metaScore'];
+                $itemData['metaTier'] = $metaData['metaTier'];
+
+                $data[$key] = $itemData;
+            }
+        }
+
+        if (count($data) == 0) {
+            Log::channel('updateGameResultEquipmentMainSummary')->info($filters['min_tier'] . ' : game result legend equipment main summary not found DATA');
+            return [
+                'total' => [],
+                'data' => [],
+            ];
+        }
+
+        $result = [
+            'total' => $totalByItemType,
+            'data' => $data,
+        ];
+
+        unset($gameResults, $data, $dataByItemType, $totalByItemType);
         gc_collect_cycles();
 
         return $result;

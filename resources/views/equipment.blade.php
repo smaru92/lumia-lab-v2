@@ -29,8 +29,8 @@
                 </select>
             </div>
             <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="input-pick-rate" style="margin-bottom: 5px;"><strong>최소 픽률(%)</strong></label>
-                <input type="number" id="input-pick-rate" min="0" max="100" step="0.1" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
+                <label for="input-min-count" style="margin-bottom: 5px;"><strong>최소 사용수</strong></label>
+                <input type="number" id="input-min-count" min="0" step="1" value="0" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
             </div>
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <label for="sel-item-grade" style="margin-bottom: 5px;"><strong>아이템 등급</strong></label>
@@ -70,7 +70,7 @@
             <th>랭크</th> {{-- 정렬 기능 없음 --}}
             <th class="sortable">이름</th>
             <th class="sortable">티어</th>
-            <th class="sortable">픽률</th>
+            <th class="sortable">사용수</th>
             <th class="sortable">평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
             <th class="sortable">승률</th>
             <th class="sortable hide-on-mobile">TOP2</th>
@@ -145,8 +145,7 @@
                         <div class="sub-stat">{{ number_format($item->meta_score, 2) }}</div>
                     </td>
                     <td class="number">
-                        <div>{{ number_format($item->game_count_percent , 2) }}%</div>
-                        <div class="sub-stat">{{ $item->game_count }}</div>
+                        {{ number_format($item->game_count) }}
                     </td>
                     <td class="number">{{ number_format($item->avg_mmr_gain, 1) }}</td>
                     <td class="number">
@@ -208,7 +207,7 @@
                             <td>
                                 @foreach($groupedByTier[$tier] as $item)
                                     <div class="tier-character-icon-container"
-                                         data-pick-rate="{{ number_format($item->game_count_percent, 2) }}"
+                                         data-game-count="{{ $item->game_count }}"
                                          data-item-grade="{{ $item->item_grade_en }}"
                                          data-item-type2="{{ $item->item_type2_en }}"
                                          data-equipment-name="{{ $item->equipment_name }}"

@@ -58,6 +58,12 @@ class EquipmentSkillsRelationManager extends RelationManager
                         default => 'gray',
                     }),
 
+                TextColumn::make('sub_category')
+                    ->label('2차분류')
+                    ->sortable()
+                    ->searchable()
+                    ->placeholder('-'),
+
                 TextColumn::make('description')
                     ->label('스킬 설명')
                     ->limit(50)
@@ -66,7 +72,7 @@ class EquipmentSkillsRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->recordSelectOptionsQuery(fn ($query) => $query->orderBy('name', 'asc'))
-                    ->recordSelectSearchColumns(['name', 'grade', 'description'])
+                    ->recordSelectSearchColumns(['name', 'grade', 'sub_category', 'description'])
                     ->recordTitle(function ($record) {
                         $gradeText = match($record->grade) {
                             'Epic' => '영웅',
@@ -75,8 +81,18 @@ class EquipmentSkillsRelationManager extends RelationManager
                             default => '',
                         };
 
+                        $title = '';
+
                         if ($gradeText) {
-                            return "[{$gradeText}] {$record->name}";
+                            $title .= "[{$gradeText}]";
+                        }
+
+                        if ($record->sub_category) {
+                            $title .= "[{$record->sub_category}]";
+                        }
+
+                        if ($title) {
+                            return "{$title} {$record->name}";
                         }
 
                         return $record->name;
