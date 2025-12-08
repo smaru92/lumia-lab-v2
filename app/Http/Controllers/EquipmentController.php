@@ -59,8 +59,11 @@ class EquipmentController
         $cacheKey = "game_equipment_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration'); // 캐시 지속 시간
 
-        // 데이터 조회 전체를 캐싱
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($versionSeason, $versionMajor, $versionMinor, $minTier, $defaultTier, $defaultVersion) {
+        // 캐시에서 데이터 조회
+        $data = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (!$data || empty($data['data']) || (is_countable($data['data']) && count($data['data']) === 0)) {
             // 버전별 최상위 티어 점수 동적 조회
             $versionFilters = [
                 'version_season' => $versionSeason,
@@ -83,7 +86,7 @@ class EquipmentController
 
             $versions = $this->equipmentMainService->getLatestVersionList();
 
-            return [
+            $data = [
                 'lastUpdate' => $lastUpdate,
                 'defaultVersion' => $defaultVersion,
                 'defaultTier' => $defaultTier,
@@ -91,7 +94,12 @@ class EquipmentController
                 'data' => $lastData,
                 'versions' => $versions,
             ];
-        });
+
+            // 데이터가 있을 때만 캐싱
+            if ($lastData && count($lastData) > 0) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
 
         return view('equipment', $data);
     }

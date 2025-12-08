@@ -163,7 +163,8 @@ class GameResultTraitSummaryService
                 'c.name as character_name',
                 't.name as trait_name',
                 't.id as trait_id',
-                't.category as trait_category'
+                't.category as trait_category',
+                't.tooltip as trait_tooltip'
             )
                 ->join('traits as t', 't.id', 'game_results_trait_summary.trait_id')
                 ->join('characters as c', 'c.id', 'game_results_trait_summary.character_id')
@@ -193,6 +194,7 @@ class GameResultTraitSummaryService
                         "trait_id" => $item->trait_id,
                         "trait_category" => $item->trait_category,
                         "trait_name" => $item->trait_name,
+                        "trait_tooltip" => $item->trait_tooltip,
                         "is_main" => $item->is_main,
                         "character_id" => $item->character_id,
                         "weapon_type" => $item->weapon_type,
@@ -268,6 +270,7 @@ class GameResultTraitSummaryService
                 'trait_id' => $traitId,
                 'trait_name' => $firstRank->trait_name,
                 'trait_category' => $firstRank->trait_category,
+                'trait_tooltip' => $firstRank->trait_tooltip ?? '',
                 'is_main' => $firstRank->is_main,
                 'game_count' => $gameCount,
                 'top1_count' => $top1Count,

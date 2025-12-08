@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selMinTier = document.getElementById('sel-min-tier'); // Version filter in main.blade.php & equipment.blade.php
     const selVersion = document.getElementById('sel-version'); // Tier filter in main.blade.php & equipment.blade.php
     const inputMinCount = document.getElementById('input-min-count');
+    const inputPickRate = document.getElementById('input-pick-rate'); // Pick rate filter for character page
     const gameTable = document.getElementById("gameTable");
     const tableBody = gameTable?.querySelector("tbody");
 
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tableBody && !tierModal) return;
 
         const minCount = parseInt(inputMinCount?.value) || 0;
+        const minPickRate = parseFloat(inputPickRate?.value) || 0;
         const selectedGrade = selItemGrade?.value || 'All';
         const selectedType2 = selItemType2?.value || 'All';
 
@@ -83,12 +85,26 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.querySelectorAll("tr").forEach(row => {
                 let showRow = true;
 
+                // Equipment page filter: minimum usage count (column 3)
                 if (inputMinCount) {
                     const countCell = row.cells[3];
                     if (countCell) {
                         const countText = countCell.innerText.trim().replace(/,/g, '');
                         const countValue = parseInt(countText) || 0;
                         if (countValue < minCount) {
+                            showRow = false;
+                        }
+                    }
+                }
+
+                // Character page filter: minimum pick rate % (column 3)
+                if (inputPickRate) {
+                    const pickRateCell = row.cells[3];
+                    if (pickRateCell) {
+                        // Extract the first line which contains the percentage
+                        const pickRateText = pickRateCell.querySelector('div')?.innerText.trim() || pickRateCell.innerText.trim();
+                        const pickRateValue = parseFloat(pickRateText.replace(/%/g, '')) || 0;
+                        if (pickRateValue < minPickRate) {
                             showRow = false;
                         }
                     }
@@ -115,9 +131,20 @@ document.addEventListener('DOMContentLoaded', () => {
             tierModal.querySelectorAll(".tier-character-icon-container").forEach(iconContainer => {
                 let showIcon = true;
 
-                const gameCountValue = parseInt(iconContainer.dataset.gameCount) || 0;
-                if (gameCountValue < minCount) {
-                    showIcon = false;
+                // Equipment page: filter by game count
+                if (inputMinCount) {
+                    const gameCountValue = parseInt(iconContainer.dataset.gameCount) || 0;
+                    if (gameCountValue < minCount) {
+                        showIcon = false;
+                    }
+                }
+
+                // Character page: filter by pick rate
+                if (inputPickRate) {
+                    const pickRateValue = parseFloat(iconContainer.dataset.pickRate) || 0;
+                    if (pickRateValue < minPickRate) {
+                        showIcon = false;
+                    }
                 }
 
                 if (selItemGrade && selectedGrade !== 'All') {
@@ -203,6 +230,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedMinCount = localStorage.getItem('minCountFilter');
         if (savedMinCount) {
             inputMinCount.value = savedMinCount;
+        }
+    }
+    if (inputPickRate) {
+        inputPickRate.addEventListener('input', () => {
+            localStorage.setItem('pickRateFilter', inputPickRate.value); // Save pick rate
+            applyAllFilters();
+        });
+        // Load saved pick rate
+        const savedPickRate = localStorage.getItem('pickRateFilter');
+        if (savedPickRate) {
+            inputPickRate.value = savedPickRate;
         }
     }
     if (selItemGrade) {

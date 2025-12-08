@@ -344,14 +344,22 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         aggregatedData.forEach((item) => {
+            const skillTooltip = (item.tactical_skill_tooltip || '').replace(/\n/g, '<br>');
+            const tooltipContent = skillTooltip
+                ? `<strong>${item.tactical_skill_name} Lv ${item.tactical_skill_level}</strong><br><br>${skillTooltip}`
+                : `${item.tactical_skill_name} Lv ${item.tactical_skill_level}`;
+
             html += `
                 <tr class="tactical-skill-row">
                     <td>
                         <div style="display: flex; align-items: center; gap: 5px;">
-                            <img src="/storage/TacticalSkill/${item.tactical_skill_id}.png"
-                                 alt="${item.tactical_skill_name}"
-                                 class="equipment-icon"
-                                 onerror="this.style.display='none'">
+                            <div class="tooltip-wrap">
+                                <img src="/storage/TacticalSkill/${item.tactical_skill_id}.png"
+                                     alt="${item.tactical_skill_name}"
+                                     class="equipment-icon"
+                                     onerror="this.style.display='none'">
+                                <span class="tooltip-text">${tooltipContent}</span>
+                            </div>
                             ${item.tactical_skill_name} Lv ${item.tactical_skill_level}
                         </div>
                     </td>
@@ -385,6 +393,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += '</tbody></table></div></div>';
         element.innerHTML = html;
+
+        // 툴팁 이벤트 설정
+        setupTooltips(element);
     }
 
     /**
@@ -710,9 +721,13 @@ document.addEventListener('DOMContentLoaded', function() {
             sortedTraitIds.forEach(traitId => {
                 const trait = traits[traitId];
                 const traitName = trait ? trait.name : `특성 ${traitId}`;
+                const traitTooltip = trait && trait.tooltip ? trait.tooltip.replace(/\n/g, '<br>') : '';
                 const isMain = trait && trait.is_main == 1;
                 const iconSize = isMain ? '36px' : '28px';
                 const borderStyle = isMain ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
+                const tooltipContent = traitTooltip
+                    ? `<strong>${traitName}</strong>${isMain ? ' (메인)' : ' (서브)'}<br><br>${traitTooltip}`
+                    : `${traitName}${isMain ? ' (메인)' : ' (서브)'}`;
                 traitIconsHtml += `
                     <div class="tooltip-wrap">
                         <img src="/storage/Trait/${traitId}.png"
@@ -720,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
                              class="trait-combination-icon"
                              style="width: ${iconSize}; height: ${iconSize}; ${borderStyle}"
                              onerror="this.style.display='none'">
-                        <span class="tooltip-text">${traitName}${isMain ? ' (메인)' : ' (서브)'}</span>
+                        <span class="tooltip-text">${tooltipContent}</span>
                     </div>
                 `;
             });
@@ -827,6 +842,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const isMain = item.is_main ? 1 : 0;
             const iconSize = item.is_main ? '36px' : '28px';
             const borderStyle = item.is_main ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
+            const traitTooltip = (item.trait_tooltip || '').replace(/\n/g, '<br>');
+            const tooltipContent = traitTooltip
+                ? `<strong>${item.trait_name}</strong>${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}<br><br>${traitTooltip}`
+                : `${item.trait_name}${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}`;
 
             html += `
                 <tr class="trait-row" data-category="${item.trait_category}" data-is-main="${isMain}">
@@ -838,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                      class="equipment-icon"
                                      style="width: ${iconSize}; height: ${iconSize}; ${borderStyle}"
                                      onerror="this.style.display='none'">
-                                <span class="tooltip-text">${item.trait_name}${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}</span>
+                                <span class="tooltip-text">${tooltipContent}</span>
                             </div>
                             <span>${item.trait_name}</span>
                         </div>
