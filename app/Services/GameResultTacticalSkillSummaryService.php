@@ -150,6 +150,7 @@ class GameResultTacticalSkillSummaryService
             'c.name as character_name',
             'ts.name as tactical_skill_name',
             'ts.id as tactical_skill_id',
+            'ts.tooltip as tactical_skill_tooltip',
         )
             ->join('tactical_skills as ts', 'ts.id', 'game_results_tactical_skill_summary.tactical_skill_id')
             ->join('characters as c', 'c.id', 'game_results_tactical_skill_summary.character_id')
@@ -186,6 +187,7 @@ class GameResultTacticalSkillSummaryService
                         "character_name" => $item->character_name,
                         "tactical_skill_id" => $item->tactical_skill_id,
                         "tactical_skill_name" => $item->tactical_skill_name,
+                        "tactical_skill_tooltip" => $item->tactical_skill_tooltip,
                         "tactical_skill_level" => 1,
                         "equipment_id" => $item->equipment_id,
                         "character_id" => $item->character_id,
@@ -211,6 +213,7 @@ class GameResultTacticalSkillSummaryService
                         "character_name" => $item->character_name,
                         "tactical_skill_id" => $item->tactical_skill_id,
                         "tactical_skill_name" => $item->tactical_skill_name,
+                        "tactical_skill_tooltip" => $item->tactical_skill_tooltip,
                         "tactical_skill_level" => 2,
                         "equipment_id" => $item->equipment_id,
                         "character_id" => $item->character_id,
@@ -286,6 +289,7 @@ class GameResultTacticalSkillSummaryService
                 $aggregatedData[] = [
                     'tactical_skill_id' => $skillId,
                     'tactical_skill_name' => $firstRank->tactical_skill_name,
+                    'tactical_skill_tooltip' => $firstRank->tactical_skill_tooltip ?? '',
                     'tactical_skill_level' => $level,
                     'game_count' => $gameCount,
                     'top1_count' => $top1Count,

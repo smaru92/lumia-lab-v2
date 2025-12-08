@@ -189,7 +189,7 @@ tr:hover {
     position: fixed;
     z-index: 10000; /* Very high z-index to appear above everything */
     white-space: normal; /* Allow line breaks */
-    max-width: 400px; /* Set max width for long descriptions */
+    max-width: 300px; /* Set max width for long descriptions */
     opacity: 0;
     transition: opacity 0.2s;
     pointer-events: none; /* Don't interfere with mouse events */
@@ -304,9 +304,13 @@ tr:hover {
 /* No sticky columns - allow all content to scroll horizontally */
 
 /* Tactical skill table specific styles */
-table:has(#tactical-skill-tbody) th:nth-child(2),
-#tactical-skill-tbody tr td:nth-child(2) {
+table:has(#tactical-skill-tbody) th:nth-child(2) {
     text-align: center;
+    padding: 8px 4px;
+}
+/* 전술스킬 테이블 사용수 열 오른쪽 정렬 */
+#tactical-skill-tbody tr td:nth-child(2) {
+    text-align: right;
     padding: 8px 4px;
 }
 
@@ -317,6 +321,11 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 }
 
 /* Trait table - let browser handle layout */
+/* 특성 테이블 사용수 열 오른쪽 정렬 */
+#trait-tbody td.number,
+#trait-combination-tbody td.number {
+    text-align: right;
+}
 
 /* Large screens (desktops) */
 @media (min-width: 992px) {
