@@ -8,40 +8,21 @@
     <div style="margin-bottom: 15px;">
         <!-- 중앙 정렬 컨테이너 -->
         <div class="main-filter-container">
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="sel-min-tier" style="margin-bottom: 5px;"><strong>버전</strong></label>
-                <select id="sel-min-tier">
-                    @foreach($versions as $version)
-                        <option value="{{ $version }}" {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}>{{ $version }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="sel-version" style="margin-bottom: 5px;"><strong>최소 티어</strong></label>
-                <select id="sel-version">
-                    <option value="All" {{ request('min_tier', $defaultTier) === 'All' ? 'selected' : '' }}>전체</option>
-                    <option value="Platinum" {{ request('min_tier', $defaultTier) === 'Platinum' ? 'selected' : '' }}>플레티넘</option>
-                    <option value="Diamond" {{ request('min_tier', $defaultTier) === 'Diamond' ? 'selected' : '' }}>다이아</option>
-                    <option value="Diamond2" {{ request('min_tier', $defaultTier) === 'Diamond2' ? 'selected' : '' }}>다이아2</option>
-                    <option value="Meteorite" {{ request('min_tier', $defaultTier) === 'Meteorite' ? 'selected' : '' }}>메테오라이트</option>
-                    <option value="Mithril" {{ request('min_tier', $defaultTier) === 'Mithril' ? 'selected' : '' }}>미스릴</option>
-                    <option value="Top" {{ request('min_tier', $defaultTier) === 'Top' ? 'selected' : '' }}>최상위큐({{ $topRankScore }}+)</option>
-                </select>
-            </div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="input-min-count" style="margin-bottom: 5px;"><strong>최소 사용수</strong></label>
+            @include('partials.filter-dropdowns')
+            <div class="custom-dropdown-container">
+                <label><strong>최소 사용수</strong></label>
                 <input type="number" id="input-min-count" min="0" step="1" value="0" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
             </div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="sel-item-grade" style="margin-bottom: 5px;"><strong>아이템 등급</strong></label>
+            <div class="custom-dropdown-container">
+                <label><strong>아이템 등급</strong></label>
                 <select id="sel-item-grade">
                     <option value="All" selected>전체 등급</option>
                     <option value="Legend">전설</option>
                     <option value="Mythic">초월</option>
                 </select>
             </div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <label for="sel-item-type2" style="margin-bottom: 5px;"><strong>아이템 부위</strong></label>
+            <div class="custom-dropdown-container">
+                <label><strong>아이템 부위</strong></label>
                 <select id="sel-item-type2">
                     <option value="All" selected>전체 부위</option>
                     <option value="Chest">옷</option>
@@ -60,6 +41,11 @@
             </div>
             <!-- 우측: 티어표 보기 버튼 -->
             <button id="openTierModal" class="tier-modal-btn" style="padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">티어표 보기</button>
+        </div>
+        <!-- Beta 안내문구 -->
+        <div class="beta-warning-box">
+            <span class="warning-icon">⚠️</span>
+            <p class="warning-text">이 페이지는 현재 실험 중인 기능입니다. 지표 평가가 부정확할 수 있으니 참고용으로만 활용해 주세요.</p>
         </div>
     </div>
 

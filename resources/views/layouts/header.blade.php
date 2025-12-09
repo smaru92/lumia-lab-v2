@@ -19,10 +19,10 @@
                 <a href="/character" class="nav-links">캐릭터</a>
             </li>
             <li class="nav-item">
-                <a href="/equipment" class="nav-links">장비</a>
+                <a href="/equipment" class="nav-links nav-beta">장비<span class="beta-badge">Beta</span></a>
             </li>
             <li class="nav-item">
-                <a href="/equipment-first" class="nav-links">초기 장비</a>
+                <a href="/equipment-first" class="nav-links nav-beta">초기 장비<span class="beta-badge">Beta</span></a>
             </li>
         </ul>
     </div>

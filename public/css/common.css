@@ -84,6 +84,49 @@
     color: white;
 }
 
+/* Beta Badge for Navigation */
+.nav-beta {
+    position: relative;
+}
+
+.beta-badge {
+    position: absolute;
+    bottom: 2px;
+    right: -2px;
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #ff6b35;
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+/* Beta Warning Box */
+.beta-warning-box {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.beta-warning-box .warning-icon {
+    font-size: 18px;
+    color: #856404;
+}
+
+.beta-warning-box .warning-text {
+    font-size: 13px;
+    color: #856404;
+    margin: 0;
+}
+
 /* Hamburger Menu - Hidden on Desktop by Default */
 .hamburger-menu {
     display: none;
@@ -540,6 +583,19 @@
     .nav-links:hover {
         background-color: #444 !important;
         color: #fff !important;
+    }
+
+    /* Beta badge for mobile/tablet */
+    .nav-beta {
+        position: relative;
+    }
+
+    .beta-badge {
+        position: static;
+        display: inline-block;
+        margin-left: 6px;
+        font-size: 10px;
+        vertical-align: middle;
     }
 }
 
