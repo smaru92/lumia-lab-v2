@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th>최소티어</th>
                     <th>티어</th>
                     <th>픽률</th>
-                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
                     <th>TOP2</th>
                     <th>TOP4</th>
@@ -272,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>순위</th>
                     <th>비율</th>
-                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                     <th>평균 TK</th>
                     <th>이득확률</th>
                     <th>이득평균점수</th>
@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>이름</th>
                     <th>사용수</th>
-                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <th>등급</th>
                         <th>이름</th>
                         <th>사용수</th>
-                        <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                        <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                         <th>승률</th>
                         <th class="hide-on-mobile">TOP2</th>
                         <th class="hide-on-mobile">TOP4</th>
@@ -672,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>특성 조합</th>
                     <th>사용수</th>
-                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>특성</th>
                     <th>사용수</th>
-                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>

@@ -44,7 +44,7 @@
             <th>티어</th>
             <th>픽률</th>
             <th>
-                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득 점수를 나타냅니다.">ⓘ</span>
+                평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span>
             </th>
             <th>승률</th>
             <th>TOP2</th>
