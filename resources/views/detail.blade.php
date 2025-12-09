@@ -11,28 +11,8 @@
     <h2><a href="/character?min_tier={{ request('min_tier') }}&version={{ request('version') }}">게임 통계</a></h2>
 
     {{-- Keep filters for changing options --}}
-    <div class="detail-filter-container">
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="sel-version-filter" style="margin-bottom: 5px;"><strong>버전</strong></label>
-            <select id="sel-version-filter"> {{-- Changed ID to avoid conflict --}}
-                @foreach($versions as $version)
-                    <option value="{{ $version }}" {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}>{{ $version }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="sel-tier-filter" style="margin-bottom: 5px;"><strong>최소 티어</strong></label>
-            <select id="sel-tier-filter"> {{-- Changed ID to avoid conflict --}}
-                <option value="All" {{ request('min_tier', $defaultTier) === 'All' ? 'selected' : '' }}>전체</option>
-                <option value="Platinum" {{ request('min_tier', $defaultTier) === 'Platinum' ? 'selected' : '' }}>플레티넘</option>
-                <option value="Diamond" {{ request('min_tier', $defaultTier) === 'Diamond' ? 'selected' : '' }}>다이아</option>
-                <option value="Diamond2" {{ request('min_tier', $defaultTier) === 'Diamond2' ? 'selected' : '' }}>다이아2</option>
-                <option value="Meteorite" {{ request('min_tier', $defaultTier) === 'Meteorite' ? 'selected' : '' }}>메테오라이트</option>
-                <option value="Mithril" {{ request('min_tier', $defaultTier) === 'Mithril' ? 'selected' : '' }}>미스릴</option>
-                <option value="Top" {{ request('min_tier', $defaultTier) === 'Top' ? 'selected' : '' }}>최상위큐({{ $topRankScore }}+)</option>
-            </select>
-        </div>
-        {{-- Removed static display of character/weapon from here --}}
+    <div class="detail-filter-container main-filter-container">
+        @include('partials.filter-dropdowns')
     </div>
     <h3>기본정보</h3>
 

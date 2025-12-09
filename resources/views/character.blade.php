@@ -8,28 +8,9 @@
     <div style="margin-bottom: 15px;">
     <!-- 중앙 정렬 컨테이너 -->
     <div class="main-filter-container">
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="sel-min-tier" style="margin-bottom: 5px;"><strong>버전</strong></label>
-            <select id="sel-min-tier">
-                @foreach($versions as $version)
-                    <option value="{{ $version }}" {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}>{{ $version }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="sel-version" style="margin-bottom: 5px;"><strong>최소 티어</strong></label>
-            <select id="sel-version">
-                <option value="All" {{ request('min_tier', $defaultTier) === 'All' ? 'selected' : '' }}>전체</option>
-                <option value="Platinum" {{ request('min_tier', $defaultTier) === 'Platinum' ? 'selected' : '' }}>플레티넘</option>
-                <option value="Diamond" {{ request('min_tier', $defaultTier) === 'Diamond' ? 'selected' : '' }}>다이아</option>
-                <option value="Diamond2" {{ request('min_tier', $defaultTier) === 'Diamond2' ? 'selected' : '' }}>다이아2</option>
-                <option value="Meteorite" {{ request('min_tier', $defaultTier) === 'Meteorite' ? 'selected' : '' }}>메테오라이트</option>
-                <option value="Mithril" {{ request('min_tier', $defaultTier) === 'Mithril' ? 'selected' : '' }}>미스릴</option>
-                <option value="Top" {{ request('min_tier', $defaultTier) === 'Top' ? 'selected' : '' }}>최상위큐({{ $topRankScore }}+)</option>
-            </select>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <label for="input-pick-rate" style="margin-bottom: 5px;"><strong>최소 픽률(%)</strong></label>
+        @include('partials.filter-dropdowns')
+        <div class="custom-dropdown-container">
+            <label><strong>최소 픽률(%)</strong></label>
             <input type="number" id="input-pick-rate" min="0" max="100" step="0.1" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
         </div>
     </div>

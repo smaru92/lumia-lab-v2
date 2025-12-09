@@ -80,6 +80,23 @@
             z-index: 1;
         }
 
+        /* 카드용 Beta 배지 */
+        .card-beta-badge {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #ff6b35;
+            padding: 2px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+            z-index: 2;
+        }
+
         /* 탭 메뉴 스타일 */
         .patch-tabs {
             display: flex;
@@ -226,11 +243,13 @@
             <div class="page-link-desc">캐릭터별 승률 및 통계</div>
         </a>
         <a href="/equipment" class="page-link-card equipment">
+            <span class="card-beta-badge">Beta</span>
             <div class="page-link-icon">⚔️</div>
             <div class="page-link-title">장비 통계</div>
             <div class="page-link-desc">장비 아이템 통계</div>
         </a>
         <a href="/equipment-first" class="page-link-card equipment-first">
+            <span class="card-beta-badge">Beta</span>
             <div class="page-link-icon">🛡️</div>
             <div class="page-link-title">초기 장비 통계</div>
             <div class="page-link-desc">초기 장비 아이템 통계</div>

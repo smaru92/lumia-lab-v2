@@ -1,63 +1,91 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Version/Tier selection logic for detail page filters
-    const versionFilterSelect = document.getElementById('sel-version-filter'); // Use updated ID
-    const tierFilterSelect = document.getElementById('sel-tier-filter'); // Use updated ID
+    // Custom dropdown elements for detail page
+    const versionDropdown = document.getElementById('version-dropdown');
+    const tierDropdown = document.getElementById('tier-dropdown');
 
-    // --- Initialize select boxes from URL parameters ---
-    function initializeFiltersFromUrl() {
-        const urlParams = new URLSearchParams(window.location.search);
+    // --- Custom Dropdown Logic ---
+    function initCustomDropdowns() {
+        const dropdowns = document.querySelectorAll('.custom-dropdown');
 
-        // Sync tier select
-        if (tierFilterSelect) {
-            const tierParam = urlParams.get('min_tier');
-            if (tierParam && tierFilterSelect.value !== tierParam) {
-                tierFilterSelect.value = tierParam;
-            }
-        }
+        dropdowns.forEach(dropdown => {
+            const selected = dropdown.querySelector('.dropdown-selected');
+            const options = dropdown.querySelector('.dropdown-options');
+            const optionItems = dropdown.querySelectorAll('.dropdown-option');
 
-        // Sync version select
-        if (versionFilterSelect) {
-            const versionParam = urlParams.get('version');
-            if (versionParam && versionFilterSelect.value !== versionParam) {
-                versionFilterSelect.value = versionParam;
-            }
-        }
+            if (!selected || !options) return;
+
+            // Toggle dropdown on click
+            selected.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // Close other dropdowns
+                dropdowns.forEach(d => {
+                    if (d !== dropdown) {
+                        d.classList.remove('open');
+                    }
+                });
+
+                dropdown.classList.toggle('open');
+            });
+
+            // Handle option selection
+            optionItems.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    const value = option.dataset.value;
+                    const html = option.innerHTML;
+
+                    // Update selected display
+                    selected.innerHTML = html;
+                    selected.dataset.value = value;
+
+                    // Update selected state
+                    optionItems.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+
+                    // Close dropdown
+                    dropdown.classList.remove('open');
+
+                    // Trigger URL update
+                    updateDetailUrl();
+                });
+            });
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.remove('open');
+            });
+        });
     }
 
-    // Initialize on page load
-    initializeFiltersFromUrl();
-
-    // Re-initialize on browser back/forward
-    window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-            // Page was loaded from cache (bfcache)
-            initializeFiltersFromUrl();
-        }
-    });
-
-    // Also handle popstate event for browser back/forward
-    window.addEventListener('popstate', function() {
-        initializeFiltersFromUrl();
-    });
-
     function updateDetailUrl() {
-        const selectedVersion = versionFilterSelect.value;
-        const selectedTier = tierFilterSelect.value;
+        const versionSelected = versionDropdown?.querySelector('.dropdown-selected');
+        const tierSelected = tierDropdown?.querySelector('.dropdown-selected');
+
+        if (!versionSelected && !tierSelected) return;
 
         // Get the current path (e.g., /detail/CharacterName-WeaponType)
         const currentPath = window.location.pathname;
+        const currentUrl = new URL(window.location.href);
+
+        if (versionSelected) {
+            currentUrl.searchParams.set('version', versionSelected.dataset.value);
+        }
+        if (tierSelected) {
+            currentUrl.searchParams.set('min_tier', tierSelected.dataset.value);
+        }
 
         // Construct the new URL with updated query parameters
-        window.location.href = `${currentPath}?min_tier=${selectedTier}&version=${selectedVersion}`;
+        if (window.location.href !== currentUrl.href) {
+            window.location.href = currentUrl.href;
+        }
     }
 
-    // Attach event listeners to the correct filter selects
-    if (versionFilterSelect) {
-        versionFilterSelect.addEventListener('change', updateDetailUrl);
-    }
-    if (tierFilterSelect) {
-        tierFilterSelect.addEventListener('change', updateDetailUrl);
-    }
+    // Initialize custom dropdowns
+    initCustomDropdowns();
 
     // Table sorting logic
     const gradeOrder = {

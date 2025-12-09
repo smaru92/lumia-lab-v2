@@ -16,6 +16,91 @@ document.addEventListener('DOMContentLoaded', () => {
     const openTierModalBtn = document.getElementById('openTierModal');
     const closeButton = document.querySelector('.close-button');
 
+    // Custom dropdown elements
+    const versionDropdown = document.getElementById('version-dropdown');
+    const tierDropdown = document.getElementById('tier-dropdown');
+
+    // --- Custom Dropdown Logic ---
+    function initCustomDropdowns() {
+        const dropdowns = document.querySelectorAll('.custom-dropdown');
+
+        dropdowns.forEach(dropdown => {
+            const selected = dropdown.querySelector('.dropdown-selected');
+            const options = dropdown.querySelector('.dropdown-options');
+            const optionItems = dropdown.querySelectorAll('.dropdown-option');
+
+            if (!selected || !options) return;
+
+            // Toggle dropdown on click
+            selected.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // Close other dropdowns
+                dropdowns.forEach(d => {
+                    if (d !== dropdown) {
+                        d.classList.remove('open');
+                    }
+                });
+
+                dropdown.classList.toggle('open');
+            });
+
+            // Handle option selection
+            optionItems.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    const value = option.dataset.value;
+                    const html = option.innerHTML;
+
+                    // Update selected display
+                    selected.innerHTML = html;
+                    selected.dataset.value = value;
+
+                    // Update selected state
+                    optionItems.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+
+                    // Close dropdown
+                    dropdown.classList.remove('open');
+
+                    // Trigger URL update
+                    updateUrlFromDropdowns();
+                });
+            });
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.remove('open');
+            });
+        });
+    }
+
+    function updateUrlFromDropdowns() {
+        const versionSelected = versionDropdown?.querySelector('.dropdown-selected');
+        const tierSelected = tierDropdown?.querySelector('.dropdown-selected');
+
+        if (!versionSelected && !tierSelected) return;
+
+        const currentUrl = new URL(window.location.href);
+
+        if (versionSelected) {
+            currentUrl.searchParams.set('version', versionSelected.dataset.value);
+        }
+        if (tierSelected) {
+            currentUrl.searchParams.set('min_tier', tierSelected.dataset.value);
+        }
+
+        if (window.location.href !== currentUrl.href) {
+            window.location.href = currentUrl.href;
+        }
+    }
+
+    // Initialize custom dropdowns
+    initCustomDropdowns();
+
     // --- Initialize select boxes from URL parameters ---
     function initializeFiltersFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
