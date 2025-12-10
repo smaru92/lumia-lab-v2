@@ -22,7 +22,7 @@
         @php
             $currentTier = request('min_tier', $defaultTier);
             $tierOptions = [
-                'All' => ['name' => '전체', 'icon' => null],
+                'All' => ['name' => '전체', 'icon' => 'All'],
                 'Platinum' => ['name' => '플래티넘', 'icon' => 'Platinum'],
                 'Diamond' => ['name' => '다이아', 'icon' => 'Diamond'],
                 'Diamond2' => ['name' => '다이아2', 'icon' => 'Diamond'],
@@ -34,7 +34,7 @@
         @endphp
         <div class="dropdown-selected" data-value="{{ $currentTier }}">
             @if($selectedTier['icon'])
-                <img src="{{ asset('storage/Tier/' . $selectedTier['icon'] . '.png') }}" alt="{{ $selectedTier['name'] }}" class="tier-icon" onerror="this.style.display='none'">
+                <span class="tier-icon" style="background-image: url('{{ asset('storage/Tier/icon/' . $selectedTier['icon'] . '.png') }}');" aria-label="{{ $selectedTier['name'] }}"></span>
             @endif
             <span>{{ $selectedTier['name'] }}</span>
         </div>
@@ -42,7 +42,7 @@
             @foreach($tierOptions as $value => $tier)
                 <div class="dropdown-option {{ $currentTier === $value ? 'selected' : '' }}" data-value="{{ $value }}">
                     @if($tier['icon'])
-                        <img src="{{ asset('storage/Tier/' . $tier['icon'] . '.png') }}" alt="{{ $tier['name'] }}" class="tier-icon" onerror="this.style.display='none'">
+                        <span class="tier-icon" style="background-image: url('{{ asset('storage/Tier/icon/' . $tier['icon'] . '.png') }}');" aria-label="{{ $tier['name'] }}"></span>
                     @endif
                     <span>{{ $tier['name'] }}</span>
                 </div>
