@@ -186,10 +186,18 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_basic_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $byMain = cache()->remember($cacheKey, $cacheDuration, function () use ($filters, $minTier) {
+        $byMain = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($byMain)) {
             $byAll = $this->mainService->getGameResultSummaryDetailBulk($filters, $this->tierRange);
-            return $byAll[$minTier] ?? null;
-        });
+            $byMain = $byAll[$minTier] ?? null;
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($byMain)) {
+                cache()->put($cacheKey, $byMain, $cacheDuration);
+            }
+        }
 
         // 데이터가 없는 경우 처리
         if (empty($byMain)) {
@@ -263,9 +271,17 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_tiers_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $byAll = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
-            return $this->mainService->getGameResultSummaryDetailBulk($filters, $this->tierRange);
-        });
+        $byAll = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($byAll)) {
+            $byAll = $this->mainService->getGameResultSummaryDetailBulk($filters, $this->tierRange);
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($byAll)) {
+                cache()->put($cacheKey, $byAll, $cacheDuration);
+            }
+        }
 
         return response()->json(['byAll' => $byAll]);
     }
@@ -301,9 +317,17 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_ranks_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $byRank = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
-            return $this->mainService->getGameResultRankSummary($filters);
-        });
+        $byRank = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($byRank)) {
+            $byRank = $this->mainService->getGameResultRankSummary($filters);
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($byRank)) {
+                cache()->put($cacheKey, $byRank, $cacheDuration);
+            }
+        }
 
         return response()->json(['byRank' => $byRank]);
     }
@@ -339,15 +363,23 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_tactical_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+        $data = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($data) || empty($data['byTacticalSkillData'])) {
             $byTacticalSkill = $this->mainService->getGameResultTacticalSkillSummary($filters);
 
-            return [
+            $data = [
                 'byTacticalSkillData' => $byTacticalSkill['data'],
                 'byTacticalSkillTotal' => $byTacticalSkill['total'],
                 'aggregatedData' => $byTacticalSkill['aggregatedData'] ?? [],
             ];
-        });
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($data['byTacticalSkillData'])) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
 
         return response()->json($data);
     }
@@ -383,15 +415,23 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_equipment_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+        $data = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($data) || empty($data['byEquipmentData'])) {
             $byEquipment = $this->mainService->getGameResultEquipmentSummary($filters);
 
-            return [
+            $data = [
                 'byEquipmentData' => $byEquipment['data'],
                 'byEquipmentTotal' => $byEquipment['total'],
                 'aggregatedData' => $byEquipment['aggregatedData'] ?? [],
             ];
-        });
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($data['byEquipmentData'])) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
 
         return response()->json($data);
     }
@@ -427,7 +467,10 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_traits_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+        $data = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($data) || empty($data['byTraitData'])) {
             $byTrait = $this->mainService->getGameResultTraitSummary($filters);
 
             // Extract unique trait categories for filtering
@@ -440,13 +483,18 @@ class CharacterController extends Controller
             }
             sort($traitCategories);
 
-            return [
+            $data = [
                 'byTraitData' => $byTrait['data'],
                 'byTraitTotal' => $byTrait['total'],
                 'traitCategories' => $traitCategories,
                 'aggregatedData' => $byTrait['aggregatedData'] ?? [],
             ];
-        });
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($data['byTraitData'])) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
 
         return response()->json($data);
     }
@@ -482,7 +530,10 @@ class CharacterController extends Controller
         $cacheKey = "game_detail_trait_combinations_{$types}_{$minTier}_" . implode('_', $version);
         $cacheDuration = config('erDev.cacheDuration');
 
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
+        $data = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($data) || empty($data['data'])) {
             $service = new GameResultTraitCombinationSummaryService();
             $result = $service->getDetail($filters);
 
@@ -500,12 +551,17 @@ class CharacterController extends Controller
             // 특성 정보 가져오기
             $traits = \App\Models\GameTrait::whereIn('id', $traitIds)->get()->keyBy('id');
 
-            return [
+            $data = [
                 'data' => $result['data'],
                 'total' => $result['total'],
                 'traits' => $traits,
             ];
-        });
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($data['data']) && count($data['data']) > 0) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
 
         return response()->json($data);
     }
