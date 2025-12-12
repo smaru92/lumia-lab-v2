@@ -36,6 +36,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('update:game-results-equipment-summary')->cron('10 1-23/2 * * *')->withoutOverlapping()->runInBackground();
         // 캐릭터별/특성조합별 데이터 - 홀수 시간 30분
         $schedule->command('update:game-result-trait-combination-summary')->cron('30 1-23/2 * * *')->withoutOverlapping()->runInBackground();
+        // 특성 메인 데이터 - 홀수 시간 50분
+        $schedule->command('update:game-results-trait-main-summary')->cron('50 1-23/2 * * *')->withoutOverlapping()->runInBackground();
     }
 
     /**
