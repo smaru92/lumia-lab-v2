@@ -1675,4 +1675,265 @@ class GameResultService
             Log::channel('fetchGameResultData')->error('Error deleting game results: ' . $e->getMessage());
         }
     }
+
+    /**
+     * 특성별 통계 (메인/서브 구분) - 특성 메인 페이지용
+     * @param array $filters
+     * @return array
+     */
+    public function getGameResultTraitMain(array $filters): array
+    {
+        DB::disableQueryLog();
+
+        $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
+
+        // 특성별 집계 쿼리
+        $results = DB::table($gameResultTableName . ' as gr')
+            ->where('gr.matching_mode', 3) // 랭크모드만
+            ->when(isset($filters['version_major']), function($query) use ($filters) {
+                return $query->where('gr.version_major', $filters['version_major']);
+            })
+            ->when(isset($filters['version_minor']), function($query) use ($filters) {
+                return $query->where('gr.version_minor', $filters['version_minor']);
+            })
+            ->when(isset($filters['min_tier']), function($query) use ($filters) {
+                return $query->where('gr.mmr_before', '>=', $filters['min_score']);
+            })
+            ->join($gameResultTraitOrderTableName . ' as grt', 'gr.id', '=', 'grt.game_result_id')
+            ->join('traits as t', 't.id', '=', 'grt.trait_id')
+            ->select(
+                'grt.trait_id',
+                'grt.is_main',
+                DB::raw('MAX(t.name) as name'),
+                DB::raw('COUNT(*) as game_count'),
+                DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
+                DB::raw('SUM(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
+                DB::raw('AVG(gr.mmr_gain) as avg_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) > 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_positive_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr.mmr_gain + gr.mmr_cost) < 0 THEN (gr.mmr_gain + gr.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr.team_kill_score) as avg_team_kill_score'),
+                DB::raw('SUM(CASE WHEN gr.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
+                DB::raw('SUM(CASE WHEN gr.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
+                DB::raw('SUM(CASE WHEN gr.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
+            )
+            ->groupBy('grt.trait_id', 'grt.is_main')
+            ->orderBy('game_count', 'desc');
+
+        $gameResults = $results->get();
+
+        // 메인/서브 분리하여 데이터 구성
+        $mainData = [];
+        $subData = [];
+        $mainTotal = [];
+        $subTotal = [];
+        $mainTotalAll = 0;
+        $subTotalAll = 0;
+
+        foreach ($gameResults as $item) {
+            $key = $item->trait_id . '_' . ($item->is_main ? 'main' : 'sub');
+            $itemData = [
+                'traitId' => $item->trait_id,
+                'isMain' => (bool) $item->is_main,
+                'name' => $item->name,
+                'gameCount' => $item->game_count,
+                'positiveGameCount' => $item->positive_count,
+                'negativeGameCount' => $item->negative_count,
+                'avgMmrGain' => round($item->avg_mmr_gain, 1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score, 2) : 0,
+                'top1Count' => $item->top1_count,
+                'top2Count' => $item->top2_count,
+                'top4Count' => $item->top4_count,
+                'positiveAvgMmrGain' => round($item->avg_positive_mmr_gain ?? 0, 1),
+                'negativeAvgMmrGain' => round($item->avg_negative_mmr_gain ?? 0, 1),
+            ];
+
+            if ($item->is_main) {
+                $mainData[$key] = $itemData;
+                $mainTotal[$key] = $item->game_count;
+                $mainTotalAll += $item->game_count;
+            } else {
+                $subData[$key] = $itemData;
+                $subTotal[$key] = $item->game_count;
+                $subTotalAll += $item->game_count;
+            }
+        }
+
+        if (count($mainData) == 0 && count($subData) == 0) {
+            Log::channel('updateGameResultTraitMainSummary')->info($filters['min_tier'] . ' : game result trait main summary not found DATA');
+            return [
+                'total' => [],
+                'data' => [],
+            ];
+        }
+
+        // 메인 특성 메타스코어 계산
+        if (count($mainData) > 0) {
+            $mainMetaStandard = [
+                'avgMmrGain' => array_sum(array_column($mainData, 'avgMmrGain')) / count($mainData),
+                'gameCount' => $mainTotalAll / count($mainData),
+                'gameCountPercent' => (1 / count($mainData)) * 100 * 1.3,
+                'dataCount' => count($mainData),
+            ];
+
+            foreach ($mainData as $key => $item) {
+                $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $mainTotalAll) * 100, 2) : 0;
+                $positiveGameCountPercent = $item['gameCount'] ? round(($item['positiveGameCount'] / $item['gameCount']) * 100, 2) : 0;
+                $negativeGameCountPercent = $item['gameCount'] ? round(($item['negativeGameCount'] / $item['gameCount']) * 100, 2) : 0;
+                $top1CountPercent = $item['top1Count'] ? round(($item['top1Count'] / $mainTotal[$key]) * 100, 2) : 0;
+                $top2CountPercent = $item['top2Count'] ? round(($item['top2Count'] / $mainTotal[$key]) * 100, 2) : 0;
+                $top4CountPercent = $item['top4Count'] ? round(($item['top4Count'] / $mainTotal[$key]) * 100, 2) : 0;
+                $endgameWinPercent = $item['top2Count'] ? round(($item['top1Count'] / $item['top2Count']) * 100, 2) : 0;
+
+                $mainData[$key]['gameCountPercent'] = $gameCountPercent;
+                $mainData[$key]['positiveGameCountPercent'] = $positiveGameCountPercent;
+                $mainData[$key]['negativeGameCountPercent'] = $negativeGameCountPercent;
+                $mainData[$key]['top1CountPercent'] = $top1CountPercent;
+                $mainData[$key]['top2CountPercent'] = $top2CountPercent;
+                $mainData[$key]['top4CountPercent'] = $top4CountPercent;
+                $mainData[$key]['endgameWinPercent'] = $endgameWinPercent;
+
+                $metaData = $this->getTraitMetaData($mainData[$key], $mainMetaStandard);
+                $mainData[$key]['metaScore'] = $metaData['metaScore'];
+                $mainData[$key]['metaTier'] = $metaData['metaTier'];
+            }
+        }
+
+        // 서브 특성 메타스코어 계산
+        if (count($subData) > 0) {
+            $subMetaStandard = [
+                'avgMmrGain' => array_sum(array_column($subData, 'avgMmrGain')) / count($subData),
+                'gameCount' => $subTotalAll / count($subData),
+                'gameCountPercent' => (1 / count($subData)) * 100 * 1.3,
+                'dataCount' => count($subData),
+            ];
+
+            foreach ($subData as $key => $item) {
+                $gameCountPercent = $item['gameCount'] ? round(($item['gameCount'] / $subTotalAll) * 100, 2) : 0;
+                $positiveGameCountPercent = $item['gameCount'] ? round(($item['positiveGameCount'] / $item['gameCount']) * 100, 2) : 0;
+                $negativeGameCountPercent = $item['gameCount'] ? round(($item['negativeGameCount'] / $item['gameCount']) * 100, 2) : 0;
+                $top1CountPercent = $item['top1Count'] ? round(($item['top1Count'] / $subTotal[$key]) * 100, 2) : 0;
+                $top2CountPercent = $item['top2Count'] ? round(($item['top2Count'] / $subTotal[$key]) * 100, 2) : 0;
+                $top4CountPercent = $item['top4Count'] ? round(($item['top4Count'] / $subTotal[$key]) * 100, 2) : 0;
+                $endgameWinPercent = $item['top2Count'] ? round(($item['top1Count'] / $item['top2Count']) * 100, 2) : 0;
+
+                $subData[$key]['gameCountPercent'] = $gameCountPercent;
+                $subData[$key]['positiveGameCountPercent'] = $positiveGameCountPercent;
+                $subData[$key]['negativeGameCountPercent'] = $negativeGameCountPercent;
+                $subData[$key]['top1CountPercent'] = $top1CountPercent;
+                $subData[$key]['top2CountPercent'] = $top2CountPercent;
+                $subData[$key]['top4CountPercent'] = $top4CountPercent;
+                $subData[$key]['endgameWinPercent'] = $endgameWinPercent;
+
+                $metaData = $this->getTraitMetaData($subData[$key], $subMetaStandard);
+                $subData[$key]['metaScore'] = $metaData['metaScore'];
+                $subData[$key]['metaTier'] = $metaData['metaTier'];
+            }
+        }
+
+        // 메인/서브 데이터 합치기
+        $data = array_merge($mainData, $subData);
+        $total = array_merge($mainTotal, $subTotal);
+
+        $result = [
+            'total' => $total,
+            'data' => $data,
+        ];
+
+        // 메모리 정리
+        unset($gameResults, $mainData, $subData, $mainTotal, $subTotal);
+        gc_collect_cycles();
+
+        return $result;
+    }
+
+    /**
+     * 특성 메타 점수 계산
+     * @param array $data
+     * @param array $metaStandard
+     * @return array
+     */
+    private function getTraitMetaData(array $data, array $metaStandard): array
+    {
+        // 7팀:8팀 = 3:7 가중 평균
+        $rankRatio = (7 * 0.3 + 8 * 0.7) / 2;
+
+        // 퍼센트(0~100)를 기준 50과 비교하여 로그 편차 계산
+        $logDelta = function (float $percent, float $scale = 50): float {
+            $delta = $percent - $scale;
+            return $delta < 0
+                ? -log(1 + abs($delta))
+                : log(1 + $delta);
+        };
+
+        // Top1/2/4: 순위 점수 편차 보정
+        $top1Score = $logDelta($data['top1CountPercent'] * $rankRatio);
+        $top2Score = $logDelta(($data['top2CountPercent'] * $rankRatio / 2));
+        $top4Score = $logDelta(($data['top4CountPercent'] * $rankRatio / 4));
+
+        // Clutch율: Top2 대비 Top1의 비율 (결승 퍼포먼스)
+        $clutchRate = ($data['top2CountPercent'] > 0)
+            ? ($data['top1CountPercent'] / $data['top2CountPercent']) * 100
+            : 0;
+        $endGameScore = $logDelta($clutchRate);
+
+        // 평균 점수 (MMR gain) → 메타 기준과의 상대 보정
+        $mmrDelta = $data['avgMmrGain'] - $metaStandard['avgMmrGain'];
+        $mmrScore = $mmrDelta < 0
+            ? -log(1 + abs($mmrDelta))
+            : log(1 + $mmrDelta);
+
+        // 픽률 (0~100) → 기준 대비 상대 편차
+        $pickDelta = $data['gameCountPercent'] - $metaStandard['gameCountPercent'];
+        $pickScore = $pickDelta < 0
+            ? -log(1 + abs($pickDelta))
+            : log(1 + $pickDelta);
+
+        // 픽률 계산 (특성은 /3 적용 - 메인특성은 1개, 서브특성은 2개 사용하므로)
+        $pickRate = max($data['gameCountPercent'] / 3 / 100, 0.001); // 최소 0.1%
+        $stabilityFactor = log(1 + $pickRate) / log(1 + 0.05);   // 5% 이상이면 1.0
+
+        // 픽률 점수: 로그 스케일로 계산 (1% 기준)
+        $pickRateScore = log($pickRate / 0.01) / log(10); // 0.1%=-2, 1%=0, 10%=2, 100%=4
+        $pickRateScore = max(-20, min(20, $pickRateScore)); // -20~20 범위로 제한
+
+        // 성능 점수 계산
+        $performanceScore = (
+            $endGameScore * 0.2 +
+            $top2Score * 0.2 +
+            $top4Score * 0.2 +
+            $mmrScore * 2.1
+        );
+
+        // 극저픽 페널티: 1% 미만일 때만 성능 감쇠
+        $lowPickPenalty = 1.0;
+        if ($pickRate < 0.01) {
+            $lowPickPenalty = 0.3 + 0.7 * ($pickRate / 0.01); // 0.1%=0.37, 0.5%=0.65, 1%=1.0
+        }
+        $performanceScore = $performanceScore * $lowPickPenalty;
+
+        // 픽률-성능 곱셈 시너지 (둘 다 좋아야 보너스)
+        $pickNormalized = max(0, min(1, $pickRate / 0.05)); // 5% = 1.0
+        $perfNormalized = max(0, min(1, ($performanceScore + 2) / 4)); // -2~2를 0~1로
+        $synergy = sqrt($pickNormalized * $perfNormalized) * 3.0; // 기하평균 사용
+
+        // 최종 메타 점수
+        $metaScore = $performanceScore * 0.6 + $pickRateScore * 4.2 + $synergy * 0.6;
+
+        // 티어 분류
+        $metaTier = match (true) {
+            $metaScore >= 5 => 'OP',
+            $metaScore >= 3 => '1',
+            $metaScore >= 1 => '2',
+            $metaScore >= -1 => '3',
+            $metaScore >= -3 => '4',
+            $metaScore >= -5 => '5',
+            default => 'RIP',
+        };
+
+        return [
+            'metaTier' => $metaTier,
+            'metaScore' => $metaScore,
+        ];
+    }
 }

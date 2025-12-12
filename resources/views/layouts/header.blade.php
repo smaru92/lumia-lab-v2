@@ -24,6 +24,9 @@
             <li class="nav-item">
                 <a href="/equipment-first" class="nav-links nav-beta">초기 장비<span class="beta-badge">Beta</span></a>
             </li>
+            <li class="nav-item">
+                <a href="/trait" class="nav-links nav-beta">특성<span class="beta-badge">Beta</span></a>
+            </li>
         </ul>
     </div>
 </nav>

@@ -176,6 +176,13 @@ return [
             'days' => 42,
             'replace_placeholders' => true,
         ],
+        'updateGameResultTraitMainSummary' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/updateGameResultTraitMainSummary/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 42,
+            'replace_placeholders' => true,
+        ],
         'updateGameResultTacticalSkillSummary' => [
             'driver' => 'daily',
             'path' => storage_path('logs/updateGameResultTacticalSkillSummary/laravel.log'),
