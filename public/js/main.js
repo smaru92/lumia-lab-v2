@@ -379,8 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const cellA = rowA.cells[columnIndex]?.innerText.trim() || '';
                 const cellB = rowB.cells[columnIndex]?.innerText.trim() || '';
-                const numA = parseFloat(cellA.replace(/%/g, ''));
-                const numB = parseFloat(cellB.replace(/%/g, ''));
+                // 쉼표와 퍼센트 기호를 제거하여 숫자로 파싱
+                const numA = parseFloat(cellA.replace(/,/g, '').replace(/%/g, ''));
+                const numB = parseFloat(cellB.replace(/,/g, '').replace(/%/g, ''));
 
                 if (!isNaN(numA) && !isNaN(numB)) {
                     valA = numA;
