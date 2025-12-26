@@ -29,7 +29,11 @@ trait ErDevTrait
         ],
         [
             'tier' => 'Mithril',
-            'tierNumber' => null,
+            'tierNumber' => 'low',
+        ],
+        [
+            'tier' => 'Mithril',
+            'tierNumber' => 'high',
         ],
         [
             'tier' => 'Top',
@@ -288,6 +292,14 @@ trait ErDevTrait
             [
                 'ko' => '미스릴',
                 'en' => 'Mithril'
+            ],
+            [
+                'ko' => '미스릴',
+                'en' => 'Mithrillow'
+            ],
+            [
+                'ko' => '미스릴(8000+)',
+                'en' => 'Mithrilhigh'
             ],
             [
                 'ko' => '최상위큐',
