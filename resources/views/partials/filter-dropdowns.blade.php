@@ -21,13 +21,15 @@
     <div class="custom-dropdown" id="tier-dropdown">
         @php
             $currentTier = request('min_tier', $defaultTier);
+            $mithrilHighScore = 8000;
             $tierOptions = [
                 'All' => ['name' => '전체', 'icon' => 'All'],
                 'Platinum' => ['name' => '플래티넘', 'icon' => 'Platinum'],
                 'Diamond' => ['name' => '다이아', 'icon' => 'Diamond'],
                 'Diamond2' => ['name' => '다이아2', 'icon' => 'Diamond'],
                 'Meteorite' => ['name' => '메테오라이트', 'icon' => 'Meteorite'],
-                'Mithril' => ['name' => '미스릴', 'icon' => 'Mithril'],
+                'Mithrillow' => ['name' => '미스릴', 'icon' => 'Mithril'],
+                'Mithrilhigh' => ['name' => '미스릴(' . $mithrilHighScore . '+)', 'icon' => 'Mithril'],
                 'Top' => ['name' => '최상위큐(' . ($topRankScore ?? '8000') . '+)', 'icon' => 'Demigod'],
             ];
             $selectedTier = $tierOptions[$currentTier] ?? $tierOptions['All'];
