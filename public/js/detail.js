@@ -367,17 +367,78 @@ document.addEventListener('DOMContentLoaded', () => {
     filterTraits();
 
     // --- Tooltip positioning logic ---
+    function positionTooltip(wrap, tooltip) {
+        const rect = wrap.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const tooltipWidth = tooltip.offsetWidth || 250; // fallback width
+        const tooltipHeight = tooltip.offsetHeight || 100; // fallback height
+
+        // 기본 위치: 아이콘 중앙 위
+        let left = rect.left + (rect.width / 2);
+        let top = rect.top - 10;
+
+        // 좌우 경계 체크 - 툴팁이 화면 밖으로 나가지 않도록
+        const halfWidth = tooltipWidth / 2;
+        const padding = 10; // 화면 가장자리와의 여백
+
+        if (left - halfWidth < padding) {
+            // 왼쪽으로 넘어가는 경우: 왼쪽에 붙이고 transform 조정
+            left = padding + halfWidth;
+        } else if (left + halfWidth > viewportWidth - padding) {
+            // 오른쪽으로 넘어가는 경우: 오른쪽에 붙이고 transform 조정
+            left = viewportWidth - padding - halfWidth;
+        }
+
+        // 상단 경계 체크 - 위쪽으로 넘어가면 아래에 표시
+        if (top - tooltipHeight < padding) {
+            // 아래에 표시
+            top = rect.bottom + 10;
+            tooltip.style.transform = 'translate(-50%, 0)';
+            tooltip.classList.add('tooltip-bottom');
+            tooltip.classList.remove('tooltip-top');
+        } else {
+            tooltip.style.transform = 'translate(-50%, -100%)';
+            tooltip.classList.add('tooltip-top');
+            tooltip.classList.remove('tooltip-bottom');
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
     const tooltipWraps = document.querySelectorAll('.tooltip-wrap');
     tooltipWraps.forEach(wrap => {
+        const tooltip = wrap.querySelector('.tooltip-text');
+        if (!tooltip) return;
+
+        // 마우스 호버
         wrap.addEventListener('mouseenter', function(e) {
-            const tooltip = this.querySelector('.tooltip-text');
-            if (tooltip) {
-                const rect = this.getBoundingClientRect();
-                tooltip.style.left = rect.left + (rect.width / 2) + 'px';
-                tooltip.style.top = (rect.top - 10) + 'px';
-            }
+            positionTooltip(this, tooltip);
         });
+
+        // 터치 이벤트 (모바일)
+        wrap.addEventListener('touchstart', function(e) {
+            // 다른 열린 툴팁 닫기
+            document.querySelectorAll('.tooltip-text.touch-visible').forEach(t => {
+                if (t !== tooltip) {
+                    t.classList.remove('touch-visible');
+                }
+            });
+            positionTooltip(this, tooltip);
+            tooltip.classList.toggle('touch-visible');
+        }, { passive: true });
     });
+
+    // 터치로 열린 툴팁을 다른 곳 터치시 닫기
+    document.addEventListener('touchstart', function(e) {
+        if (!e.target.closest('.tooltip-wrap')) {
+            document.querySelectorAll('.tooltip-text.touch-visible').forEach(t => {
+                t.classList.remove('touch-visible');
+            });
+        }
+    }, { passive: true });
 
     // --- Tier Info Toggle Logic ---
     const toggleTierInfoButton = document.getElementById('toggle-tier-info');

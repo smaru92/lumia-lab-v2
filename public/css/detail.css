@@ -196,9 +196,23 @@ tr:hover {
     line-height: 1.5; /* Match common.css line height */
 }
 
-.tooltip-wrap:hover .tooltip-text {
+.tooltip-wrap:hover .tooltip-text,
+.tooltip-wrap .tooltip-text.touch-visible {
     visibility: visible;
     opacity: 1;
+}
+
+/* 아래 방향 툴팁 화살표 */
+.tooltip-wrap .tooltip-text.tooltip-bottom::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    top: auto;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #333 transparent;
 }
 
 /* Tab Styles */

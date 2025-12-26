@@ -929,19 +929,64 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
+     * 툴팁 포지셔닝 - 화면 경계 체크
+     */
+    function positionTooltip(wrap, tooltip) {
+        const rect = wrap.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const tooltipWidth = tooltip.offsetWidth || 250;
+        const tooltipHeight = tooltip.offsetHeight || 100;
+
+        let left = rect.left + (rect.width / 2);
+        let top = rect.top - 10;
+
+        const halfWidth = tooltipWidth / 2;
+        const padding = 10;
+
+        if (left - halfWidth < padding) {
+            left = padding + halfWidth;
+        } else if (left + halfWidth > viewportWidth - padding) {
+            left = viewportWidth - padding - halfWidth;
+        }
+
+        if (top - tooltipHeight < padding) {
+            top = rect.bottom + 10;
+            tooltip.style.transform = 'translate(-50%, 0)';
+            tooltip.classList.add('tooltip-bottom');
+            tooltip.classList.remove('tooltip-top');
+        } else {
+            tooltip.style.transform = 'translate(-50%, -100%)';
+            tooltip.classList.add('tooltip-top');
+            tooltip.classList.remove('tooltip-bottom');
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
+    /**
      * 툴팁 포지셔닝 설정
      */
     function setupTooltips(container) {
         const tooltipWraps = container.querySelectorAll('.tooltip-wrap');
         tooltipWraps.forEach(wrap => {
+            const tooltip = wrap.querySelector('.tooltip-text');
+            if (!tooltip) return;
+
             wrap.addEventListener('mouseenter', function(e) {
-                const tooltip = this.querySelector('.tooltip-text');
-                if (tooltip) {
-                    const rect = this.getBoundingClientRect();
-                    tooltip.style.left = rect.left + (rect.width / 2) + 'px';
-                    tooltip.style.top = (rect.top - 10) + 'px';
-                }
+                positionTooltip(this, tooltip);
             });
+
+            wrap.addEventListener('touchstart', function(e) {
+                document.querySelectorAll('.tooltip-text.touch-visible').forEach(t => {
+                    if (t !== tooltip) {
+                        t.classList.remove('touch-visible');
+                    }
+                });
+                positionTooltip(this, tooltip);
+                tooltip.classList.toggle('touch-visible');
+            }, { passive: true });
         });
     }
 
