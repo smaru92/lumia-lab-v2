@@ -34,6 +34,9 @@ class GameResultFirstEquipmentMainSummaryService
 
         $tiers = $this->tierRange;
 
+        // 트랜잭션으로 delete와 insert를 묶어서 처리
+        DB::beginTransaction();
+
         try {
             // 1단계: 기존 데이터 삭제 (청크 단위)
             $deleteChunkSize = 5000;
@@ -141,9 +144,12 @@ class GameResultFirstEquipmentMainSummaryService
                 $totalInserted += count($batchData);
             }
 
+            DB::commit();
+
             Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Inserted {$totalInserted} new records");
             Log::channel('updateGameResultFirstEquipmentMainSummary')->info('E: game equipment main result summary');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::channel('updateGameResultFirstEquipmentMainSummary')->error('Error: ' . $e->getMessage());
             Log::channel('updateGameResultFirstEquipmentMainSummary')->error($e->getTraceAsString());
             throw $e;
