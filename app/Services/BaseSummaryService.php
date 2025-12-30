@@ -37,6 +37,9 @@ abstract class BaseSummaryService
 
         $summaryModel = $this->getSummaryModel();
 
+        // 트랜잭션으로 delete와 insert를 묶어서 처리
+        DB::beginTransaction();
+
         try {
             // 1단계: 기존 데이터 삭제 (청크 단위)
             $deleteChunkSize = 5000;
@@ -110,9 +113,12 @@ abstract class BaseSummaryService
                 $totalInserted += count($batchData);
             }
 
+            DB::commit();
+
             Log::channel($this->logChannel)->info("Inserted {$totalInserted} new records");
             Log::channel($this->logChannel)->info('E: update summary');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::channel($this->logChannel)->error('Error: ' . $e->getMessage());
             Log::channel($this->logChannel)->error($e->getTraceAsString());
             throw $e;

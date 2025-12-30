@@ -35,6 +35,9 @@ class GameResultTacticalSkillSummaryService
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
         $tiers = $this->tierRange;
 
+        // 트랜잭션으로 delete와 insert를 묶어서 처리
+        DB::beginTransaction();
+
         try {
             // 1단계: 기존 데이터 삭제 (청크 단위)
             $deleteChunkSize = 5000;
@@ -126,9 +129,12 @@ class GameResultTacticalSkillSummaryService
                 $totalInserted += count($batchData);
             }
 
+            DB::commit();
+
             Log::channel('updateGameResultTacticalSkillSummary')->info("Inserted {$totalInserted} new records");
             Log::channel('updateGameResultTacticalSkillSummary')->info('E: game result tactical_skill summary');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::channel('updateGameResultTacticalSkillSummary')->error('rank Error: ' . $e->getMessage());
             Log::channel('updateGameResultTacticalSkillSummary')->error($e->getTraceAsString());
             throw $e;
