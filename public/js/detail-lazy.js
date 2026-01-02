@@ -12,10 +12,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const version = urlParams.get('version') || document.getElementById('sel-version-filter')?.value || '';
     const minTier = urlParams.get('min_tier') || document.getElementById('sel-tier-filter')?.value || 'Diamond';
 
-    // 로드 상태 추적
+    // 로드 상태 추적 (ranks는 서버에서 렌더링하므로 제외)
     const loadedSections = {
         tiers: false,
-        ranks: false,
         tacticalSkills: false,
         equipment: false,
         traitStats: false
@@ -45,9 +44,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, observerOptions);
 
-    // 모든 lazy 섹션 관찰 시작
+    // 모든 lazy 섹션 관찰 시작 (tiers는 버튼 클릭 시에만 로드하므로 제외)
     const sections = document.querySelectorAll('[data-lazy-section]');
-    sections.forEach(section => observer.observe(section));
+    sections.forEach(section => {
+        if (section.dataset.lazySection !== 'tiers') {
+            observer.observe(section);
+        }
+    });
+
+    // 티어 정보는 버튼 클릭 시에만 로드
+    const toggleTierBtn = document.getElementById('toggle-tier-info');
+    const tierContainer = document.getElementById('tier-info-container');
+
+    if (toggleTierBtn && tierContainer) {
+        toggleTierBtn.addEventListener('click', function() {
+            const isHidden = tierContainer.style.display === 'none';
+
+            if (isHidden) {
+                tierContainer.style.display = 'block';
+                toggleTierBtn.textContent = '▲ 접기';
+
+                // 아직 로드되지 않았다면 로드
+                if (!loadedSections.tiers) {
+                    loadSection('tiers', tierContainer);
+                    loadedSections.tiers = true;
+                }
+            } else {
+                tierContainer.style.display = 'none';
+                toggleTierBtn.textContent = '▼ 펼치기';
+            }
+        });
+    }
 
     /**
      * 섹션 데이터 로드
@@ -181,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th>TOP2</th>
                     <th>TOP4</th>
                     <th>막금구승률</th>
-                    <th>평균 TK</th>
+                    <th>평균TK</th>
                     <th>이득확률</th>
                     <th>이득평균점수</th>
                     <th>손실확률</th>
@@ -273,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th>순위</th>
                     <th>비율</th>
                     <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
-                    <th>평균 TK</th>
+                    <th>평균TK</th>
                     <th>이득확률</th>
                     <th>이득평균점수</th>
                     <th>손실확률</th>
@@ -312,21 +339,74 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 전술스킬 통계 렌더링 (특성 통계와 동일한 열 구성)
+     * 전술스킬 통계 렌더링 (탭 메뉴: 통합 + 레벨별)
      */
     function renderTacticalSkillsSection(data, element) {
         const aggregatedData = data.aggregatedData || [];
+        const aggregatedBySkill = data.aggregatedBySkill || [];
 
-        if (aggregatedData.length === 0) {
+        if (aggregatedData.length === 0 && aggregatedBySkill.length === 0) {
             element.innerHTML = '<p style="text-align: center; color: #999;">집계된 전술스킬 데이터가 없습니다.</p>';
             return;
         }
 
-        // 스크롤 가능한 영역으로 감싸기
-        let html = '<div class="tactical-skill-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333; border-radius: 4px;">';
+        let html = '';
+
+        // 탭 메뉴
+        html += '<div class="tabs">';
+        html += '<button class="tab-link active" onclick="openTacticalSkillTab(event, \'tactical-skill-combined\')">통합</button>';
+        html += '<button class="tab-link" onclick="openTacticalSkillTab(event, \'tactical-skill-by-level\')">레벨별</button>';
+        html += '</div>';
+
+        // 통합 탭 (기본 활성화)
+        html += '<div id="tactical-skill-combined" class="tab-content active">';
+        html += renderTacticalSkillCombinedContent(aggregatedBySkill);
+        html += '</div>';
+
+        // 레벨별 탭
+        html += '<div id="tactical-skill-by-level" class="tab-content">';
+        html += renderTacticalSkillByLevelContent(aggregatedData);
+        html += '</div>';
+
+        element.innerHTML = html;
+
+        // 탭 전환 함수 등록
+        window.openTacticalSkillTab = function(evt, tabName) {
+            const tabContents = element.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            });
+
+            const tabLinks = element.querySelectorAll('.tab-link');
+            tabLinks.forEach(link => link.classList.remove('active'));
+
+            const targetTab = element.querySelector(`#${tabName}`);
+            if (targetTab) {
+                targetTab.style.display = 'block';
+                targetTab.classList.add('active');
+            }
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+        };
+
+        // 툴팁 이벤트 설정
+        setupTooltips(element);
+    }
+
+    /**
+     * 전술스킬 통합 통계 (레벨 구분 없음)
+     */
+    function renderTacticalSkillCombinedContent(aggregatedBySkill) {
+        if (aggregatedBySkill.length === 0) {
+            return '<p style="text-align: center; color: #999;">집계된 전술스킬 데이터가 없습니다.</p>';
+        }
+
+        let html = '<div class="tactical-skill-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333;">';
         html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
         html += `
-            <thead style="position: sticky; top: 0; background: #1a1a1a; z-index: 10;">
+            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
                 <tr>
                     <th>이름</th>
                     <th>사용수</th>
@@ -335,12 +415,92 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
                     <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
-                    <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균TK</th>
                     <th class="hide-on-mobile">이득확률</th>
                     <th class="hide-on-mobile">손실확률</th>
                 </tr>
             </thead>
-            <tbody id="tactical-skill-tbody">
+            <tbody>
+        `;
+
+        aggregatedBySkill.forEach((item) => {
+            const skillTooltip = (item.tactical_skill_tooltip || '').replace(/\n/g, '<br>');
+            const tooltipContent = skillTooltip
+                ? `<strong>${item.tactical_skill_name}</strong><br><br>${skillTooltip}`
+                : item.tactical_skill_name;
+
+            html += `
+                <tr class="tactical-skill-row">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div class="tooltip-wrap">
+                                <img src="/storage/TacticalSkill/${item.tactical_skill_id}.png"
+                                     alt="${item.tactical_skill_name}"
+                                     class="equipment-icon"
+                                     onerror="this.style.display='none'">
+                                <span class="tooltip-text">${tooltipContent}</span>
+                            </div>
+                            ${item.tactical_skill_name}
+                        </div>
+                    </td>
+                    <td class="number">${formatNumber(item.game_count)}</td>
+                    <td class="number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">
+                        <div>${formatPercent(item.top1_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top1_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top2_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top2_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top4_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top4_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatPercent(item.endgame_win_percent)}%</td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatNumber(item.avg_team_kill_score, 2)}</td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                        <div class="sub-stat">+${formatNumber(item.positive_avg_mmr_gain, 1)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.negative_avg_mmr_gain, 1)}</div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div></div>';
+        return html;
+    }
+
+    /**
+     * 전술스킬 레벨별 통계
+     */
+    function renderTacticalSkillByLevelContent(aggregatedData) {
+        if (aggregatedData.length === 0) {
+            return '<p style="text-align: center; color: #999;">집계된 전술스킬 데이터가 없습니다.</p>';
+        }
+
+        let html = '<div class="tactical-skill-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333;">';
+        html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
+        html += `
+            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                <tr>
+                    <th>이름</th>
+                    <th>사용수</th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>승률</th>
+                    <th class="hide-on-mobile">TOP2</th>
+                    <th class="hide-on-mobile">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균TK</th>
+                    <th class="hide-on-mobile">이득확률</th>
+                    <th class="hide-on-mobile">손실확률</th>
+                </tr>
+            </thead>
+            <tbody>
         `;
 
         aggregatedData.forEach((item) => {
@@ -392,10 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         html += '</tbody></table></div></div>';
-        element.innerHTML = html;
-
-        // 툴팁 이벤트 설정
-        setupTooltips(element);
+        return html;
     }
 
     /**
@@ -457,10 +614,10 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '</div>';
 
             // 스크롤 가능한 영역으로 감싸기
-            html += '<div class="equipment-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333; border-radius: 4px;">';
+            html += '<div class="equipment-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333;">';
             html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
             html += `
-                <thead style="position: sticky; top: 0; background: #1a1a1a; z-index: 10;">
+                <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
                     <tr>
                         <th>등급</th>
                         <th>이름</th>
@@ -470,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <th class="hide-on-mobile">TOP2</th>
                         <th class="hide-on-mobile">TOP4</th>
                         <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
-                        <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                        <th class="hide-on-mobile hide-on-tablet">평균TK</th>
                         <th class="hide-on-mobile">이득확률</th>
                         <th class="hide-on-mobile">손실확률</th>
                     </tr>
@@ -677,7 +834,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
                     <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
-                    <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균TK</th>
                     <th class="hide-on-mobile">이득확률</th>
                     <th class="hide-on-mobile">손실확률</th>
                 </tr>
@@ -723,8 +880,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const traitName = trait ? trait.name : `특성 ${traitId}`;
                 const traitTooltip = trait && trait.tooltip ? trait.tooltip.replace(/\n/g, '<br>') : '';
                 const isMain = trait && trait.is_main == 1;
-                const iconSize = isMain ? '36px' : '28px';
-                const borderStyle = isMain ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
+                const iconSize = isMain ? '31px' : '23px';
+                const borderStyle = isMain ? 'border: 2px solid #ffd700;' : '';
                 const tooltipContent = traitTooltip
                     ? `<strong>${traitName}</strong>${isMain ? ' (메인)' : ' (서브)'}<br><br>${traitTooltip}`
                     : `${traitName}${isMain ? ' (메인)' : ' (서브)'}`;
@@ -816,10 +973,10 @@ document.addEventListener('DOMContentLoaded', function() {
         html += '</div>';
 
         // 스크롤 가능한 영역으로 감싸기
-        html += '<div class="trait-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333; border-radius: 4px;">';
+        html += '<div class="trait-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333;">';
         html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table">';
         html += `
-            <thead style="position: sticky; top: 0; background: #1a1a1a; z-index: 10;">
+            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
                 <tr>
                     <th>특성</th>
                     <th>사용수</th>
@@ -828,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th class="hide-on-mobile">TOP2</th>
                     <th class="hide-on-mobile">TOP4</th>
                     <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
-                    <th class="hide-on-mobile hide-on-tablet">평균 TK</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균TK</th>
                     <th class="hide-on-mobile">이득확률</th>
                     <th class="hide-on-mobile">손실확률</th>
                 </tr>
@@ -840,8 +997,8 @@ document.addEventListener('DOMContentLoaded', function() {
         aggregatedData.forEach((item, index) => {
             const traitId = item.trait_id;
             const isMain = item.is_main ? 1 : 0;
-            const iconSize = item.is_main ? '36px' : '28px';
-            const borderStyle = item.is_main ? 'border: 2px solid #ffd700; border-radius: 4px;' : '';
+            const iconSize = item.is_main ? '31px' : '23px';
+            const borderStyle = item.is_main ? 'border: 2px solid #ffd700;' : '';
             const traitTooltip = (item.trait_tooltip || '').replace(/\n/g, '<br>');
             const tooltipContent = traitTooltip
                 ? `<strong>${item.trait_name}</strong>${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}<br><br>${traitTooltip}`
