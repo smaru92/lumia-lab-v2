@@ -190,6 +190,38 @@
             }
         }
 
+        /* 티어 선택기 스타일 (캐릭터 통계 페이지와 동일) */
+        .tier-selector-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .tier-selector-container .custom-dropdown-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tier-selector-container .custom-dropdown-container label {
+            margin-bottom: 0;
+        }
+
+        /* 로딩/에러 상태 */
+        .loading-container,
+        .error-container {
+            padding: 40px 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .error-container {
+            color: #d32f2f;
+        }
+
         /* 반응형 디자인 */
         @media (max-width: 599px) {
             .page-links-container {
@@ -287,9 +319,33 @@
             <strong>비교 버전:</strong> {{ $previousVersion->version_season }}.{{ $previousVersion->version_major }}.{{ $previousVersion->version_minor }}
             ({{ $previousVersion->start_date->format('Y-m-d') }})
         </p>
-        <p class="version-info-note">
-            <small>* <strong>메테오라이트</strong> 티어 기준 통계입니다.</small>
-        </p>
+        <div class="tier-selector-container">
+            {{-- 최소 티어 드롭다운 (캐릭터 통계 페이지와 동일) --}}
+            <div class="custom-dropdown-container">
+                <label><strong>기준 티어</strong></label>
+                <div class="custom-dropdown" id="main-tier-dropdown">
+                    @php
+                        $selectedTier = $availableTiers[$minTier] ?? $availableTiers['Meteorite'];
+                    @endphp
+                    <div class="dropdown-selected" data-value="{{ $minTier }}">
+                        @if($selectedTier['icon'])
+                            <span class="tier-icon" style="background-image: url('{{ asset('storage/Tier/icon/' . $selectedTier['icon'] . '.png') }}');" aria-label="{{ $selectedTier['name'] }}"></span>
+                        @endif
+                        <span>{{ $selectedTier['name'] }}</span>
+                    </div>
+                    <div class="dropdown-options">
+                        @foreach($availableTiers as $value => $tier)
+                            <div class="dropdown-option {{ $minTier === $value ? 'selected' : '' }}" data-value="{{ $value }}">
+                                @if($tier['icon'])
+                                    <span class="tier-icon" style="background-image: url('{{ asset('storage/Tier/icon/' . $tier['icon'] . '.png') }}');" aria-label="{{ $tier['name'] }}"></span>
+                                @endif
+                                <span>{{ $tier['name'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 탭 메뉴 -->
@@ -321,15 +377,15 @@
                     <th class="text-center">픽률</th>
                     <th class="text-center">평균 획득점수</th>
                     <th class="text-center">승률</th>
-                    <th class="hide-on-mobile text-center">TOP2</th>
-                    <th class="hide-on-mobile text-center">TOP4</th>
-                    <th class="hide-on-mobile hide-on-tablet text-center">막금구승률</th>
-                    <th class="hide-on-mobile text-center">평균 TK</th>
+                    <th class="text-center">TOP2</th>
+                    <th class="text-center">TOP4</th>
+                    <th class="text-center">막금구승률</th>
+                    <th class="text-center">평균TK</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($buffedCharacters as $index => $item)
-                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Meteorite&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="buffed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
+                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier={{ $minTier }}&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="buffed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
                     <td>
                         <div class="character-cell-content">
                             @php
@@ -412,7 +468,7 @@
                             {{ number_format($item['previous']->top1_count_percent, 2) }}% → {{ number_format($item['latest']->top1_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile text-center">
+                    <td class="text-center">
                         @php
                             $top2_diff = $item['latest']->top2_count_percent - $item['previous']->top2_count_percent;
                         @endphp
@@ -425,7 +481,7 @@
                             {{ number_format($item['previous']->top2_count_percent, 2) }}% → {{ number_format($item['latest']->top2_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile text-center">
+                    <td class="text-center">
                         <div>
                             <span class="stat-diff {{ $item['top4_rate_diff'] > 0 ? 'positive' : ($item['top4_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
                                 {{ $item['top4_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['top4_rate_diff'], 2) }}%
@@ -435,7 +491,7 @@
                             {{ number_format($item['previous']->top4_count_percent, 2) }}% → {{ number_format($item['latest']->top4_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile hide-on-tablet text-center">
+                    <td class="text-center">
                         @php
                             $endgame_diff = $item['latest']->endgame_win_percent - $item['previous']->endgame_win_percent;
                         @endphp
@@ -448,7 +504,7 @@
                             {{ number_format($item['previous']->endgame_win_percent, 2) }}% → {{ number_format($item['latest']->endgame_win_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile text-center">
+                    <td class="text-center">
                         @php
                             $tk_diff = $item['latest']->avg_team_kill_score - $item['previous']->avg_team_kill_score;
                         @endphp
@@ -498,15 +554,15 @@
                     <th class="text-center">픽률</th>
                     <th class="text-center">평균 획득점수</th>
                     <th class="text-center">승률</th>
-                    <th class="hide-on-mobile text-center">TOP2</th>
-                    <th class="hide-on-mobile text-center">TOP4</th>
-                    <th class="hide-on-mobile hide-on-tablet text-center">막금구승률</th>
-                    <th class="hide-on-mobile text-center">평균 TK</th>
+                    <th class="text-center">TOP2</th>
+                    <th class="text-center">TOP4</th>
+                    <th class="text-center">막금구승률</th>
+                    <th class="text-center">평균TK</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($nerfedCharacters as $index => $item)
-                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier=Meteorite&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="nerfed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
+                <tr data-href="/detail/{{ $item['character_name'] }}-{{ $item['weapon_type_en'] ?? $item['weapon_type'] }}?min_tier={{ $minTier }}&version={{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}" class="nerfed-row {{ $index >= 5 ? 'hidden-row' : '' }}">
                     <td>
                         <div class="character-cell-content">
                             @php
@@ -589,7 +645,7 @@
                             {{ number_format($item['previous']->top1_count_percent, 2) }}% → {{ number_format($item['latest']->top1_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile text-center">
+                    <td class="text-center">
                         @php
                             $top2_diff = $item['latest']->top2_count_percent - $item['previous']->top2_count_percent;
                         @endphp
@@ -602,7 +658,7 @@
                             {{ number_format($item['previous']->top2_count_percent, 2) }}% → {{ number_format($item['latest']->top2_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile text-center">
+                    <td class="text-center">
                         <div>
                             <span class="stat-diff {{ $item['top4_rate_diff'] > 0 ? 'positive' : ($item['top4_rate_diff'] < 0 ? 'negative' : 'neutral') }}">
                                 {{ $item['top4_rate_diff'] > 0 ? '+' : '' }}{{ number_format($item['top4_rate_diff'], 2) }}%
@@ -612,7 +668,7 @@
                             {{ number_format($item['previous']->top4_count_percent, 2) }}% → {{ number_format($item['latest']->top4_count_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile hide-on-tablet text-center">
+                    <td class="text-center">
                         @php
                             $endgame_diff = $item['latest']->endgame_win_percent - $item['previous']->endgame_win_percent;
                         @endphp
@@ -625,7 +681,7 @@
                             {{ number_format($item['previous']->endgame_win_percent, 2) }}% → {{ number_format($item['latest']->endgame_win_percent, 2) }}%
                         </div>
                     </td>
-                    <td class="hide-on-mobile text-center">
+                    <td class="text-center">
                         @php
                             $tk_diff = $item['latest']->avg_team_kill_score - $item['previous']->avg_team_kill_score;
                         @endphp
@@ -770,6 +826,287 @@
                     this.classList.remove('collapse');
                 }
             });
+        }
+    });
+
+    // 현재 선택된 티어
+    let currentTier = '{{ $minTier }}';
+    let latestVersionInfo = @json($latestVersion ? ['full_version' => $latestVersion->version_season . '.' . $latestVersion->version_major . '.' . $latestVersion->version_minor] : null);
+
+    // 티어 드롭다운 초기화
+    const mainTierDropdown = document.getElementById('main-tier-dropdown');
+    if (mainTierDropdown) {
+        const dropdownSelected = mainTierDropdown.querySelector('.dropdown-selected');
+        const dropdownOptions = mainTierDropdown.querySelector('.dropdown-options');
+
+        // 드롭다운 토글
+        dropdownSelected.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mainTierDropdown.classList.toggle('open');
+        });
+
+        // 옵션 클릭
+        dropdownOptions.querySelectorAll('.dropdown-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.dataset.value;
+                const html = this.innerHTML;
+
+                // 선택된 값 업데이트
+                dropdownSelected.innerHTML = html;
+                dropdownSelected.dataset.value = value;
+
+                // 선택 상태 업데이트
+                dropdownOptions.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // 드롭다운 닫기
+                mainTierDropdown.classList.remove('open');
+
+                // 티어 변경 함수 호출
+                changeTier(value);
+            });
+        });
+
+        // 외부 클릭시 드롭다운 닫기
+        document.addEventListener('click', function() {
+            mainTierDropdown.classList.remove('open');
+        });
+    }
+
+    // 티어 변경 함수 (비동기)
+    async function changeTier(tier) {
+        if (tier === currentTier) return;
+
+        const buffedTab = document.getElementById('buffed-tab');
+        const nerfedTab = document.getElementById('nerfed-tab');
+        const buffedBadge = document.querySelector('.patch-tab-button.buffed .patch-tab-badge');
+        const nerfedBadge = document.querySelector('.patch-tab-button.nerfed .patch-tab-badge');
+
+        // 로딩 상태 표시
+        buffedTab.innerHTML = '<div class="loading-container"><p>로딩 중...</p></div>';
+        nerfedTab.innerHTML = '<div class="loading-container"><p>로딩 중...</p></div>';
+
+        try {
+            const response = await fetch(`/api/patch-comparison?min_tier=${tier}`);
+            if (!response.ok) throw new Error('API 호출 실패');
+
+            const data = await response.json();
+
+            // 버프/너프 테이블 렌더링
+            renderBuffedTable(data.buffedCharacters, data.latestVersion, tier);
+            renderNerfedTable(data.nerfedCharacters, data.latestVersion, tier);
+
+            // 배지 업데이트
+            buffedBadge.textContent = data.buffedCharacters.length;
+            nerfedBadge.textContent = data.nerfedCharacters.length;
+
+            // URL 업데이트 (히스토리에 추가)
+            const url = new URL(window.location.href);
+            url.searchParams.set('min_tier', tier);
+            history.pushState({ tier: tier }, '', url.href);
+
+            currentTier = tier;
+            latestVersionInfo = data.latestVersion;
+
+        } catch (error) {
+            console.error('Error:', error);
+            buffedTab.innerHTML = '<div class="error-container"><p>데이터를 불러오는데 실패했습니다.</p></div>';
+            nerfedTab.innerHTML = '<div class="error-container"><p>데이터를 불러오는데 실패했습니다.</p></div>';
+        }
+    }
+
+    // 버프 테이블 렌더링
+    function renderBuffedTable(characters, version, tier) {
+        const container = document.getElementById('buffed-tab');
+        const title = document.querySelector('.section-title.buffed');
+
+        if (title) {
+            title.innerHTML = `🔼 버프된 캐릭터 (${characters.length}개)`;
+        }
+
+        if (characters.length === 0) {
+            container.innerHTML = '<div class="section-container"><h3 class="section-title buffed">🔼 버프된 캐릭터 (0개)</h3><p class="empty-message">버프된 캐릭터가 없습니다.</p></div>';
+            return;
+        }
+
+        container.innerHTML = renderCharacterTable(characters, version, tier, 'buffed');
+        setupTableEvents('buffed', characters.length);
+    }
+
+    // 너프 테이블 렌더링
+    function renderNerfedTable(characters, version, tier) {
+        const container = document.getElementById('nerfed-tab');
+        const title = document.querySelector('.section-title.nerfed');
+
+        if (title) {
+            title.innerHTML = `🔽 너프된 캐릭터 (${characters.length}개)`;
+        }
+
+        if (characters.length === 0) {
+            container.innerHTML = '<div class="section-container"><h3 class="section-title nerfed">🔽 너프된 캐릭터 (0개)</h3><p class="empty-message">너프된 캐릭터가 없습니다.</p></div>';
+            return;
+        }
+
+        container.innerHTML = renderCharacterTable(characters, version, tier, 'nerfed');
+        setupTableEvents('nerfed', characters.length);
+    }
+
+    // 캐릭터 테이블 HTML 생성
+    function renderCharacterTable(characters, version, tier, type) {
+        const typeKo = type === 'buffed' ? '버프' : '너프';
+        const emoji = type === 'buffed' ? '🔼' : '🔽';
+
+        let html = `<div class="section-container">
+            <h3 class="section-title ${type}">${emoji} ${typeKo}된 캐릭터 (${characters.length}개)</h3>
+            <div class="table-wrapper">
+            <table id="${type}Table" class="patch-table ${type}">
+                <thead>
+                    <tr>
+                        <th class="text-left">캐릭터</th>
+                        <th class="text-center">티어 변동</th>
+                        <th class="text-center">픽률</th>
+                        <th class="text-center">평균 획득점수</th>
+                        <th class="text-center">승률</th>
+                        <th class="text-center">TOP2</th>
+                        <th class="text-center">TOP4</th>
+                        <th class="text-center">막금구승률</th>
+                        <th class="text-center">평균TK</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        characters.forEach((item, index) => {
+            const hiddenClass = index >= 5 ? 'hidden-row' : '';
+            const charId = String(item.character_id).padStart(3, '0');
+            const weaponTypeEn = item.weapon_type_en || item.weapon_type;
+            const detailUrl = `/detail/${item.character_name}-${weaponTypeEn}?min_tier=${tier}&version=${version.full_version}`;
+
+            const prevTierClass = 'tier-' + item.previous.meta_tier.toLowerCase().replace(' ', '-');
+            const latestTierClass = 'tier-' + item.latest.meta_tier.toLowerCase().replace(' ', '-');
+
+            const top2Diff = item.latest.top2_count_percent - item.previous.top2_count_percent;
+            const endgameDiff = item.latest.endgame_win_percent - item.previous.endgame_win_percent;
+            const tkDiff = item.latest.avg_team_kill_score - item.previous.avg_team_kill_score;
+
+            html += `
+                <tr data-href="${detailUrl}" class="${type}-row ${hiddenClass}">
+                    <td>
+                        <div class="character-cell-content">
+                            <div class="icon-container">
+                                <img src="/storage/Character/icon/${charId}.png" alt="${item.character_name}" class="character-icon" loading="lazy" onerror="this.src='/storage/Character/icon/default.png';">
+                                ${item.weapon_type !== 'All' ? `<img src="/storage/Weapon/${weaponTypeEn}.png" alt="${item.weapon_type}" class="weapon-icon" loading="lazy" onerror="this.src='/storage/Weapon/icon/default.png';">` : ''}
+                            </div>
+                            <div class="character-name-weapon">
+                                ${item.character_name}<br>
+                                ${item.weapon_type && item.weapon_type !== 'All' ? `<small>${item.weapon_type}</small>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="tier-change-container">
+                            <span class="tier-badge tier-badge-small ${prevTierClass}">${item.previous.meta_tier}</span>
+                            <span class="tier-arrow">→</span>
+                            <span class="tier-badge tier-badge-small ${latestTierClass}">${item.latest.meta_tier}</span>
+                        </div>
+                        <div class="meta-score-detail">${formatNumber(item.previous.meta_score, 2)} → ${formatNumber(item.latest.meta_score, 2)}</div>
+                        <div class="meta-score-diff ${getDiffClass(item.meta_score_diff)}">${formatDiff(item.meta_score_diff, 2)}</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(item.pick_rate_diff)}">${formatDiff(item.pick_rate_diff, 2)}%</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.game_count_percent, 2)}% → ${formatNumber(item.latest.game_count_percent, 2)}%</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(item.avg_mmr_gain_diff)}">${formatDiff(item.avg_mmr_gain_diff, 1)}</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.avg_mmr_gain, 1)} → ${formatNumber(item.latest.avg_mmr_gain, 1)}</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(item.win_rate_diff)}">${formatDiff(item.win_rate_diff, 2)}%</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.top1_count_percent, 2)}% → ${formatNumber(item.latest.top1_count_percent, 2)}%</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(top2Diff)}">${formatDiff(top2Diff, 2)}%</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.top2_count_percent, 2)}% → ${formatNumber(item.latest.top2_count_percent, 2)}%</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(item.top4_rate_diff)}">${formatDiff(item.top4_rate_diff, 2)}%</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.top4_count_percent, 2)}% → ${formatNumber(item.latest.top4_count_percent, 2)}%</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(endgameDiff)}">${formatDiff(endgameDiff, 2)}%</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.endgame_win_percent, 2)}% → ${formatNumber(item.latest.endgame_win_percent, 2)}%</div>
+                    </td>
+                    <td class="text-center">
+                        <div><span class="stat-diff ${getDiffClass(tkDiff)}">${formatDiff(tkDiff, 2)}</span></div>
+                        <div class="stat-detail">${formatNumber(item.previous.avg_team_kill_score, 2)} → ${formatNumber(item.latest.avg_team_kill_score, 2)}</div>
+                    </td>
+                </tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+
+        if (characters.length > 5) {
+            html += `<div class="view-all-container"><button id="${type}ViewAll" class="view-all-btn">전체보기 (${characters.length}개)</button></div>`;
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    // 테이블 이벤트 설정
+    function setupTableEvents(type, count) {
+        // 행 클릭 이벤트
+        const rows = document.querySelectorAll(`#${type}-tab tr[data-href]`);
+        rows.forEach(row => {
+            row.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+
+        // 전체보기 버튼
+        const viewAllBtn = document.getElementById(`${type}ViewAll`);
+        if (viewAllBtn) {
+            viewAllBtn.addEventListener('click', function() {
+                const hiddenRows = document.querySelectorAll(`.${type}-row.hidden-row`);
+
+                if (hiddenRows.length > 0) {
+                    hiddenRows.forEach(row => row.classList.remove('hidden-row'));
+                    this.textContent = '접기';
+                    this.classList.add('collapse');
+                } else {
+                    document.querySelectorAll(`.${type}-row`).forEach((row, index) => {
+                        if (index >= 5) row.classList.add('hidden-row');
+                    });
+                    this.textContent = `전체보기 (${count}개)`;
+                    this.classList.remove('collapse');
+                }
+            });
+        }
+    }
+
+    // 헬퍼 함수들
+    function formatNumber(value, decimals) {
+        return Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+
+    function formatDiff(value, decimals) {
+        const formatted = formatNumber(value, decimals);
+        return value > 0 ? '+' + formatted : formatted;
+    }
+
+    function getDiffClass(value) {
+        if (value > 0) return 'positive';
+        if (value < 0) return 'negative';
+        return 'neutral';
+    }
+
+    // 브라우저 뒤로가기/앞으로가기 처리
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.tier) {
+            document.getElementById('tier-selector').value = event.state.tier;
+            changeTier(event.state.tier);
         }
     });
 </script>

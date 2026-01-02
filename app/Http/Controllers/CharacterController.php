@@ -212,6 +212,18 @@ class CharacterController extends Controller
         // rank_count를 byMain에서 직접 가져오기 (중복 쿼리 제거)
         $byMainCount = $byMain->rank_count ?? 0;
 
+        // 순위 통계도 서버에서 미리 로드 (항상 보이는 핵심 데이터)
+        $rankCacheKey = "game_detail_ranks_{$types}_{$minTier}_" . implode('_', $version);
+        $byRank = cache()->get($rankCacheKey);
+
+        if (empty($byRank)) {
+            $byRank = $this->mainService->getGameResultRankSummary($filters);
+
+            if (!empty($byRank)) {
+                cache()->put($rankCacheKey, $byRank, $cacheDuration);
+            }
+        }
+
         $data = [
             'minTier' => $minTier,
             'versionSeason' => $versionSeason,
@@ -225,6 +237,7 @@ class CharacterController extends Controller
             'versions' => $versions,
             'byMain' => $byMain,
             'byMainCount' => $byMainCount,
+            'byRank' => $byRank, // 순위 통계 서버 렌더링
             // 나머지 데이터는 AJAX로 로드
         ];
 
@@ -373,6 +386,7 @@ class CharacterController extends Controller
                 'byTacticalSkillData' => $byTacticalSkill['data'],
                 'byTacticalSkillTotal' => $byTacticalSkill['total'],
                 'aggregatedData' => $byTacticalSkill['aggregatedData'] ?? [],
+                'aggregatedBySkill' => $byTacticalSkill['aggregatedBySkill'] ?? [],
             ];
 
             // 데이터가 있을 때만 캐싱

@@ -70,13 +70,14 @@ select {
     overflow-y: visible; /* Allow tooltips to overflow vertically */
     overflow-x: auto; /* Horizontal scroll for wide tables */
     width: 100%;
+    border: 1px solid #333;
+    margin-bottom: 15px;
 }
 table {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
-    margin-bottom: 15px; /* Add space below table */
-    border: 1px solid #ddd;
+    border: none;
 }
 thead {
     position: sticky;
@@ -85,6 +86,11 @@ thead {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     z-index: 10; /* Lower than tooltips to allow tooltips to appear above */
 }
+
+thead tr {
+    border-bottom: 2px solid #333;
+}
+
 th, td {
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
@@ -94,7 +100,7 @@ th, td {
     text-align: center;
     white-space: nowrap;
     cursor: pointer;
-    font-size: 0.9em; /* Slightly smaller font for table data */
+    font-size: 0.9em;
 }
 
 /* Removed general first column styling - now specific to tables in mobile view */
@@ -156,8 +162,8 @@ tr:hover {
 }
 
 .equipment-icon {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
     margin-right: 5px;
     object-fit: cover;
 }
@@ -218,18 +224,19 @@ tr:hover {
 /* Tab Styles */
 .tabs {
     overflow: hidden;
-    border: 1px solid #444;
-    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-bottom: none;
+    background-color: #f8f9fa;
     margin-top: 20px;
     margin-bottom: 0;
     display: flex; /* Use flexbox for tabs */
     flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
 }
 .tabs button {
-    background-color: #1a1a1a;
-    color: #e0e0e0;
+    background-color: #f8f9fa;
+    color: #333;
     border: none;
-    border-right: 1px solid #444;
+    border-right: 1px solid #ddd;
     outline: none;
     cursor: pointer;
     padding: 10px 12px; /* Adjusted padding */
@@ -243,18 +250,19 @@ tr:hover {
     border-right: none;
 }
 .tabs button:hover {
-    background-color: #333;
-    color: #fff;
+    background-color: #e8e8e8;
+    color: #000;
 }
 .tabs button.active {
-    background-color: #333;
-    color: #fff;
-    border-bottom: 2px solid #fff;
+    background-color: #fff;
+    color: #000;
+    font-weight: bold;
+    border-bottom: 2px solid #333;
 }
 .tab-content {
     display: none; /* Hide all tab content by default */
     padding: 15px 12px;
-    border: 1px solid #ccc;
+    border: 1px solid #333;
     border-top: none;
     margin-bottom: 15px;
 }
@@ -353,9 +361,9 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     max-width: 200px; /* Max width */
     margin: 15px auto; /* Center the button with margin */
     padding: 10px 15px;
-    background-color: #1a1a1a;
-    color: #e0e0e0;
-    border: 1px solid #444;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #333;
     border-radius: 0; /* 각진 모양 */
     cursor: pointer;
     text-align: center;
@@ -364,8 +372,8 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 }
 
 .show-more-button:hover {
-    background-color: #333;
-    color: #fff;
+    background-color: #f0f0f0;
+    color: #000;
 }
 
 /* Toggle Button Style */
@@ -373,9 +381,9 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     display: inline-block;
     padding: 6px 12px;
     margin-left: 10px;
-    background-color: #1a1a1a;
-    color: #e0e0e0;
-    border: 1px solid #444;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #333;
     border-radius: 0; /* 각진 모양 */
     cursor: pointer;
     font-size: 0.85em;
@@ -383,8 +391,8 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 }
 
 .toggle-button:hover {
-    background-color: #333;
-    color: #fff;
+    background-color: #f0f0f0;
+    color: #000;
 }
 
 /* Character Cell Styles (Copied from main.css for consistency) */
@@ -400,11 +408,10 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .icon-container {
     position: relative; /* Needed for absolute positioning of weapon icon */
     display: inline-block; /* Keep icons together */
-    width: 50px; /* Set container width to 50px */
-    height: 50px; /* Set container height to 50px */
+    width: 45px;
+    height: 45px;
     flex-shrink: 0; /* Prevent container from shrinking */
     overflow: visible !important; /* Allow tooltips to show outside */
-    border-radius: 4px; /* Optional: slightly rounded corners for the container */
 }
 
 .character-icon {
@@ -626,8 +633,8 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     }
 
     .icon-container {
-        width: 36px;
-        height: 36px;
+        width: 45px;
+        height: 45px;
         margin: 0;
         flex-shrink: 0; /* Prevent icon from shrinking */
     }
@@ -644,8 +651,8 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 
     /* Equipment icon optimization */
     .equipment-icon {
-        width: 30px;
-        height: 30px;
+        width: 25px;
+        height: 25px;
         margin-right: 3px;
     }
 
@@ -908,4 +915,309 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 /* 필터로 숨겨진 행 (체크박스 필터용) */
 .filtered-hidden {
     display: none !important;
+}
+
+/* 순위 통계 차트+테이블 통합 스타일 */
+.rank-chart-table {
+    background: #fff;
+    padding: 0;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+    overflow: hidden;
+}
+
+.rank-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.rank-row:last-child {
+    border-bottom: none;
+}
+
+.rank-row:hover {
+    background: #f5f5f5;
+}
+
+/* 1위 강조 */
+.rank-row[data-rank="1"] {
+    background: #f9f9f9;
+}
+
+.rank-row[data-rank="1"] .rank-label {
+    color: #000;
+}
+
+/* 차트 영역 */
+.rank-chart-area {
+    display: flex;
+    align-items: center;
+    flex: 0 0 30%;
+    gap: 8px;
+}
+
+.rank-label {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #333;
+    min-width: 32px;
+    text-align: center;
+}
+
+.rank-bar-wrap {
+    flex: 1;
+    height: 18px;
+    background: #e8e8e8;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.rank-bar {
+    height: 100%;
+    background: #555;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* 순위별 막대 색상 */
+.rank-bar[data-rank="1"] {
+    background: #333;
+}
+
+.rank-bar[data-rank="2"],
+.rank-bar[data-rank="3"],
+.rank-bar[data-rank="4"] {
+    background: #555;
+}
+
+.rank-bar[data-rank="5"],
+.rank-bar[data-rank="6"],
+.rank-bar[data-rank="7"],
+.rank-bar[data-rank="8"] {
+    background: #888;
+}
+
+.rank-percent {
+    font-size: 0.85em;
+    color: #333;
+    min-width: 50px;
+    text-align: right;
+    font-weight: bold;
+}
+
+/* 데이터 영역 */
+.rank-data-area {
+    display: flex;
+    flex: 1;
+    justify-content: space-around;
+    padding-left: 16px;
+    border-left: 1px solid #ddd;
+    margin-left: 12px;
+}
+
+.rank-data-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 50px;
+    flex: 1;
+}
+
+.data-label {
+    font-size: 0.7em;
+    color: #888;
+    margin-bottom: 2px;
+    display: none; /* 기본적으로 숨김 (헤더가 보이므로) */
+}
+
+.data-value {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #333;
+}
+
+.data-value.positive {
+    color: #333;
+}
+
+.data-value.negative {
+    color: #666;
+}
+
+/* 헤더 행 스타일 */
+.rank-header {
+    background: #f8f9fa;
+    border-bottom: 2px solid #333;
+    font-weight: bold;
+}
+
+.rank-header:hover {
+    background: #f8f9fa;
+}
+
+.rank-header .rank-label,
+.rank-header .rank-percent {
+    font-size: 0.85em;
+    color: #333;
+}
+
+.rank-header .header-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85em;
+    color: #333;
+    background: transparent;
+}
+
+.header-text {
+    font-size: 0.85em;
+    color: #333;
+    font-weight: bold;
+    text-align: right;
+}
+
+/* 태블릿 반응형 */
+@media (max-width: 1024px) {
+    .rank-chart-area {
+        flex: 0 0 35%;
+    }
+
+    .rank-data-area {
+        flex: 0 0 65%;
+        padding-left: 12px;
+        margin-left: 8px;
+    }
+
+    .rank-data-item {
+        min-width: 40px;
+    }
+
+    .data-value {
+        font-size: 0.75em;
+    }
+
+    .header-text {
+        font-size: 0.75em;
+    }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 599px) {
+    .rank-chart-table {
+        padding: 0;
+    }
+
+    .rank-row {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 0;
+        gap: 8px;
+    }
+
+    .rank-chart-area {
+        flex: none;
+        width: 100%;
+    }
+
+    .rank-label {
+        font-size: 0.85em;
+        min-width: 28px;
+    }
+
+    .rank-bar-wrap {
+        height: 16px;
+    }
+
+    .rank-percent {
+        font-size: 0.8em;
+        min-width: 42px;
+    }
+
+    .rank-data-area {
+        flex: none;
+        width: 100%;
+        padding-left: 0;
+        border-left: none;
+        margin-left: 0;
+        padding-top: 6px;
+        border-top: 1px dashed #ccc;
+        justify-content: space-between;
+    }
+
+    .rank-data-item {
+        flex: 1;
+        min-width: 0;
+        align-items: center;
+        text-align: center;
+    }
+
+    .data-label {
+        display: block; /* 모바일에서 레이블 표시 */
+        font-size: 0.6em;
+    }
+
+    .data-value {
+        font-size: 0.75em;
+    }
+
+    /* 모바일에서 헤더 행 숨김 */
+    .rank-header {
+        display: none;
+    }
+}
+
+/* ==================== 동적 로딩 테이블 스타일 (detail-lazy.js) ==================== */
+
+/* 비동기 로딩 테이블 공통 스타일 */
+.sortable-table,
+#tierInfoTable,
+#rankStatsTable {
+    border: 1px solid #333;
+}
+
+.sortable-table th,
+.sortable-table td,
+#tierInfoTable th,
+#tierInfoTable td,
+#rankStatsTable th,
+#rankStatsTable td {
+    font-size: 0.9em;
+    padding: 8px;
+}
+
+.sortable-table thead tr,
+#tierInfoTable thead tr,
+#rankStatsTable thead tr {
+    border-bottom: 2px solid #333;
+}
+
+.sortable-table .sub-stat,
+#tierInfoTable .sub-stat,
+#rankStatsTable .sub-stat {
+    font-size: 11px;
+}
+
+/* 스크롤 컨테이너 내 테이블 스타일 */
+.equipment-scroll-container table,
+.trait-scroll-container table,
+.tactical-skill-scroll-container table {
+    border: none;
+    margin: 0;
+}
+
+/* 스크롤 컨테이너 헤더 스타일 통일 */
+.equipment-scroll-container thead,
+.trait-scroll-container thead,
+.tactical-skill-scroll-container thead {
+    background: #f8f9fa;
+}
+
+.equipment-scroll-container thead tr,
+.trait-scroll-container thead tr,
+.tactical-skill-scroll-container thead tr {
+    border-bottom: 2px solid #333;
 }

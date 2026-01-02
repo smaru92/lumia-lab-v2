@@ -18,7 +18,7 @@ html {
 
 .custom-dropdown {
     position: relative;
-    min-width: 150px;
+    min-width: 200px;
     user-select: none;
 }
 
@@ -33,6 +33,7 @@ html {
     cursor: pointer;
     font-size: 16px;
     transition: border-color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
 }
 
 .dropdown-selected:hover {
@@ -90,6 +91,7 @@ html {
     padding: 10px 12px;
     cursor: pointer;
     transition: background-color 0.15s;
+    white-space: nowrap;
 }
 
 .dropdown-option:hover {
@@ -117,7 +119,7 @@ html {
 
 /* 티어 드롭다운 너비 */
 #tier-dropdown {
-    min-width: 180px;
+    min-width: 200px;
 }
 
 /* 모든 필터 요소 높이 통일 (38px) */
@@ -140,9 +142,9 @@ html {
 /* 모바일 드롭다운 스타일 */
 @media screen and (max-width: 599px) {
     .custom-dropdown {
-        min-width: 130px;
-        width: 100%;
-        max-width: 200px;
+        min-width: 160px;
+        width: auto;
+        max-width: none;
     }
 
     .dropdown-selected {
@@ -290,7 +292,7 @@ table {
     min-width: 100%;
     border-collapse: collapse;
     background: #fff;
-    border: 1px solid #ddd;
+    border: 1px solid #333;
     margin: 0 auto;
     /* overflow: hidden; /* Removing this to prevent clipping sticky header/shadows */
 }
@@ -303,14 +305,19 @@ thead {
     z-index: 999;
 }
 
+thead tr {
+    border-bottom: 2px solid #333;
+}
+
 th, td {
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
     border-left: none;
     border-right: none;
-    padding: 10px;
+    padding: 8px 10px;
     text-align: center;
     white-space: nowrap;
+    font-size: 0.9em;
 }
 
 th {
@@ -346,7 +353,7 @@ tr:hover { background-color: #e8f4ff; }
     color: #333;
 }
 .sub-stat {
-    font-size: 12px;
+    font-size: 11px;
     color: #777;
 }
 
@@ -363,11 +370,10 @@ tr:hover { background-color: #e8f4ff; }
 .icon-container {
     position: relative; /* For absolute positioning of weapon_icon */
     display: inline-block; /* Or flex, if preferred for centering content */
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     flex-shrink: 0;
     overflow: hidden;
-    border-radius: 4px;
 }
 
 .character-icon, .equipment-icon { /* equipment-icon styled like character-icon */
@@ -385,9 +391,8 @@ tr:hover { background-color: #e8f4ff; }
 }
 
 .trait-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 6px;
+    width: 39px;
+    height: 39px;
     object-fit: cover;
 }
 
@@ -557,7 +562,7 @@ tr:hover { background-color: #e8f4ff; }
     margin-bottom: 20px;
     table-layout: fixed;
     overflow: visible; /* Allow tooltips to extend beyond table boundaries */
-    border: 1px solid #ddd;
+    border: 1px solid #333;
 }
 
 .tier-table th,
@@ -788,7 +793,7 @@ body > .tier-tooltip {
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
-        border: none;
+        border: 1px solid #333;
         margin-bottom: 20px;
     }
 
@@ -854,8 +859,8 @@ body > .tier-tooltip {
 
     /* Smaller icons on mobile */
     .icon-container {
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
     }
 
     .weapon-icon {

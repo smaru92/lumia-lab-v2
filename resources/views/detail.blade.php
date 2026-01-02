@@ -30,7 +30,7 @@
             <th>TOP2</th>
             <th>TOP4</th>
             <th>막금구승률</th>
-            <th>평균 TK</th>
+            <th>평균TK</th>
             <th>이득확률</th>
             <th>이득평균점수</th>
             <th>손실확률</th>
@@ -131,11 +131,78 @@
     </div>
 
     <h3>순위 통계</h3>
-    <div data-lazy-section="ranks">
-        <div class="loading-placeholder" style="padding: 20px; text-align: center;">
-            <p>로딩 중...</p>
+    @if(!empty($byRank))
+    @php
+        // 최대값을 기준으로 상대적 너비 계산
+        $maxPercent = collect($byRank)->max('game_rank_count_percent');
+    @endphp
+    {{-- 순위 분포 차트 + 데이터 통합 --}}
+    <div class="rank-chart-table">
+        {{-- 헤더 --}}
+        <div class="rank-row rank-header">
+            <div class="rank-chart-area">
+                <span class="rank-label">순위</span>
+                <div class="rank-bar-wrap header-label">분포</div>
+                <span class="rank-percent">비율</span>
+            </div>
+            <div class="rank-data-area">
+                <div class="rank-data-item"><span class="header-text">획득</span></div>
+                <div class="rank-data-item"><span class="header-text">평균TK</span></div>
+                <div class="rank-data-item"><span class="header-text">이득확률</span></div>
+                <div class="rank-data-item"><span class="header-text">이득평균</span></div>
+                <div class="rank-data-item"><span class="header-text">손실확률</span></div>
+                <div class="rank-data-item"><span class="header-text">손실평균</span></div>
+            </div>
         </div>
+        @foreach($byRank as $item)
+        @php
+            // 최대값 대비 상대적 너비 (최대값이 100%가 됨)
+            $barWidth = $maxPercent > 0 ? ($item->game_rank_count_percent / $maxPercent) * 100 : 0;
+            $barWidth = max($barWidth, 5); // 최소 5% 너비
+            $scoreClass = $item->avg_mmr_gain >= 0 ? 'positive' : 'negative';
+        @endphp
+        <div class="rank-row" data-rank="{{ $item->game_rank }}">
+            {{-- 차트 영역 --}}
+            <div class="rank-chart-area">
+                <span class="rank-label">{{ $item->game_rank }}위</span>
+                <div class="rank-bar-wrap">
+                    <div class="rank-bar" style="width: {{ $barWidth }}%;" data-rank="{{ $item->game_rank }}"></div>
+                </div>
+                <span class="rank-percent">{{ number_format($item->game_rank_count_percent, 1) }}%</span>
+            </div>
+            {{-- 데이터 영역 --}}
+            <div class="rank-data-area">
+                <div class="rank-data-item">
+                    <span class="data-label">획득</span>
+                    <span class="data-value {{ $scoreClass }}">{{ $item->avg_mmr_gain >= 0 ? '+' : '' }}{{ number_format($item->avg_mmr_gain, 2) }}</span>
+                </div>
+                <div class="rank-data-item">
+                    <span class="data-label">평균TK</span>
+                    <span class="data-value">{{ number_format($item->avg_team_kill_score, 2) }}</span>
+                </div>
+                <div class="rank-data-item">
+                    <span class="data-label">이득확률</span>
+                    <span class="data-value">{{ number_format($item->positive_count_percent, 1) }}%</span>
+                </div>
+                <div class="rank-data-item">
+                    <span class="data-label">이득평균</span>
+                    <span class="data-value positive">+{{ number_format($item->positive_avg_mmr_gain, 2) }}</span>
+                </div>
+                <div class="rank-data-item">
+                    <span class="data-label">손실확률</span>
+                    <span class="data-value">{{ number_format($item->negative_count_percent, 1) }}%</span>
+                </div>
+                <div class="rank-data-item">
+                    <span class="data-label">손실평균</span>
+                    <span class="data-value negative">{{ number_format($item->negative_avg_mmr_gain, 2) }}</span>
+                </div>
+            </div>
+        </div>
+        @endforeach
     </div>
+    @else
+    <p style="text-align: center; color: #999;">데이터가 없습니다.</p>
+    @endif
 
     <h3>전술스킬 통계</h3>
     <div data-lazy-section="tacticalSkills">

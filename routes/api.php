@@ -33,3 +33,6 @@ Route::get('/detail/{types}/tactical-skills', [\App\Http\Controllers\CharacterCo
 Route::get('/detail/{types}/equipment', [\App\Http\Controllers\CharacterController::class, 'getDetailEquipment']);
 Route::get('/detail/{types}/traits', [\App\Http\Controllers\CharacterController::class, 'getDetailTraits']);
 Route::get('/detail/{types}/trait-combinations', [\App\Http\Controllers\CharacterController::class, 'getDetailTraitCombinations']);
+
+// 메인페이지 패치 비교 API
+Route::get('/patch-comparison', [\App\Http\Controllers\MainController::class, 'getPatchComparison']);

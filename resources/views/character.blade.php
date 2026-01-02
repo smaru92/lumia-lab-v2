@@ -39,8 +39,8 @@
             <th class="sortable hide-on-mobile">TOP2</th>
             <th class="sortable hide-on-mobile">TOP4</th>
             <th class="sortable hide-on-mobile hide-on-tablet">막금구승률</th>
-            <th class="sortable hide-on-mobile">평균 TK</th>
-            <th class="sortable hide-on-mobile">이득확률</th>
+            <th class="sortable hide-on-mobile">평균TK</th>
+            <th class="sortable">이득확률</th>
             <th class="sortable hide-on-mobile">손실확률</th>
         </tr>
         </thead>
@@ -114,7 +114,7 @@
                         <div>{{ number_format($item->endgame_win_percent , 2) }}%</div>
                     </td>
                     <td class="hide-on-mobile number">{{ number_format($item->avg_team_kill_score, 2) }}</td>
-                    <td class="hide-on-mobile number">
+                    <td class="number">
                         <div>{{ number_format($item->positive_game_count_percent , 2) }}%</div>
                         <div class="sub-stat">평균 +{{ number_format($item->positive_avg_mmr_gain, 1) }}점</div>
                     </td>

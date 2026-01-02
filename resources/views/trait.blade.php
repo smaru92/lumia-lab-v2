@@ -62,8 +62,8 @@
             <th class="sortable hide-on-mobile">TOP2</th>
             <th class="sortable hide-on-mobile">TOP4</th>
             <th class="sortable hide-on-mobile hide-on-tablet">막금구승률</th>
-            <th class="sortable hide-on-mobile">평균 TK</th>
-            <th class="sortable hide-on-mobile">이득확률</th>
+            <th class="sortable hide-on-mobile">평균TK</th>
+            <th class="sortable">이득확률</th>
             <th class="sortable hide-on-mobile">손실확률</th>
         </tr>
         </thead>

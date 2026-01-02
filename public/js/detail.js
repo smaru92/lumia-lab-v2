@@ -441,19 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
 
     // --- Tier Info Toggle Logic ---
-    const toggleTierInfoButton = document.getElementById('toggle-tier-info');
-    const tierInfoContainer = document.getElementById('tier-info-container');
-
-    if (toggleTierInfoButton && tierInfoContainer) {
-        toggleTierInfoButton.addEventListener('click', function() {
-            if (tierInfoContainer.style.display === 'none' || tierInfoContainer.style.display === '') {
-                tierInfoContainer.style.display = 'block';
-                this.innerHTML = '▲ 접기';
-            } else {
-                tierInfoContainer.style.display = 'none';
-                this.innerHTML = '▼ 펼치기';
-            }
-        });
-    }
+    // 티어 토글 로직은 detail-lazy.js에서 처리 (데이터 로딩 포함)
 
 }); // End DOMContentLoaded
