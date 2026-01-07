@@ -72,20 +72,17 @@ class GameResultTraitCombinationSummaryService
 
         $tiers = $this->tierRange;
 
-        // 트랜잭션으로 delete와 insert를 묶어서 처리
-        DB::beginTransaction();
+        // TRUNCATE는 DDL이므로 트랜잭션 밖에서 실행 (암묵적 커밋 방지)
+        Log::channel($this->logChannel)->info('Truncating table...');
+        DB::table($tableName)->truncate();
+        Log::channel($this->logChannel)->info("Truncated table {$tableName}");
+
+        // 티어별 데이터 처리
+        $insertChunkSize = 500;
+        $totalInserted = 0;
+        $batchData = [];
 
         try {
-            // 1단계: 버전별 테이블이므로 TRUNCATE로 빠르게 삭제
-            Log::channel($this->logChannel)->info('Truncating table...');
-            DB::table($tableName)->truncate();
-            Log::channel($this->logChannel)->info("Truncated table {$tableName}");
-
-            // 2단계: 티어별 데이터 처리
-            $insertChunkSize = 500;
-            $totalInserted = 0;
-            $batchData = [];
-
             foreach ($tiers as $tier) {
                 echo "game result trait combination S : {$tier['tier']} {$tier['tierNumber']} \n";
 
@@ -150,12 +147,9 @@ class GameResultTraitCombinationSummaryService
                 $totalInserted += count($batchData);
             }
 
-            DB::commit();
-
             Log::channel($this->logChannel)->info("Inserted {$totalInserted} new records");
             Log::channel($this->logChannel)->info('E: game result trait combination summary');
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::channel($this->logChannel)->error('Error: ' . $e->getMessage());
             Log::channel($this->logChannel)->error($e->getTraceAsString());
             throw $e;
