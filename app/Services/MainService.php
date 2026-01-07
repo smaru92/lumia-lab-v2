@@ -62,8 +62,8 @@ class MainService
     {
         $result = $this->gameResultSummaryService->getList($filters);
         foreach ($result as $gameResult) {
-            $gameResult['weapon_type_en'] = $gameResult['weapon_type'];
-            $gameResult['weapon_type'] = $this->replaceWeaponType($gameResult['weapon_type']);
+            $gameResult->weapon_type_en = $gameResult->weapon_type;
+            $gameResult->weapon_type = $this->replaceWeaponType($gameResult->weapon_type);
         }
         return $result;
     }
