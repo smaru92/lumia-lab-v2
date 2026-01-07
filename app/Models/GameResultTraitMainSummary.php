@@ -2,20 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class GameResultTraitMainSummary extends Model
+class GameResultTraitMainSummary extends DynamicModel
 {
-    protected $guarded = [
+    protected $guarded = [];
 
-    ];
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
-    # table 정의
     protected $table = 'game_results_trait_main_summary';
-    # primaryKey 정의
     protected $primaryKey = 'id';
 
     /**

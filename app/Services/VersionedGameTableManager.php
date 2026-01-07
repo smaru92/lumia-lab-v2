@@ -137,5 +137,271 @@ class VersionedGameTableManager
             });
         }
     }
+
+    // ==================== Summary Tables ====================
+
+    public function ensureGameResultSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('character_id');
+                $table->string('character_name');
+                $table->string('weapon_type');
+                $table->string('min_tier');
+                $table->integer('min_score');
+                $table->integer('game_count');
+                $table->integer('positive_game_count');
+                $table->integer('negative_game_count');
+                $table->decimal('game_count_percent', 10, 3);
+                $table->decimal('positive_game_count_percent', 10, 3);
+                $table->decimal('negative_game_count_percent', 10, 3);
+                $table->integer('top1_count');
+                $table->integer('top2_count');
+                $table->integer('top4_count');
+                $table->decimal('top1_count_percent', 10, 3);
+                $table->decimal('top2_count_percent', 10, 3);
+                $table->decimal('top4_count_percent', 10, 3);
+                $table->decimal('endgame_win_percent', 10, 3)->nullable();
+                $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('positive_avg_mmr_gain', 10, 3);
+                $table->decimal('negative_avg_mmr_gain', 10, 3);
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
+                $table->unique(['character_id', 'weapon_type', 'min_tier'], 'summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultRankSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('character_id')->nullable();
+                $table->string('character_name')->nullable();
+                $table->string('weapon_type')->nullable();
+                $table->integer('game_rank')->nullable();
+                $table->integer('game_rank_count')->nullable();
+                $table->decimal('avg_mmr_gain', 10, 3)->nullable();
+                $table->integer('positive_count')->nullable();
+                $table->integer('negative_count')->nullable();
+                $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable();
+                $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable();
+                $table->string('min_tier')->nullable();
+                $table->integer('min_score')->nullable();
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
+                $table->unique(['character_id', 'weapon_type', 'min_tier', 'game_rank'], 'rank_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultEquipmentSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('equipment_id')->nullable()->comment('장비 id');
+                $table->integer('character_id')->nullable()->comment('캐릭터 id');
+                $table->string('weapon_type')->nullable()->comment('무기타입');
+                $table->integer('game_rank')->nullable()->comment('순위');
+                $table->integer('game_rank_count')->nullable()->comment('게임 수');
+                $table->integer('positive_count')->nullable()->comment('이득 게임 수');
+                $table->integer('negative_count')->nullable()->comment('손실 게임 수');
+                $table->decimal('avg_mmr_gain', 10, 3)->nullable()->comment('평균 점수 획득');
+                $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable()->comment('평균 이득 점수 획득');
+                $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable()->comment('평균 손실 점수 획득');
+                $table->string('min_tier')->nullable();
+                $table->integer('min_score')->nullable();
+                $table->unique(['character_id', 'weapon_type', 'equipment_id', 'min_tier', 'game_rank'], 'equipment_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultEquipmentMainSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('equipment_id');
+                $table->string('equipment_name');
+                $table->string('meta_tier')->nullable();
+                $table->decimal('meta_score', 10, 3)->nullable();
+                $table->string('min_tier');
+                $table->integer('min_score');
+                $table->integer('game_count');
+                $table->integer('positive_game_count');
+                $table->integer('negative_game_count');
+                $table->decimal('game_count_percent', 10, 3);
+                $table->decimal('positive_game_count_percent', 10, 3);
+                $table->decimal('negative_game_count_percent', 10, 3);
+                $table->integer('top1_count');
+                $table->integer('top2_count');
+                $table->integer('top4_count');
+                $table->decimal('top1_count_percent', 10, 3);
+                $table->decimal('top2_count_percent', 10, 3);
+                $table->decimal('top4_count_percent', 10, 3);
+                $table->decimal('endgame_win_percent', 10, 3)->nullable();
+                $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('positive_avg_mmr_gain', 10, 3);
+                $table->decimal('negative_avg_mmr_gain', 10, 3);
+                $table->unique(['equipment_id', 'min_tier'], 'equipment_main_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultFirstEquipmentMainSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('equipment_id');
+                $table->string('equipment_name');
+                $table->string('meta_tier')->nullable();
+                $table->decimal('meta_score', 10, 3)->nullable();
+                $table->string('min_tier');
+                $table->integer('min_score');
+                $table->integer('game_count');
+                $table->integer('positive_game_count');
+                $table->integer('negative_game_count');
+                $table->decimal('game_count_percent', 10, 3);
+                $table->decimal('positive_game_count_percent', 10, 3);
+                $table->decimal('negative_game_count_percent', 10, 3);
+                $table->integer('top1_count');
+                $table->integer('top2_count');
+                $table->integer('top4_count');
+                $table->decimal('top1_count_percent', 10, 3);
+                $table->decimal('top2_count_percent', 10, 3);
+                $table->decimal('top4_count_percent', 10, 3);
+                $table->decimal('endgame_win_percent', 10, 3);
+                $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('positive_avg_mmr_gain', 10, 3);
+                $table->decimal('negative_avg_mmr_gain', 10, 3);
+                $table->unique(['equipment_id', 'min_tier'], 'first_equipment_main_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultTacticalSkillSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('tactical_skill_id')->nullable()->comment('전술스킬 id');
+                $table->integer('tactical_skill_level')->nullable()->comment('전술스킬 레벨');
+                $table->integer('character_id')->nullable()->comment('캐릭터 id');
+                $table->string('weapon_type')->nullable()->comment('무기타입');
+                $table->integer('game_rank')->nullable()->comment('순위');
+                $table->integer('game_rank_count')->nullable()->comment('게임 수');
+                $table->integer('positive_count')->nullable()->comment('이득 게임 수');
+                $table->integer('negative_count')->nullable()->comment('손실 게임 수');
+                $table->decimal('avg_mmr_gain', 10, 3)->nullable()->comment('평균 점수 획득');
+                $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable()->comment('평균 이득 점수 획득');
+                $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable()->comment('평균 손실 점수 획득');
+                $table->string('min_tier')->nullable();
+                $table->integer('min_score')->nullable();
+                $table->unique(['character_id', 'weapon_type', 'tactical_skill_id', 'tactical_skill_level', 'min_tier', 'game_rank'], 'tactical_skill_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultTraitSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('trait_id')->nullable()->comment('특성 id');
+                $table->boolean('is_main')->nullable()->comment('메인특성여부');
+                $table->integer('character_id')->nullable()->comment('캐릭터 id');
+                $table->string('weapon_type')->nullable()->comment('무기타입');
+                $table->integer('game_rank')->nullable()->comment('순위');
+                $table->integer('game_rank_count')->nullable()->comment('게임 수');
+                $table->integer('positive_count')->nullable()->comment('이득 게임 수');
+                $table->integer('negative_count')->nullable()->comment('손실 게임 수');
+                $table->decimal('avg_mmr_gain', 10, 3)->nullable()->comment('평균 점수 획득');
+                $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable()->comment('평균 이득 점수 획득');
+                $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable()->comment('평균 손실 점수 획득');
+                $table->string('min_tier')->nullable();
+                $table->integer('min_score')->nullable();
+                $table->unique(['character_id', 'weapon_type', 'trait_id', 'min_tier', 'game_rank'], 'trait_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultTraitCombinationSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('character_id');
+                $table->string('character_name');
+                $table->string('weapon_type');
+                $table->string('trait_ids')->comment('정렬된 특성 ID 조합 (예: 101,205,308)');
+                $table->string('min_tier');
+                $table->integer('min_score');
+                $table->integer('game_count');
+                $table->integer('positive_game_count');
+                $table->integer('negative_game_count');
+                $table->decimal('game_count_percent', 10, 3)->comment('해당 캐릭터 내 픽률');
+                $table->decimal('positive_game_count_percent', 10, 3);
+                $table->decimal('negative_game_count_percent', 10, 3);
+                $table->integer('top1_count');
+                $table->integer('top2_count');
+                $table->integer('top4_count');
+                $table->decimal('top1_count_percent', 10, 3);
+                $table->decimal('top2_count_percent', 10, 3);
+                $table->decimal('top4_count_percent', 10, 3);
+                $table->decimal('endgame_win_percent', 10, 3)->nullable();
+                $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('positive_avg_mmr_gain', 10, 3);
+                $table->decimal('negative_avg_mmr_gain', 10, 3);
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
+                $table->unique(['character_id', 'weapon_type', 'trait_ids', 'min_tier'], 'trait_combination_summary_unique');
+                $table->index(['character_id', 'weapon_type'], 'trait_combination_char_weapon_idx');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultTraitMainSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('trait_id')->comment('특성 id');
+                $table->string('trait_name')->comment('특성 이름');
+                $table->boolean('is_main')->comment('메인 특성 여부');
+                $table->string('meta_tier')->nullable()->comment('메타 티어');
+                $table->decimal('meta_score', 10, 3)->nullable()->comment('메타 점수');
+                $table->string('min_tier')->comment('최소 티어');
+                $table->integer('min_score')->comment('최소 점수');
+                $table->integer('game_count')->comment('게임 수');
+                $table->integer('positive_game_count')->comment('이득 게임 수');
+                $table->integer('negative_game_count')->comment('손실 게임 수');
+                $table->decimal('game_count_percent', 10, 3)->comment('픽률');
+                $table->decimal('positive_game_count_percent', 10, 3)->comment('이득 확률');
+                $table->decimal('negative_game_count_percent', 10, 3)->comment('손실 확률');
+                $table->integer('top1_count')->comment('1위 횟수');
+                $table->integer('top2_count')->comment('TOP2 횟수');
+                $table->integer('top4_count')->comment('TOP4 횟수');
+                $table->decimal('top1_count_percent', 10, 3)->comment('승률');
+                $table->decimal('top2_count_percent', 10, 3)->comment('TOP2 비율');
+                $table->decimal('top4_count_percent', 10, 3)->comment('TOP4 비율');
+                $table->decimal('endgame_win_percent', 10, 3)->nullable()->comment('막금구 승률');
+                $table->decimal('avg_mmr_gain', 10, 3)->comment('평균 획득 점수');
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable()->comment('평균 TK');
+                $table->decimal('positive_avg_mmr_gain', 10, 3)->comment('이득 시 평균 획득 점수');
+                $table->decimal('negative_avg_mmr_gain', 10, 3)->comment('손실 시 평균 획득 점수');
+                $table->unique(['trait_id', 'is_main', 'min_tier'], 'trait_main_summary_unique');
+                $table->timestamps();
+            });
+        }
+    }
 }
 

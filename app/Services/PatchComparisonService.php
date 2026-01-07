@@ -7,10 +7,23 @@ use App\Models\GameResultSummary;
 use App\Models\PatchNote;
 use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
+use Illuminate\Support\Facades\DB;
 
 class PatchComparisonService
 {
     use ErDevTrait;
+
+    /**
+     * 버전별 Summary 테이블명 가져오기
+     */
+    protected function getVersionedTableName($version): string
+    {
+        return VersionedGameTableManager::getTableName('game_results_summary', [
+            'version_season' => $version->version_season,
+            'version_major' => $version->version_major,
+            'version_minor' => $version->version_minor,
+        ]);
+    }
 
     /**
      * 최신 버전 조회
@@ -72,9 +85,9 @@ class PatchComparisonService
      */
     public function getGameResultStats($version, $minTier, $characterId, $weaponType = null)
     {
-        $query = GameResultSummary::where('version_season', $version->version_season)
-            ->where('version_major', $version->version_major)
-            ->where('version_minor', $version->version_minor)
+        $tableName = $this->getVersionedTableName($version);
+
+        $query = DB::table($tableName)
             ->where('min_tier', $minTier)
             ->where('character_id', $characterId);
 
@@ -98,24 +111,24 @@ class PatchComparisonService
         // 1. 모든 캐릭터 ID 수집
         $characterIds = $patchNotes->pluck('target_id')->unique();
 
-        // 2. 한 번에 모든 통계 조회 (N+1 해결!)
-        $latestStats = GameResultSummary::where('version_season', $latestVersion->version_season)
-            ->where('version_major', $latestVersion->version_major)
-            ->where('version_minor', $latestVersion->version_minor)
+        // 2. 버전별 테이블명 가져오기
+        $latestTableName = $this->getVersionedTableName($latestVersion);
+        $previousTableName = $this->getVersionedTableName($previousVersion);
+
+        // 3. 한 번에 모든 통계 조회 (N+1 해결!)
+        $latestStats = DB::table($latestTableName)
             ->where('min_tier', $minTier)
             ->whereIn('character_id', $characterIds)
             ->get()
             ->groupBy('character_id');
 
-        $previousStats = GameResultSummary::where('version_season', $previousVersion->version_season)
-            ->where('version_major', $previousVersion->version_major)
-            ->where('version_minor', $previousVersion->version_minor)
+        $previousStats = DB::table($previousTableName)
             ->where('min_tier', $minTier)
             ->whereIn('character_id', $characterIds)
             ->get()
             ->groupBy('character_id');
 
-        // 3. 패치노트 처리
+        // 4. 패치노트 처리
         foreach ($patchNotes as $patchNote) {
             $characterId = $patchNote->target_id;
             $weaponType = $patchNote->weapon_type;

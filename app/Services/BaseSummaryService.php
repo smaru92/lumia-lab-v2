@@ -13,18 +13,22 @@ abstract class BaseSummaryService
 
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
+    protected VersionedGameTableManager $versionedTableManager;
     protected string $logChannel;
 
     public function __construct(string $logChannel)
     {
         $this->rankRangeService = new RankRangeService();
         $this->gameResultService = new GameResultService();
+        $this->versionedTableManager = new VersionedGameTableManager();
         $this->logChannel = $logChannel;
     }
 
     abstract protected function getSummaryModel(): string;
+    abstract protected function getSummaryTableBaseName(): string;
     abstract protected function getGameResults(array $params): iterable;
-    abstract protected function transformData(object|array $gameResult, string $minTier, int $minScore, int $versionSeason, int $versionMajor, int $versionMinor): array;
+    abstract protected function transformData(object|array $gameResult, string $minTier, int $minScore): array;
+    abstract protected function ensureTableExists(string $tableName): void;
 
     public function updateSummary($versionSeason = null, $versionMajor = null, $versionMinor = null)
     {
@@ -35,33 +39,32 @@ abstract class BaseSummaryService
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
 
+        // 버전별 테이블명 생성
+        $versionFilters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor
+        ];
+        $versionedTableName = VersionedGameTableManager::getTableName(
+            $this->getSummaryTableBaseName(),
+            $versionFilters
+        );
+
+        Log::channel($this->logChannel)->info("Using versioned table: {$versionedTableName}");
+
+        // 테이블 존재 확인 및 생성
+        $this->ensureTableExists($versionedTableName);
+
         $summaryModel = $this->getSummaryModel();
 
         // 트랜잭션으로 delete와 insert를 묶어서 처리
         DB::beginTransaction();
 
         try {
-            // 1단계: 기존 데이터 삭제 (청크 단위)
-            $deleteChunkSize = 5000;
-            $deletedCount = 0;
-
-            Log::channel($this->logChannel)->info('Deleting old records...');
-            do {
-                $deleted = $summaryModel::where('version_season', $versionSeason)
-                    ->where('version_major', $versionMajor)
-                    ->where('version_minor', $versionMinor)
-                    ->limit($deleteChunkSize)
-                    ->delete();
-
-                $deletedCount += $deleted;
-
-                // 메모리 정리
-                if ($deletedCount % 20000 === 0) {
-                    gc_collect_cycles();
-                }
-            } while ($deleted > 0);
-
-            Log::channel($this->logChannel)->info("Deleted {$deletedCount} old records");
+            // 1단계: 버전별 테이블이므로 TRUNCATE로 빠르게 삭제
+            Log::channel($this->logChannel)->info('Truncating table...');
+            DB::table($versionedTableName)->truncate();
+            Log::channel($this->logChannel)->info("Truncated table {$versionedTableName}");
 
             // 2단계: 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
             $insertChunkSize = 500;
@@ -69,11 +72,6 @@ abstract class BaseSummaryService
             $batchData = [];
 
             foreach ($this->tierRange as $tier) {
-                $versionFilters = [
-                    'version_season' => $versionSeason,
-                    'version_major' => $versionMajor,
-                    'version_minor' => $versionMinor
-                ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
                 $minTier = $tier['tier'] . $tier['tierNumber'];
@@ -87,11 +85,11 @@ abstract class BaseSummaryService
                 ]);
 
                 foreach ($gameResults as $gameResult) {
-                    $batchData[] = $this->transformData($gameResult, $minTier, $minScore, $versionSeason, $versionMajor, $versionMinor);
+                    $batchData[] = $this->transformData($gameResult, $minTier, $minScore);
 
                     // 일정 크기마다 insert
                     if (count($batchData) >= $insertChunkSize) {
-                        $summaryModel::insert($batchData);
+                        DB::table($versionedTableName)->insert($batchData);
                         $totalInserted += count($batchData);
                         $batchData = [];
 
@@ -109,7 +107,7 @@ abstract class BaseSummaryService
 
             // 남은 데이터 insert
             if (!empty($batchData)) {
-                $summaryModel::insert($batchData);
+                DB::table($versionedTableName)->insert($batchData);
                 $totalInserted += count($batchData);
             }
 
