@@ -50,10 +50,10 @@ class FirstEquipmentMainService
     {
         $result = $this->gameResultFirstEquipmentMainSummaryService->getList($filters);
         foreach ($result as $gameResult) {
-            $gameResult['item_grade_en'] = $gameResult['item_grade'];
-            $gameResult['item_grade'] = $this->replaceItemGrade($gameResult['item_grade']);
-            $gameResult['item_type2_en'] = $gameResult['item_type2'];
-            $gameResult['item_type2'] = $this->replaceItemType2($gameResult['item_type2']);
+            $gameResult->item_grade_en = $gameResult->item_grade;
+            $gameResult->item_grade = $this->replaceItemGrade($gameResult->item_grade);
+            $gameResult->item_type2_en = $gameResult->item_type2;
+            $gameResult->item_type2 = $this->replaceItemType2($gameResult->item_type2);
         }
         return $result;
     }
