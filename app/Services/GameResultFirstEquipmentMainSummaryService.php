@@ -13,10 +13,33 @@ class GameResultFirstEquipmentMainSummaryService
     use ErDevTrait;
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
+    protected VersionedGameTableManager $versionedTableManager;
+
     public function __construct()
     {
         $this->rankRangeService = new RankRangeService();
         $this->gameResultService = new GameResultService();
+        $this->versionedTableManager = new VersionedGameTableManager();
+    }
+
+    protected function getVersionedTableName(array $filters): string
+    {
+        $versionSeason = $filters['version_season'] ?? null;
+        $versionMajor = $filters['version_major'] ?? null;
+        $versionMinor = $filters['version_minor'] ?? null;
+
+        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+            $latestVersion = VersionHistory::latest('created_at')->first();
+            $versionSeason = $versionSeason ?? $latestVersion->version_season;
+            $versionMajor = $versionMajor ?? $latestVersion->version_major;
+            $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        }
+
+        return VersionedGameTableManager::getTableName('game_results_first_equipment_main_summary', [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+        ]);
     }
 
     /**
@@ -32,33 +55,29 @@ class GameResultFirstEquipmentMainSummaryService
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
 
+        // 버전별 테이블명 생성
+        $versionFilters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor
+        ];
+        $tableName = VersionedGameTableManager::getTableName('game_results_first_equipment_main_summary', $versionFilters);
+
+        Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Using versioned table: {$tableName}");
+
+        // 테이블 존재 확인 및 생성
+        $this->versionedTableManager->ensureGameResultFirstEquipmentMainSummaryTableExists($tableName);
+
         $tiers = $this->tierRange;
 
         // 트랜잭션으로 delete와 insert를 묶어서 처리
         DB::beginTransaction();
 
         try {
-            // 1단계: 기존 데이터 삭제 (청크 단위)
-            $deleteChunkSize = 5000;
-            $deletedCount = 0;
-
-            Log::channel('updateGameResultFirstEquipmentMainSummary')->info('Deleting old records...');
-            do {
-                $deleted = GameResultFirstEquipmentMainSummary::where('version_season', $versionSeason)
-                    ->where('version_major', $versionMajor)
-                    ->where('version_minor', $versionMinor)
-                    ->limit($deleteChunkSize)
-                    ->delete();
-
-                $deletedCount += $deleted;
-
-                // 메모리 정리
-                if ($deletedCount % 20000 === 0) {
-                    gc_collect_cycles();
-                }
-            } while ($deleted > 0);
-
-            Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Deleted {$deletedCount} old records");
+            // 1단계: 버전별 테이블이므로 TRUNCATE로 빠르게 삭제
+            Log::channel('updateGameResultFirstEquipmentMainSummary')->info('Truncating table...');
+            DB::table($tableName)->truncate();
+            Log::channel('updateGameResultFirstEquipmentMainSummary')->info("Truncated table {$tableName}");
 
             // 2단계: 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
             $insertChunkSize = 500;
@@ -66,11 +85,6 @@ class GameResultFirstEquipmentMainSummaryService
             $batchData = [];
 
             foreach ($tiers as $tier) {
-                $versionFilters = [
-                    'version_season' => $versionSeason,
-                    'version_major' => $versionMajor,
-                    'version_minor' => $versionMinor
-                ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'].$tier['tierNumber'];
                 echo $tier['tier'] . $tier['tierNumber'] . ':' . $minScore . "\n";
@@ -113,16 +127,13 @@ class GameResultFirstEquipmentMainSummaryService
                         'avg_team_kill_score' => $gameResult['avgTeamKillScore'],
                         'positive_avg_mmr_gain' => $gameResult['positiveAvgMmrGain'],
                         'negative_avg_mmr_gain' => $gameResult['negativeAvgMmrGain'],
-                        'version_season' => $versionSeason,
-                        'version_major' => $versionMajor,
-                        'version_minor' => $versionMinor,
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
 
                     // 일정 크기마다 insert
                     if (count($batchData) >= $insertChunkSize) {
-                        DB::table('game_results_first_equipment_main_summary')->insert($batchData);
+                        DB::table($tableName)->insert($batchData);
                         $totalInserted += count($batchData);
                         $batchData = [];
 
@@ -140,7 +151,7 @@ class GameResultFirstEquipmentMainSummaryService
 
             // 남은 데이터 insert
             if (!empty($batchData)) {
-                DB::table('game_results_first_equipment_main_summary')->insert($batchData);
+                DB::table($tableName)->insert($batchData);
                 $totalInserted += count($batchData);
             }
 
@@ -161,28 +172,32 @@ class GameResultFirstEquipmentMainSummaryService
 
     public function getList(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+
         // 초기 장비 페이지용: 랭킹 계산 제거로 성능 최적화
-        $results = GameResultFirstEquipmentMainSummary::select(
-            'game_results_first_equipment_main_summary.*',
-            'equipments.item_grade',
-            'equipments.item_type2',
-            // 장비 스탯 정보 추가
-            'equipments.attack_power', 'equipments.attack_power_by_lv',
-            'equipments.defense', 'equipments.defense_by_lv',
-            'equipments.skill_amp', 'equipments.skill_amp_by_level',
-            'equipments.skill_amp_ratio', 'equipments.skill_amp_ratio_by_level',
-            'equipments.adaptive_force', 'equipments.adaptive_force_by_level',
-            'equipments.max_hp', 'equipments.max_hp_by_lv',
-            'equipments.hp_regen', 'equipments.hp_regen_ratio',
-            'equipments.sp_regen', 'equipments.sp_regen_ratio',
-            'equipments.attack_speed_ratio', 'equipments.attack_speed_ratio_by_lv',
-            'equipments.critical_strike_chance', 'equipments.critical_strike_damage',
-            'equipments.cooldown_reduction',
-            'equipments.life_steal', 'equipments.normal_life_steal', 'equipments.skill_life_steal',
-            'equipments.move_speed', 'equipments.move_speed_ratio', 'equipments.move_speed_out_of_combat',
-            'equipments.penetration_defense', 'equipments.penetration_defense_ratio'
-        )
-            ->join('equipments', 'equipments.id', '=', 'game_results_first_equipment_main_summary.equipment_id')
+        $results = DB::table($tableName . ' as ges')
+            ->select(
+                'ges.*',
+                'equipments.item_grade',
+                'equipments.item_type2',
+                // 장비 스탯 정보 추가
+                'equipments.attack_power', 'equipments.attack_power_by_lv',
+                'equipments.defense', 'equipments.defense_by_lv',
+                'equipments.skill_amp', 'equipments.skill_amp_by_level',
+                'equipments.skill_amp_ratio', 'equipments.skill_amp_ratio_by_level',
+                'equipments.adaptive_force', 'equipments.adaptive_force_by_level',
+                'equipments.max_hp', 'equipments.max_hp_by_lv',
+                'equipments.hp_regen', 'equipments.hp_regen_ratio',
+                'equipments.sp_regen', 'equipments.sp_regen_ratio',
+                'equipments.attack_speed_ratio', 'equipments.attack_speed_ratio_by_lv',
+                'equipments.critical_strike_chance', 'equipments.critical_strike_damage',
+                'equipments.cooldown_reduction',
+                'equipments.life_steal', 'equipments.normal_life_steal', 'equipments.skill_life_steal',
+                'equipments.move_speed', 'equipments.move_speed_ratio', 'equipments.move_speed_out_of_combat',
+                'equipments.penetration_defense', 'equipments.penetration_defense_ratio'
+            )
+            ->join('equipments', 'equipments.id', '=', 'ges.equipment_id')
             ->where($filters)
             ->whereIn('equipments.item_grade', ['Epic'])
             ->orderBy('meta_score', 'desc')

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GameResultEquipmentSummary;
+use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
 
@@ -25,12 +26,22 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
         return GameResultEquipmentSummary::class;
     }
 
+    protected function getSummaryTableBaseName(): string
+    {
+        return 'game_results_equipment_summary';
+    }
+
+    protected function ensureTableExists(string $tableName): void
+    {
+        $this->versionedTableManager->ensureGameResultEquipmentSummaryTableExists($tableName);
+    }
+
     protected function getGameResults(array $params): iterable
     {
         return $this->gameResultService->getGameResultByEquipment($params);
     }
 
-    protected function transformData(object|array $gameResult, string $minTier, int $minScore, int $versionSeason, int $versionMajor, int $versionMinor): array
+    protected function transformData(object|array $gameResult, string $minTier, int $minScore): array
     {
         return [
             'character_id' => $gameResult->character_id,
@@ -46,103 +57,124 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
             'negative_avg_mmr_gain' => $gameResult->negative_avg_mmr_gain,
             'min_tier' => $minTier,
             'min_score' => $minScore,
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor,
             'updated_at' => now(),
             'created_at' => now(),
         ];
     }
 
+    protected function getVersionedTableName(array $filters): string
+    {
+        $versionSeason = $filters['version_season'] ?? null;
+        $versionMajor = $filters['version_major'] ?? null;
+        $versionMinor = $filters['version_minor'] ?? null;
+
+        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+            $latestVersion = VersionHistory::latest('created_at')->first();
+            $versionSeason = $versionSeason ?? $latestVersion->version_season;
+            $versionMajor = $versionMajor ?? $latestVersion->version_major;
+            $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        }
+
+        return VersionedGameTableManager::getTableName($this->getSummaryTableBaseName(), [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+        ]);
+    }
+
     public function getDetail(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
         if (isset($filters['character_name'])) {
             $filters['c.name'] = $filters['character_name'];
             unset($filters['character_name']);
         }
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
         // 캐시 키 생성
-        $cacheKey = "equipment_summary_" . md5(json_encode($filters));
+        $cacheKey = "equipment_summary_" . md5(json_encode($filters) . $tableName);
         $cacheDuration = 60 * 10; // 10분 캐싱
 
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
-            return GameResultEquipmentSummary::select(
-            'c.name as character_name',
-            'e.item_type1',
-            'e.item_type2',
-            'e.item_grade',
-            'e.name as equipment_name',
-            'e.attack_power',
-            'e.attack_power_by_lv',
-            'e.defense',
-            'e.defense_by_lv',
-            'e.skill_amp',
-            'e.skill_amp_by_level',
-            'e.skill_amp_ratio',
-            'e.skill_amp_ratio_by_level',
-            'e.adaptive_force',
-            'e.adaptive_force_by_level',
-            'e.max_hp',
-            'e.max_hp_by_lv',
-            'e.max_sp',
-            'e.max_sp_by_lv',
-            'e.hp_regen',
-            'e.hp_regen_ratio',
-            'e.sp_regen',
-            'e.sp_regen_ratio',
-            'e.attack_speed_ratio',
-            'e.attack_speed_ratio_by_lv',
-            'e.critical_strike_chance',
-            'e.critical_strike_damage',
-            'e.prevent_critical_strike_damaged',
-            'e.cooldown_reduction',
-            'e.cooldown_limit',
-            'e.life_steal',
-            'e.normal_life_steal',
-            'e.skill_life_steal',
-            'e.move_speed',
-            'e.move_speed_ratio',
-            'e.move_speed_out_of_combat',
-            'e.sight_range',
-            'e.attack_range',
-            'e.increase_basic_attack_damage',
-            'e.increase_basic_attack_damage_by_lv',
-            'e.increase_basic_attack_damage_ratio',
-            'e.increase_basic_attack_damage_ratio_by_lv',
-            'e.prevent_basic_attack_damaged',
-            'e.prevent_basic_attack_damaged_by_lv',
-            'e.prevent_basic_attack_damaged_ratio',
-            'e.prevent_basic_attack_damaged_ratio_by_lv',
-            'e.prevent_skill_damaged',
-            'e.prevent_skill_damaged_by_lv',
-            'e.prevent_skill_damaged_ratio',
-            'e.prevent_skill_damaged_ratio_by_lv',
-            'e.penetration_defense',
-            'e.penetration_defense_ratio',
-            'e.trap_damage_reduce',
-            'e.trap_damage_reduce_ratio',
-            'e.slow_resist_ratio',
-            'e.hp_healed_increase_ratio',
-            'e.healer_give_hp_heal_ratio',
-            'e.unique_attack_range',
-            'e.unique_hp_healed_increase_ratio',
-            'e.unique_cooldown_limit',
-            'e.unique_tenacity',
-            'e.unique_move_speed',
-            'e.unique_penetration_defense',
-            'e.unique_penetration_defense_ratio',
-            'e.unique_life_steal',
-            'e.unique_skill_amp_ratio',
-            'game_results_equipment_summary.*',
-        )
-            ->join('equipments as e', 'e.id', 'game_results_equipment_summary.equipment_id')
-            ->join('characters as c', 'c.id', 'game_results_equipment_summary.character_id')
-            ->where($filters)
-            ->whereIn('e.item_grade', ['Epic', 'Legend', 'Mythic'])
-            ->orderBy('game_rank_count', 'desc')
-            ->orderBy('game_results_equipment_summary.game_rank', 'asc')
-            ->get();
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters, $tableName) {
+            return DB::table($tableName . ' as ges')
+                ->select(
+                    'c.name as character_name',
+                    'e.item_type1',
+                    'e.item_type2',
+                    'e.item_grade',
+                    'e.name as equipment_name',
+                    'e.attack_power',
+                    'e.attack_power_by_lv',
+                    'e.defense',
+                    'e.defense_by_lv',
+                    'e.skill_amp',
+                    'e.skill_amp_by_level',
+                    'e.skill_amp_ratio',
+                    'e.skill_amp_ratio_by_level',
+                    'e.adaptive_force',
+                    'e.adaptive_force_by_level',
+                    'e.max_hp',
+                    'e.max_hp_by_lv',
+                    'e.max_sp',
+                    'e.max_sp_by_lv',
+                    'e.hp_regen',
+                    'e.hp_regen_ratio',
+                    'e.sp_regen',
+                    'e.sp_regen_ratio',
+                    'e.attack_speed_ratio',
+                    'e.attack_speed_ratio_by_lv',
+                    'e.critical_strike_chance',
+                    'e.critical_strike_damage',
+                    'e.prevent_critical_strike_damaged',
+                    'e.cooldown_reduction',
+                    'e.cooldown_limit',
+                    'e.life_steal',
+                    'e.normal_life_steal',
+                    'e.skill_life_steal',
+                    'e.move_speed',
+                    'e.move_speed_ratio',
+                    'e.move_speed_out_of_combat',
+                    'e.sight_range',
+                    'e.attack_range',
+                    'e.increase_basic_attack_damage',
+                    'e.increase_basic_attack_damage_by_lv',
+                    'e.increase_basic_attack_damage_ratio',
+                    'e.increase_basic_attack_damage_ratio_by_lv',
+                    'e.prevent_basic_attack_damaged',
+                    'e.prevent_basic_attack_damaged_by_lv',
+                    'e.prevent_basic_attack_damaged_ratio',
+                    'e.prevent_basic_attack_damaged_ratio_by_lv',
+                    'e.prevent_skill_damaged',
+                    'e.prevent_skill_damaged_by_lv',
+                    'e.prevent_skill_damaged_ratio',
+                    'e.prevent_skill_damaged_ratio_by_lv',
+                    'e.penetration_defense',
+                    'e.penetration_defense_ratio',
+                    'e.trap_damage_reduce',
+                    'e.trap_damage_reduce_ratio',
+                    'e.slow_resist_ratio',
+                    'e.hp_healed_increase_ratio',
+                    'e.healer_give_hp_heal_ratio',
+                    'e.unique_attack_range',
+                    'e.unique_hp_healed_increase_ratio',
+                    'e.unique_cooldown_limit',
+                    'e.unique_tenacity',
+                    'e.unique_move_speed',
+                    'e.unique_penetration_defense',
+                    'e.unique_penetration_defense_ratio',
+                    'e.unique_life_steal',
+                    'e.unique_skill_amp_ratio',
+                    'ges.*'
+                )
+                ->join('equipments as e', 'e.id', 'ges.equipment_id')
+                ->join('characters as c', 'c.id', 'ges.character_id')
+                ->where($filters)
+                ->whereIn('e.item_grade', ['Epic', 'Legend', 'Mythic'])
+                ->orderBy('game_rank_count', 'desc')
+                ->orderBy('ges.game_rank', 'asc')
+                ->get();
         });
 
         // 🔥 최적화 1: 장비 ID 수집하여 한 번에 스킬 정보 가져오기 (N+1 쿼리 해결)

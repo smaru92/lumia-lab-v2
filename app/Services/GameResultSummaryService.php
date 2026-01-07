@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GameResultSummary;
+use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
 
@@ -25,13 +26,23 @@ class GameResultSummaryService extends BaseSummaryService
         return GameResultSummary::class;
     }
 
+    protected function getSummaryTableBaseName(): string
+    {
+        return 'game_results_summary';
+    }
+
+    protected function ensureTableExists(string $tableName): void
+    {
+        $this->versionedTableManager->ensureGameResultSummaryTableExists($tableName);
+    }
+
     protected function getGameResults(array $params): iterable
     {
         // getGameResultMain returns an array ['data' => [...]], so we extract the data part.
         return $this->gameResultService->getGameResultMain($params)['data'] ?? [];
     }
 
-    protected function transformData(object|array $gameResult, string $minTier, int $minScore, int $versionSeason, int $versionMajor, int $versionMinor): array
+    protected function transformData(object|array $gameResult, string $minTier, int $minScore): array
     {
         // In this specific service, $gameResult is an associative array, not an object.
         return [
@@ -59,44 +70,73 @@ class GameResultSummaryService extends BaseSummaryService
             'avg_team_kill_score' => $gameResult['avgTeamKillScore'],
             'positive_avg_mmr_gain' => $gameResult['positiveAvgMmrGain'],
             'negative_avg_mmr_gain' => $gameResult['negativeAvgMmrGain'],
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor,
             'updated_at' => now(),
             'created_at' => now(),
         ];
     }
 
+    protected function getVersionedTableName(array $filters): string
+    {
+        $versionSeason = $filters['version_season'] ?? null;
+        $versionMajor = $filters['version_major'] ?? null;
+        $versionMinor = $filters['version_minor'] ?? null;
+
+        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+            $latestVersion = VersionHistory::latest('created_at')->first();
+            $versionSeason = $versionSeason ?? $latestVersion->version_season;
+            $versionMajor = $versionMajor ?? $latestVersion->version_major;
+            $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        }
+
+        return VersionedGameTableManager::getTableName($this->getSummaryTableBaseName(), [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+        ]);
+    }
+
     public function getList(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+
+        // version 필터는 테이블명에 포함되므로 제거
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+
         // 메인 페이지용: 랭킹 계산 제거로 성능 최적화 (랭킹은 detail 페이지에서만 사용)
-        return GameResultSummary::where($filters)
+        return DB::table($tableName)
+            ->where($filters)
             ->orderBy('meta_score', 'desc')
             ->get();
     }
     public function getDetail(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+
         $subQueryFilter = $filters;
         unset($subQueryFilter['character_name']);
         unset($subQueryFilter['weapon_type']);
-        $subQuery = GameResultSummary::select(
-            'game_results_summary.*',
-            DB::raw("RANK() OVER (ORDER BY meta_score DESC) AS meta_score_rank"),
-            DB::raw("RANK() OVER (ORDER BY game_count DESC) AS game_count_rank"),
-            DB::raw("RANK() OVER (ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY endgame_win_percent DESC) AS endgame_win_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
-            DB::raw("RANK() OVER (ORDER BY avg_team_kill_score DESC) AS avg_team_kill_score_rank"),
-            DB::raw("RANK() OVER (ORDER BY positive_game_count_percent DESC) AS positive_game_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY negative_game_count_percent ASC) AS negative_game_count_percent_rank"),
-            DB::raw("RANK() OVER (ORDER BY positive_avg_mmr_gain DESC) AS positive_avg_mmr_gain_rank"),
-            DB::raw("RANK() OVER (ORDER BY negative_avg_mmr_gain DESC) AS negative_avg_mmr_gain_rank"),
-        )
+        unset($subQueryFilter['version_season'], $subQueryFilter['version_major'], $subQueryFilter['version_minor']);
+
+        $subQuery = DB::table($tableName)
+            ->select(
+                '*',
+                DB::raw("RANK() OVER (ORDER BY meta_score DESC) AS meta_score_rank"),
+                DB::raw("RANK() OVER (ORDER BY game_count DESC) AS game_count_rank"),
+                DB::raw("RANK() OVER (ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
+                DB::raw("RANK() OVER (ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
+                DB::raw("RANK() OVER (ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
+                DB::raw("RANK() OVER (ORDER BY endgame_win_percent DESC) AS endgame_win_percent_rank"),
+                DB::raw("RANK() OVER (ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
+                DB::raw("RANK() OVER (ORDER BY avg_team_kill_score DESC) AS avg_team_kill_score_rank"),
+                DB::raw("RANK() OVER (ORDER BY positive_game_count_percent DESC) AS positive_game_count_percent_rank"),
+                DB::raw("RANK() OVER (ORDER BY negative_game_count_percent ASC) AS negative_game_count_percent_rank"),
+                DB::raw("RANK() OVER (ORDER BY positive_avg_mmr_gain DESC) AS positive_avg_mmr_gain_rank"),
+                DB::raw("RANK() OVER (ORDER BY negative_avg_mmr_gain DESC) AS negative_avg_mmr_gain_rank")
+            )
             ->where($subQueryFilter);
+
         return DB::table(DB::raw("({$subQuery->toSql()}) as ranked"))
-            ->mergeBindings($subQuery->getQuery())
+            ->mergeBindings($subQuery)
             ->where('character_name', $filters['character_name'])
             ->where('weapon_type', $filters['weapon_type'])
             ->first();
@@ -104,29 +144,33 @@ class GameResultSummaryService extends BaseSummaryService
 
     public function getDetailBulk(array $filters, array $tierRange)
     {
+        $tableName = $this->getVersionedTableName($filters);
+
         // 모든 티어를 한 번에 조회 (성능 최적화)
         $baseFilters = $filters;
         unset($baseFilters['character_name']);
         unset($baseFilters['weapon_type']);
         unset($baseFilters['min_tier']);
+        unset($baseFilters['version_season'], $baseFilters['version_major'], $baseFilters['version_minor']);
 
         // PARTITION BY min_tier로 각 티어별 랭킹을 한 번에 계산
-        $subQuery = GameResultSummary::select(
-            'game_results_summary.*',
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY meta_score DESC) AS meta_score_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY game_count DESC) AS game_count_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY endgame_win_percent DESC) AS endgame_win_percent_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY avg_team_kill_score DESC) AS avg_team_kill_score_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY positive_game_count_percent DESC) AS positive_game_count_percent_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY negative_game_count_percent ASC) AS negative_game_count_percent_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY positive_avg_mmr_gain DESC) AS positive_avg_mmr_gain_rank"),
-            DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY negative_avg_mmr_gain DESC) AS negative_avg_mmr_gain_rank"),
-            DB::raw("COUNT(*) OVER (PARTITION BY min_tier) AS rank_count")
-        )
+        $subQuery = DB::table($tableName)
+            ->select(
+                '*',
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY meta_score DESC) AS meta_score_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY game_count DESC) AS game_count_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top1_count_percent DESC) AS top1_count_percent_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top2_count_percent DESC) AS top2_count_percent_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY top4_count_percent DESC) AS top4_count_percent_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY endgame_win_percent DESC) AS endgame_win_percent_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY avg_mmr_gain DESC) AS avg_mmr_gain_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY avg_team_kill_score DESC) AS avg_team_kill_score_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY positive_game_count_percent DESC) AS positive_game_count_percent_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY negative_game_count_percent ASC) AS negative_game_count_percent_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY positive_avg_mmr_gain DESC) AS positive_avg_mmr_gain_rank"),
+                DB::raw("RANK() OVER (PARTITION BY min_tier ORDER BY negative_avg_mmr_gain DESC) AS negative_avg_mmr_gain_rank"),
+                DB::raw("COUNT(*) OVER (PARTITION BY min_tier) AS rank_count")
+            )
             ->where($baseFilters);
 
         // 필요한 티어들만 필터링
@@ -135,7 +179,7 @@ class GameResultSummaryService extends BaseSummaryService
         }, $tierRange);
 
         $results = DB::table(DB::raw("({$subQuery->toSql()}) as ranked"))
-            ->mergeBindings($subQuery->getQuery())
+            ->mergeBindings($subQuery)
             ->where('character_name', $filters['character_name'])
             ->where('weapon_type', $filters['weapon_type'])
             ->whereIn('min_tier', $tierList)

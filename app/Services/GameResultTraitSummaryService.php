@@ -13,10 +13,33 @@ class GameResultTraitSummaryService
     use ErDevTrait;
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
+    protected VersionedGameTableManager $versionedTableManager;
+
     public function __construct()
     {
         $this->rankRangeService = new RankRangeService();
         $this->gameResultService = new GameResultService();
+        $this->versionedTableManager = new VersionedGameTableManager();
+    }
+
+    protected function getVersionedTableName(array $filters): string
+    {
+        $versionSeason = $filters['version_season'] ?? null;
+        $versionMajor = $filters['version_major'] ?? null;
+        $versionMinor = $filters['version_minor'] ?? null;
+
+        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+            $latestVersion = VersionHistory::latest('created_at')->first();
+            $versionSeason = $versionSeason ?? $latestVersion->version_season;
+            $versionMajor = $versionMajor ?? $latestVersion->version_major;
+            $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        }
+
+        return VersionedGameTableManager::getTableName('game_results_trait_summary', [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+        ]);
     }
 
 
@@ -33,33 +56,30 @@ class GameResultTraitSummaryService
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+
+        // 버전별 테이블명 생성
+        $versionFilters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor
+        ];
+        $tableName = VersionedGameTableManager::getTableName('game_results_trait_summary', $versionFilters);
+
+        Log::channel('updateGameResultTraitSummary')->info("Using versioned table: {$tableName}");
+
+        // 테이블 존재 확인 및 생성
+        $this->versionedTableManager->ensureGameResultTraitSummaryTableExists($tableName);
+
         $tiers = $this->tierRange;
 
         // 트랜잭션으로 delete와 insert를 묶어서 처리
         DB::beginTransaction();
 
         try {
-            // 1단계: 기존 데이터 삭제 (청크 단위)
-            $deleteChunkSize = 5000;
-            $deletedCount = 0;
-
-            Log::channel('updateGameResultTraitSummary')->info('Deleting old records...');
-            do {
-                $deleted = GameResultTraitSummary::where('version_season', $versionSeason)
-                    ->where('version_major', $versionMajor)
-                    ->where('version_minor', $versionMinor)
-                    ->limit($deleteChunkSize)
-                    ->delete();
-
-                $deletedCount += $deleted;
-
-                // 메모리 정리
-                if ($deletedCount % 20000 === 0) {
-                    gc_collect_cycles();
-                }
-            } while ($deleted > 0);
-
-            Log::channel('updateGameResultTraitSummary')->info("Deleted {$deletedCount} old records");
+            // 1단계: 버전별 테이블이므로 TRUNCATE로 빠르게 삭제
+            Log::channel('updateGameResultTraitSummary')->info('Truncating table...');
+            DB::table($tableName)->truncate();
+            Log::channel('updateGameResultTraitSummary')->info("Truncated table {$tableName}");
 
             // 2단계: 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
             $insertChunkSize = 500;
@@ -68,11 +88,6 @@ class GameResultTraitSummaryService
 
             foreach ($tiers as $tier) {
                 echo "game result trait S : {$tier['tier']} {$tier['tierNumber']} \n";
-                $versionFilters = [
-                    'version_season' => $versionSeason,
-                    'version_major' => $versionMajor,
-                    'version_minor' => $versionMinor
-                ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'].$tier['tierNumber'];
                 $gameResultsCursor = $this->gameResultService->getGameResultByTrait([
@@ -99,16 +114,13 @@ class GameResultTraitSummaryService
                         'negative_avg_mmr_gain' => $gameResult->negative_avg_mmr_gain ?? 0,
                         'min_tier' => $minTier,
                         'min_score' => $minScore,
-                        'version_season' => $versionSeason,
-                        'version_major' => $versionMajor,
-                        'version_minor' => $versionMinor,
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
 
                     // 일정 크기마다 insert
                     if (count($batchData) >= $insertChunkSize) {
-                        GameResultTraitSummary::insert($batchData);
+                        DB::table($tableName)->insert($batchData);
                         $totalInserted += count($batchData);
                         $batchData = [];
 
@@ -126,7 +138,7 @@ class GameResultTraitSummaryService
 
             // 남은 데이터 insert
             if (!empty($batchData)) {
-                GameResultTraitSummary::insert($batchData);
+                DB::table($tableName)->insert($batchData);
                 $totalInserted += count($batchData);
             }
 
@@ -147,6 +159,9 @@ class GameResultTraitSummaryService
 
     public function getDetail(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
         if (isset($filters['character_name'])) {
             $filters['c.name'] = $filters['character_name'];
@@ -154,20 +169,21 @@ class GameResultTraitSummaryService
         }
 
         // 캐시 키 생성
-        $cacheKey = "trait_summary_" . md5(json_encode($filters));
+        $cacheKey = "trait_summary_" . md5($tableName . json_encode($filters));
         $cacheDuration = 60 * 10; // 10분 캐싱
 
-        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($filters) {
-            return GameResultTraitSummary::select(
-                'game_results_trait_summary.*',
-                'c.name as character_name',
-                't.name as trait_name',
-                't.id as trait_id',
-                't.category as trait_category',
-                't.tooltip as trait_tooltip'
-            )
-                ->join('traits as t', 't.id', 'game_results_trait_summary.trait_id')
-                ->join('characters as c', 'c.id', 'game_results_trait_summary.character_id')
+        $data = cache()->remember($cacheKey, $cacheDuration, function () use ($tableName, $filters) {
+            return DB::table($tableName . ' as gts')
+                ->select(
+                    'gts.*',
+                    'c.name as character_name',
+                    't.name as trait_name',
+                    't.id as trait_id',
+                    't.category as trait_category',
+                    't.tooltip as trait_tooltip'
+                )
+                ->join('traits as t', 't.id', '=', 'gts.trait_id')
+                ->join('characters as c', 'c.id', '=', 'gts.character_id')
                 ->where($filters)
                 ->orderBy('game_rank_count', 'desc')
                 ->orderBy('game_rank', 'asc')

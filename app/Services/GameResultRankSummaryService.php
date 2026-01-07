@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\GameResultRankSummary;
+use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
+use Illuminate\Support\Facades\DB;
 
 class GameResultRankSummaryService extends BaseSummaryService
 {
@@ -24,12 +26,22 @@ class GameResultRankSummaryService extends BaseSummaryService
         return GameResultRankSummary::class;
     }
 
+    protected function getSummaryTableBaseName(): string
+    {
+        return 'game_results_rank_summary';
+    }
+
+    protected function ensureTableExists(string $tableName): void
+    {
+        $this->versionedTableManager->ensureGameResultRankSummaryTableExists($tableName);
+    }
+
     protected function getGameResults(array $params): iterable
     {
         return $this->gameResultService->getGameResultByGameRank($params);
     }
 
-    protected function transformData(object|array $gameResult, string $minTier, int $minScore, int $versionSeason, int $versionMajor, int $versionMinor): array
+    protected function transformData(object|array $gameResult, string $minTier, int $minScore): array
     {
         return [
             'character_id' => $gameResult->character_id,
@@ -45,18 +57,43 @@ class GameResultRankSummaryService extends BaseSummaryService
             'negative_avg_mmr_gain' => $gameResult->negative_avg_mmr_gain,
             'min_tier' => $minTier,
             'min_score' => $minScore,
-            'version_season' => $versionSeason,
-            'version_major' => $versionMajor,
-            'version_minor' => $versionMinor,
             'updated_at' => now(),
             'created_at' => now(),
         ];
     }
 
+    protected function getVersionedTableName(array $filters): string
+    {
+        $versionSeason = $filters['version_season'] ?? null;
+        $versionMajor = $filters['version_major'] ?? null;
+        $versionMinor = $filters['version_minor'] ?? null;
+
+        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+            $latestVersion = VersionHistory::latest('created_at')->first();
+            $versionSeason = $versionSeason ?? $latestVersion->version_season;
+            $versionMajor = $versionMajor ?? $latestVersion->version_major;
+            $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        }
+
+        return VersionedGameTableManager::getTableName($this->getSummaryTableBaseName(), [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+        ]);
+    }
+
     public function getDetail(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
-        $data = GameResultRankSummary::where($filters)->orderBy('game_rank', 'asc')->get();
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+
+        $data = DB::table($tableName)
+            ->where($filters)
+            ->orderBy('game_rank', 'asc')
+            ->get();
+
         $total = 0;
         foreach ($data as $item) {
             $total += $item->game_rank_count;

@@ -14,12 +14,34 @@ class GameResultTraitCombinationSummaryService
 
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
+    protected VersionedGameTableManager $versionedTableManager;
     protected string $logChannel = 'updateGameResultTraitCombinationSummary';
 
     public function __construct()
     {
         $this->rankRangeService = new RankRangeService();
         $this->gameResultService = new GameResultService();
+        $this->versionedTableManager = new VersionedGameTableManager();
+    }
+
+    protected function getVersionedTableName(array $filters): string
+    {
+        $versionSeason = $filters['version_season'] ?? null;
+        $versionMajor = $filters['version_major'] ?? null;
+        $versionMinor = $filters['version_minor'] ?? null;
+
+        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+            $latestVersion = VersionHistory::latest('created_at')->first();
+            $versionSeason = $versionSeason ?? $latestVersion->version_season;
+            $versionMajor = $versionMajor ?? $latestVersion->version_major;
+            $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        }
+
+        return VersionedGameTableManager::getTableName('game_results_trait_combination_summary', [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+        ]);
     }
 
     /**
@@ -34,32 +56,30 @@ class GameResultTraitCombinationSummaryService
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+
+        // 버전별 테이블명 생성
+        $versionFilters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor
+        ];
+        $tableName = VersionedGameTableManager::getTableName('game_results_trait_combination_summary', $versionFilters);
+
+        Log::channel($this->logChannel)->info("Using versioned table: {$tableName}");
+
+        // 테이블 존재 확인 및 생성
+        $this->versionedTableManager->ensureGameResultTraitCombinationSummaryTableExists($tableName);
+
         $tiers = $this->tierRange;
 
         // 트랜잭션으로 delete와 insert를 묶어서 처리
         DB::beginTransaction();
 
         try {
-            // 1단계: 기존 데이터 삭제 (청크 단위)
-            $deleteChunkSize = 5000;
-            $deletedCount = 0;
-
-            Log::channel($this->logChannel)->info('Deleting old records...');
-            do {
-                $deleted = GameResultTraitCombinationSummary::where('version_season', $versionSeason)
-                    ->where('version_major', $versionMajor)
-                    ->where('version_minor', $versionMinor)
-                    ->limit($deleteChunkSize)
-                    ->delete();
-
-                $deletedCount += $deleted;
-
-                if ($deletedCount % 20000 === 0) {
-                    gc_collect_cycles();
-                }
-            } while ($deleted > 0);
-
-            Log::channel($this->logChannel)->info("Deleted {$deletedCount} old records");
+            // 1단계: 버전별 테이블이므로 TRUNCATE로 빠르게 삭제
+            Log::channel($this->logChannel)->info('Truncating table...');
+            DB::table($tableName)->truncate();
+            Log::channel($this->logChannel)->info("Truncated table {$tableName}");
 
             // 2단계: 티어별 데이터 처리
             $insertChunkSize = 500;
@@ -69,11 +89,6 @@ class GameResultTraitCombinationSummaryService
             foreach ($tiers as $tier) {
                 echo "game result trait combination S : {$tier['tier']} {$tier['tierNumber']} \n";
 
-                $versionFilters = [
-                    'version_season' => $versionSeason,
-                    'version_major' => $versionMajor,
-                    'version_minor' => $versionMinor
-                ];
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
                 $minTier = $tier['tier'] . $tier['tierNumber'];
 
@@ -110,15 +125,12 @@ class GameResultTraitCombinationSummaryService
                         'positive_avg_mmr_gain' => $item['positiveAvgMmrGain'],
                         'negative_avg_mmr_gain' => $item['negativeAvgMmrGain'],
                         'avg_team_kill_score' => $item['avgTeamKillScore'],
-                        'version_season' => $versionSeason,
-                        'version_major' => $versionMajor,
-                        'version_minor' => $versionMinor,
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
 
                     if (count($batchData) >= $insertChunkSize) {
-                        GameResultTraitCombinationSummary::insert($batchData);
+                        DB::table($tableName)->insert($batchData);
                         $totalInserted += count($batchData);
                         $batchData = [];
 
@@ -134,7 +146,7 @@ class GameResultTraitCombinationSummaryService
 
             // 남은 데이터 insert
             if (!empty($batchData)) {
-                GameResultTraitCombinationSummary::insert($batchData);
+                DB::table($tableName)->insert($batchData);
                 $totalInserted += count($batchData);
             }
 
@@ -157,29 +169,23 @@ class GameResultTraitCombinationSummaryService
      */
     public function getDetail(array $filters)
     {
+        $tableName = $this->getVersionedTableName($filters);
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+
         // weapon_type 영어로 변환
         if (isset($filters['weapon_type'])) {
             $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
         }
 
-        $query = GameResultTraitCombinationSummary::select(
-            'game_results_trait_combination_summary.*'
-        );
+        $query = DB::table($tableName);
 
-        if (isset($filters['version_season'])) {
-            $query->where('version_season', $filters['version_season']);
-        }
-        if (isset($filters['version_major'])) {
-            $query->where('version_major', $filters['version_major']);
-        }
-        if (isset($filters['version_minor'])) {
-            $query->where('version_minor', $filters['version_minor']);
-        }
         if (isset($filters['min_tier'])) {
             $query->where('min_tier', $filters['min_tier']);
+            unset($filters['min_tier']);
         }
         if (isset($filters['character_name'])) {
             $query->where('character_name', $filters['character_name']);
+            unset($filters['character_name']);
         }
         if (isset($filters['weapon_type']) && $filters['weapon_type'] !== 'All') {
             $query->where('weapon_type', $filters['weapon_type']);
