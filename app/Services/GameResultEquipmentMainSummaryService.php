@@ -70,19 +70,17 @@ class GameResultEquipmentMainSummaryService
 
         $tiers = $this->tierRange;
 
-        // 트랜잭션으로 delete와 insert를 묶어서 처리
-        DB::beginTransaction();
+        // TRUNCATE는 DDL이므로 트랜잭션 밖에서 실행 (암묵적 커밋 방지)
+        Log::channel('updateGameResultEquipmentMainSummary')->info('Truncating table...');
+        DB::table($tableName)->truncate();
+        Log::channel('updateGameResultEquipmentMainSummary')->info("Truncated table {$tableName}");
+
+        // 데이터 처리하면서 바로 insert
+        $insertChunkSize = 500;
+        $totalInserted = 0;
+        $batchData = [];
 
         try {
-            // 1단계: 버전별 테이블이므로 TRUNCATE로 빠르게 삭제
-            Log::channel('updateGameResultEquipmentMainSummary')->info('Truncating table...');
-            DB::table($tableName)->truncate();
-            Log::channel('updateGameResultEquipmentMainSummary')->info("Truncated table {$tableName}");
-
-            // 2단계: 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
-            $insertChunkSize = 500;
-            $totalInserted = 0;
-            $batchData = [];
 
             foreach ($tiers as $tier) {
                 $minScore = $this->rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $versionFilters) ?: 0;
@@ -172,12 +170,9 @@ class GameResultEquipmentMainSummaryService
                 $totalInserted += count($batchData);
             }
 
-            DB::commit();
-
             Log::channel('updateGameResultEquipmentMainSummary')->info("Inserted {$totalInserted} new records");
             Log::channel('updateGameResultEquipmentMainSummary')->info('E: game equipment main result summary');
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::channel('updateGameResultEquipmentMainSummary')->error('Error: ' . $e->getMessage());
             Log::channel('updateGameResultEquipmentMainSummary')->error($e->getTraceAsString());
             throw $e;
