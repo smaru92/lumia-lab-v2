@@ -239,8 +239,6 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
                     "negative_avg_mmr_gain" => 0,
                     "min_tier" => $item->min_tier,
                     "min_score" => $item->min_score,
-                    "version_major" => $item->version_major,
-                    "version_minor" => $item->version_minor,
                     "created_at" => "0000-00-00 00:00:00",
                     "updated_at" => "0000-00-00 00:00:00",
                     "positive_count_percent" => 0,
