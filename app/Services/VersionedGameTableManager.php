@@ -148,6 +148,8 @@ class VersionedGameTableManager
                 $table->integer('character_id');
                 $table->string('character_name');
                 $table->string('weapon_type');
+                $table->string('meta_tier')->nullable();
+                $table->decimal('meta_score', 10, 3)->nullable();
                 $table->string('min_tier');
                 $table->integer('min_score');
                 $table->integer('game_count');
@@ -210,6 +212,7 @@ class VersionedGameTableManager
                 $table->integer('positive_count')->nullable()->comment('이득 게임 수');
                 $table->integer('negative_count')->nullable()->comment('손실 게임 수');
                 $table->decimal('avg_mmr_gain', 10, 3)->nullable()->comment('평균 점수 획득');
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable()->comment('평균 TK');
                 $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable()->comment('평균 이득 점수 획득');
                 $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable()->comment('평균 손실 점수 획득');
                 $table->string('min_tier')->nullable();
@@ -245,6 +248,7 @@ class VersionedGameTableManager
                 $table->decimal('top4_count_percent', 10, 3);
                 $table->decimal('endgame_win_percent', 10, 3)->nullable();
                 $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
                 $table->decimal('positive_avg_mmr_gain', 10, 3);
                 $table->decimal('negative_avg_mmr_gain', 10, 3);
                 $table->unique(['equipment_id', 'min_tier'], 'equipment_main_summary_unique');
@@ -278,6 +282,7 @@ class VersionedGameTableManager
                 $table->decimal('top4_count_percent', 10, 3);
                 $table->decimal('endgame_win_percent', 10, 3);
                 $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
                 $table->decimal('positive_avg_mmr_gain', 10, 3);
                 $table->decimal('negative_avg_mmr_gain', 10, 3);
                 $table->unique(['equipment_id', 'min_tier'], 'first_equipment_main_summary_unique');
@@ -300,6 +305,7 @@ class VersionedGameTableManager
                 $table->integer('positive_count')->nullable()->comment('이득 게임 수');
                 $table->integer('negative_count')->nullable()->comment('손실 게임 수');
                 $table->decimal('avg_mmr_gain', 10, 3)->nullable()->comment('평균 점수 획득');
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable()->comment('평균 TK');
                 $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable()->comment('평균 이득 점수 획득');
                 $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable()->comment('평균 손실 점수 획득');
                 $table->string('min_tier')->nullable();
@@ -324,6 +330,7 @@ class VersionedGameTableManager
                 $table->integer('positive_count')->nullable()->comment('이득 게임 수');
                 $table->integer('negative_count')->nullable()->comment('손실 게임 수');
                 $table->decimal('avg_mmr_gain', 10, 3)->nullable()->comment('평균 점수 획득');
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable()->comment('평균 TK');
                 $table->decimal('positive_avg_mmr_gain', 10, 3)->nullable()->comment('평균 이득 점수 획득');
                 $table->decimal('negative_avg_mmr_gain', 10, 3)->nullable()->comment('평균 손실 점수 획득');
                 $table->string('min_tier')->nullable();
