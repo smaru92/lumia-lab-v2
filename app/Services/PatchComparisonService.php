@@ -8,6 +8,7 @@ use App\Models\PatchNote;
 use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PatchComparisonService
 {
@@ -87,6 +88,11 @@ class PatchComparisonService
     {
         $tableName = $this->getVersionedTableName($version);
 
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return $weaponType ? null : collect();
+        }
+
         $query = DB::table($tableName)
             ->where('min_tier', $minTier)
             ->where('character_id', $characterId);
@@ -115,7 +121,15 @@ class PatchComparisonService
         $latestTableName = $this->getVersionedTableName($latestVersion);
         $previousTableName = $this->getVersionedTableName($previousVersion);
 
-        // 3. 한 번에 모든 통계 조회 (N+1 해결!)
+        // 3. 테이블 존재 여부 확인 - 없으면 빈 결과 반환
+        if (!Schema::hasTable($latestTableName) || !Schema::hasTable($previousTableName)) {
+            return [
+                'buffed' => $buffedCharacters,
+                'nerfed' => $nerfedCharacters,
+            ];
+        }
+
+        // 4. 한 번에 모든 통계 조회 (N+1 해결!)
         $latestStats = DB::table($latestTableName)
             ->where('min_tier', $minTier)
             ->whereIn('character_id', $characterIds)
@@ -128,7 +142,7 @@ class PatchComparisonService
             ->get()
             ->groupBy('character_id');
 
-        // 4. 패치노트 처리
+        // 5. 패치노트 처리
         foreach ($patchNotes as $patchNote) {
             $characterId = $patchNote->target_id;
             $weaponType = $patchNote->weapon_type;
