@@ -6,6 +6,7 @@ use App\Models\GameResultEquipmentSummary;
 use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class GameResultEquipmentSummaryService extends BaseSummaryService
 {
@@ -85,6 +86,21 @@ class GameResultEquipmentSummaryService extends BaseSummaryService
     public function getDetail(array $filters)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return [
+                'data' => [],
+                'total' => [],
+                'aggregatedData' => [
+                    'Weapon' => [],
+                    'Chest' => [],
+                    'Head' => [],
+                    'Arm' => [],
+                    'Leg' => [],
+                ]
+            ];
+        }
 
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
         if (isset($filters['character_name'])) {
