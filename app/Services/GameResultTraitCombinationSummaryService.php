@@ -7,6 +7,7 @@ use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class GameResultTraitCombinationSummaryService
 {
@@ -164,6 +165,15 @@ class GameResultTraitCombinationSummaryService
     public function getDetail(array $filters)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return [
+                'data' => collect(),
+                'total' => 0,
+            ];
+        }
+
         unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
         // weapon_type 영어로 변환

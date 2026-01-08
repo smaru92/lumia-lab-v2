@@ -7,6 +7,7 @@ use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class GameResultTacticalSkillSummaryService
 {
@@ -153,6 +154,17 @@ class GameResultTacticalSkillSummaryService
     public function getDetail(array $filters)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return [
+                'data' => [],
+                'total' => [],
+                'aggregatedData' => [],
+                'aggregatedBySkill' => []
+            ];
+        }
+
         unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');

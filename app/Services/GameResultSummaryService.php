@@ -6,6 +6,7 @@ use App\Models\GameResultSummary;
 use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class GameResultSummaryService extends BaseSummaryService
 {
@@ -99,6 +100,11 @@ class GameResultSummaryService extends BaseSummaryService
     {
         $tableName = $this->getVersionedTableName($filters);
 
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return collect();
+        }
+
         // version 필터는 테이블명에 포함되므로 제거
         unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
@@ -111,6 +117,11 @@ class GameResultSummaryService extends BaseSummaryService
     public function getDetail(array $filters)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return null;
+        }
 
         $subQueryFilter = $filters;
         unset($subQueryFilter['character_name']);
@@ -145,6 +156,11 @@ class GameResultSummaryService extends BaseSummaryService
     public function getDetailBulk(array $filters, array $tierRange)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return [];
+        }
 
         // 모든 티어를 한 번에 조회 (성능 최적화)
         $baseFilters = $filters;

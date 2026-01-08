@@ -7,6 +7,7 @@ use App\Models\VersionHistory;
 use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class GameResultEquipmentMainSummaryService
 {
@@ -185,6 +186,12 @@ class GameResultEquipmentMainSummaryService
     public function getList(array $filters)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 테이블 존재 여부 확인
+        if (!Schema::hasTable($tableName)) {
+            return collect();
+        }
+
         unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
         // 장비 페이지용: 랭킹 계산 제거로 성능 최적화
