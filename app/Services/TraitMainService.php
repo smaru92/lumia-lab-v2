@@ -32,7 +32,7 @@ class TraitMainService
         $result = $this->gameResultTraitMainSummaryService->getList($filters);
         foreach ($result as $item) {
             // trait_category가 이미 한글이므로 그대로 사용
-            $item['trait_category_ko'] = $item['trait_category'];
+            $item->trait_category_ko = $item->trait_category;
         }
         return $result;
     }
