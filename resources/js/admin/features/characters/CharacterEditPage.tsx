@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '@/lib/axios';
-import { Character } from '@/types';
+import { Character, CharacterTag } from '@/types';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/useToast';
+import { CharacterTagsManager } from './CharacterTagsManager';
 
 const characterSchema = z.object({
     name: z.string().nullable(),
@@ -73,6 +74,18 @@ export default function CharacterEditPage() {
         },
     });
 
+    const { data: allTags = [] } = useQuery<CharacterTag[]>({
+        queryKey: ['character-tags'],
+        queryFn: async () => {
+            try {
+                const response = await api.get('/character-tags');
+                return response.data.data;
+            } catch {
+                return [];
+            }
+        },
+    });
+
     const {
         register,
         handleSubmit,
@@ -93,7 +106,7 @@ export default function CharacterEditPage() {
                 title: '저장 완료',
                 description: '캐릭터 정보가 저장되었습니다.',
             });
-            navigate('/characters');
+            navigate(-1);
         },
         onError: () => {
             toast({
@@ -117,8 +130,24 @@ export default function CharacterEditPage() {
             <PageHeader
                 title={`캐릭터 수정: ${character?.name || ''}`}
                 description="캐릭터 스탯 정보를 수정합니다."
-                backLink="/characters"
+                showBack
             />
+
+            {/* 태그 관리 섹션 */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>태그</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {character && (
+                        <CharacterTagsManager
+                            characterId={character.id}
+                            currentTags={character.tags || []}
+                            allTags={allTags}
+                        />
+                    )}
+                </CardContent>
+            </Card>
 
             <form onSubmit={handleSubmit((data) => mutation.mutate(data))}>
                 <Card>
@@ -148,7 +177,7 @@ export default function CharacterEditPage() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => navigate('/characters')}
+                                onClick={() => navigate(-1)}
                             >
                                 취소
                             </Button>

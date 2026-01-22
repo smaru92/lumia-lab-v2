@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CharacterController as AdminCharacterController;
+use App\Http\Controllers\Admin\CharacterTagController;
 use App\Http\Controllers\Admin\EquipmentController as AdminEquipmentController;
 use App\Http\Controllers\Admin\EquipmentSkillController;
 use App\Http\Controllers\Admin\VersionHistoryController;
@@ -39,6 +40,12 @@ Route::prefix('admin')->group(function () {
         Route::get('/characters', [AdminCharacterController::class, 'index']);
         Route::get('/characters/{character}', [AdminCharacterController::class, 'show']);
         Route::put('/characters/{character}', [AdminCharacterController::class, 'update']);
+        Route::post('/characters/{character}/tags', [AdminCharacterController::class, 'syncTags']);
+
+        // Character Tags
+        Route::get('/character-tags', [CharacterTagController::class, 'index']);
+        Route::post('/character-tags', [CharacterTagController::class, 'store']);
+        Route::delete('/character-tags/{characterTag}', [CharacterTagController::class, 'destroy']);
 
         // Equipment (read/update only)
         Route::get('/equipment', [AdminEquipmentController::class, 'index']);

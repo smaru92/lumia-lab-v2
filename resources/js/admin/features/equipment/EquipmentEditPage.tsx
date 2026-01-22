@@ -205,7 +205,7 @@ export default function EquipmentEditPage() {
                 title: '저장 완료',
                 description: '장비 정보가 저장되었습니다.',
             });
-            navigate('/equipment');
+            navigate(-1);
         },
         onError: () => {
             toast({
@@ -250,7 +250,7 @@ export default function EquipmentEditPage() {
             <PageHeader
                 title={`장비 수정: ${equipment?.name || ''}`}
                 description="장비 아이템 정보를 수정합니다."
-                backLink="/equipment"
+                showBack
             />
 
             <form onSubmit={handleSubmit((data) => mutation.mutate(data))}>
@@ -287,7 +287,7 @@ export default function EquipmentEditPage() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => navigate('/equipment')}
+                                onClick={() => navigate(-1)}
                             >
                                 취소
                             </Button>

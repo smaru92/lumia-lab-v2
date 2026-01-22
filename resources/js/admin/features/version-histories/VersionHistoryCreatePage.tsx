@@ -36,11 +36,11 @@ export default function VersionHistoryCreatePage() {
             <PageHeader
                 title="새 버전"
                 description="새로운 버전 히스토리를 생성합니다."
-                backLink="/version-histories"
+                showBack
             />
             <VersionHistoryForm
                 onSubmit={(data) => mutation.mutate(data)}
-                onCancel={() => navigate('/version-histories')}
+                onCancel={() => navigate(-1)}
                 isSubmitting={mutation.isPending}
             />
         </div>

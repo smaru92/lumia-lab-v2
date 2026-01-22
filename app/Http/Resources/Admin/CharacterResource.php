@@ -33,6 +33,14 @@ class CharacterResource extends JsonResource
             'sight_range' => $this->sight_range,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+            'tags' => $this->whenLoaded('tags', function () {
+                return $this->tags->map(function ($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                });
+            }),
         ];
     }
 }
