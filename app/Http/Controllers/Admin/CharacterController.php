@@ -5,18 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\CharacterResource;
 use App\Models\Character;
+use App\Models\CharacterTag;
 use Illuminate\Http\Request;
 
 class CharacterController extends Controller
 {
     public function index()
     {
-        $characters = Character::orderBy('name')->get();
+        $characters = Character::with('tags')->orderBy('name')->get();
         return CharacterResource::collection($characters);
     }
 
     public function show(Character $character)
     {
+        $character->load('tags');
         return new CharacterResource($character);
     }
 
@@ -46,6 +48,32 @@ class CharacterController extends Controller
         ]);
 
         $character->update($validated);
+        $character->load('tags');
+
+        return new CharacterResource($character);
+    }
+
+    public function syncTags(Request $request, Character $character)
+    {
+        $validated = $request->validate([
+            'tag_ids' => 'array',
+            'tag_ids.*' => 'exists:character_tags,id',
+            'new_tags' => 'array',
+            'new_tags.*' => 'string|max:255',
+        ]);
+
+        $tagIds = $validated['tag_ids'] ?? [];
+
+        // Create new tags if provided
+        if (!empty($validated['new_tags'])) {
+            foreach ($validated['new_tags'] as $tagName) {
+                $tag = CharacterTag::firstOrCreate(['name' => trim($tagName)]);
+                $tagIds[] = $tag->id;
+            }
+        }
+
+        $character->tags()->sync(array_unique($tagIds));
+        $character->load('tags');
 
         return new CharacterResource($character);
     }

@@ -10,7 +10,30 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DeleteDialog } from '@/components/shared/DeleteDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { toast } from '@/hooks/useToast';
+
+const GRADE_CONFIG: Record<string, { label: string; className: string }> = {
+    Common: { label: '일반', className: 'bg-gray-500 text-white' },
+    Uncommon: { label: '고급', className: 'bg-green-500 text-white' },
+    Rare: { label: '희귀', className: 'bg-blue-500 text-white' },
+    Epic: { label: '영웅', className: 'bg-purple-500 text-white' },
+    Legend: { label: '전설', className: 'bg-yellow-500 text-black' },
+    Mythic: { label: '초월', className: 'bg-red-500 text-white' },
+};
+
+const GRADE_OPTIONS = [
+    { value: 'all', label: '전체 등급' },
+    { value: 'Epic', label: '영웅 (Epic)' },
+    { value: 'Legend', label: '전설 (Legend)' },
+    { value: 'Mythic', label: '초월 (Mythic)' },
+];
 
 export default function EquipmentSkillListPage() {
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -57,10 +80,16 @@ export default function EquipmentSkillListPage() {
         {
             accessorKey: 'grade',
             header: '등급',
+            size: 100,
             cell: ({ row }) => {
                 const grade = row.original.grade;
                 if (!grade) return '-';
-                return <Badge variant="secondary">{grade}</Badge>;
+                const config = GRADE_CONFIG[grade];
+                return <Badge className={`${config?.className || ''} whitespace-nowrap`}>{config?.label || grade}</Badge>;
+            },
+            filterFn: (row, id, filterValue) => {
+                if (!filterValue) return true;
+                return row.getValue(id) === filterValue;
             },
         },
         {
@@ -124,6 +153,23 @@ export default function EquipmentSkillListPage() {
                 data={skills}
                 searchKey="name"
                 searchPlaceholder="스킬 이름으로 검색..."
+                filters={(_table, { filterValue, onFilterChange }) => (
+                    <Select
+                        value={filterValue}
+                        onValueChange={(value) => onFilterChange('grade', value)}
+                    >
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="등급 필터" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {GRADE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
             />
 
             <DeleteDialog

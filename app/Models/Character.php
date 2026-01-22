@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Schema;
 
 class Character extends Model
@@ -20,5 +21,10 @@ class Character extends Model
     public function getColumns()
     {
         return Schema::getColumnListing('characters');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(CharacterTag::class, 'character_character_tag');
     }
 }

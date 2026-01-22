@@ -20,7 +20,7 @@ export default function EquipmentSkillCreatePage() {
                 title: '생성 완료',
                 description: '새 장비 스킬이 생성되었습니다.',
             });
-            navigate('/equipment-skills');
+            navigate(-1);
         },
         onError: () => {
             toast({
@@ -36,11 +36,11 @@ export default function EquipmentSkillCreatePage() {
             <PageHeader
                 title="새 장비 스킬"
                 description="새로운 장비 스킬을 생성합니다."
-                backLink="/equipment-skills"
+                showBack
             />
             <EquipmentSkillForm
                 onSubmit={(data) => mutation.mutate(data)}
-                onCancel={() => navigate('/equipment-skills')}
+                onCancel={() => navigate(-1)}
                 isSubmitting={mutation.isPending}
             />
         </div>

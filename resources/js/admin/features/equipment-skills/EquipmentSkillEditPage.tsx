@@ -30,7 +30,7 @@ export default function EquipmentSkillEditPage() {
                 title: '저장 완료',
                 description: '장비 스킬이 저장되었습니다.',
             });
-            navigate('/equipment-skills');
+            navigate(-1);
         },
         onError: () => {
             toast({
@@ -54,12 +54,12 @@ export default function EquipmentSkillEditPage() {
             <PageHeader
                 title={`스킬 수정: ${skill?.name || ''}`}
                 description="장비 스킬 정보를 수정합니다."
-                backLink="/equipment-skills"
+                showBack
             />
             <EquipmentSkillForm
                 skill={skill}
                 onSubmit={(data) => mutation.mutate(data)}
-                onCancel={() => navigate('/equipment-skills')}
+                onCancel={() => navigate(-1)}
                 isSubmitting={mutation.isPending}
             />
         </div>

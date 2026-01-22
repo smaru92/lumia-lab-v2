@@ -54,12 +54,12 @@ export default function VersionHistoryEditPage() {
             <PageHeader
                 title={`버전 수정: ${version?.version || ''}`}
                 description="버전 히스토리 및 패치노트를 수정합니다."
-                backLink="/version-histories"
+                showBack
             />
             <VersionHistoryForm
                 version={version}
                 onSubmit={(data) => mutation.mutate(data)}
-                onCancel={() => navigate('/version-histories')}
+                onCancel={() => navigate(-1)}
                 isSubmitting={mutation.isPending}
             />
             <PatchNotesPanel versionHistoryId={Number(id)} />

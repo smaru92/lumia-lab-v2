@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { EquipmentSkill } from '@/types';
+
+const GRADE_OPTIONS = [
+    { value: 'Epic', label: '영웅 (Epic)' },
+    { value: 'Legend', label: '전설 (Legend)' },
+    { value: 'Mythic', label: '초월 (Mythic)' },
+];
 
 const skillSchema = z.object({
     name: z.string().min(1, '이름을 입력해주세요'),
@@ -33,6 +46,7 @@ export function EquipmentSkillForm({
     const {
         register,
         handleSubmit,
+        control,
         formState: { errors },
     } = useForm<SkillFormData>({
         resolver: zodResolver(skillSchema),
@@ -64,7 +78,27 @@ export function EquipmentSkillForm({
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="grade">등급</Label>
-                            <Input id="grade" {...register('grade')} />
+                            <Controller
+                                name="grade"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ''}
+                                        onValueChange={(value) => field.onChange(value || null)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="등급 선택..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {GRADE_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="sub_category">서브 카테고리</Label>

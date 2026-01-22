@@ -7,6 +7,11 @@ export interface User {
     updated_at: string;
 }
 
+export interface CharacterTag {
+    id: number;
+    name: string;
+}
+
 export interface Character {
     id: number;
     name: string;
@@ -31,6 +36,7 @@ export interface Character {
     sight_range: number | null;
     created_at: string;
     updated_at: string;
+    tags?: CharacterTag[];
 }
 
 export interface Equipment {

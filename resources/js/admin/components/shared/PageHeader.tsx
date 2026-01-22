@@ -1,24 +1,24 @@
 import { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PageHeaderProps {
     title: string;
     description?: string;
-    backLink?: string;
+    showBack?: boolean;
     actions?: ReactNode;
 }
 
-export function PageHeader({ title, description, backLink, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, showBack, actions }: PageHeaderProps) {
+    const navigate = useNavigate();
+
     return (
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-                {backLink && (
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link to={backLink}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
+                {showBack && (
+                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="h-5 w-5" />
                     </Button>
                 )}
                 <div>
