@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Redirect login to Filament admin login
+// Redirect login to React admin login
 Route::get('/login', function() {
     return redirect('/admin/login');
 })->name('login');
@@ -30,3 +30,8 @@ Route::get('/equipment', [EquipmentController::class, 'index']);
 Route::get('/equipment-first', [EquipmentFirstController::class, 'index']);
 Route::get('/trait', [TraitController::class, 'index']);
 Route::get('/detail/{types}', [CharacterController::class, 'show']);
+
+// React Admin SPA - catch all admin routes
+Route::get('/admin/{any?}', function () {
+    return view('admin');
+})->where('any', '.*');
