@@ -26,6 +26,9 @@ jobs:
           ssh ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_SERVER_IP }} << 'EOF'
             cd /var/www/lumia-lab-v2
 
+            # Add safe directory to avoid ownership issues
+            git config --global --add safe.directory /var/www/lumia-lab-v2
+
             # Git pull with sudo to handle permission issues
             sudo git pull origin main
 
