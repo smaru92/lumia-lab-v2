@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\CharacterResource;
+use App\Models\Character;
+use Illuminate\Http\Request;
+
+class CharacterController extends Controller
+{
+    public function index()
+    {
+        $characters = Character::orderBy('name')->get();
+        return CharacterResource::collection($characters);
+    }
+
+    public function show(Character $character)
+    {
+        return new CharacterResource($character);
+    }
+
+    public function update(Request $request, Character $character)
+    {
+        $validated = $request->validate([
+            'name' => 'nullable|string',
+            'max_hp' => 'nullable|numeric',
+            'max_hp_by_lv' => 'nullable|numeric',
+            'max_mp' => 'nullable|numeric',
+            'max_mp_by_lv' => 'nullable|numeric',
+            'init_extra_point' => 'nullable|numeric',
+            'max_extra_point' => 'nullable|numeric',
+            'attack_power' => 'nullable|numeric',
+            'attack_power_by_lv' => 'nullable|numeric',
+            'deffence' => 'nullable|numeric',
+            'deffence_by_lv' => 'nullable|numeric',
+            'hp_regen' => 'nullable|numeric',
+            'hp_regen_by_lv' => 'nullable|numeric',
+            'sp_regen' => 'nullable|numeric',
+            'sp_regen_by_lv' => 'nullable|numeric',
+            'attack_speed' => 'nullable|numeric',
+            'attack_speed_limit' => 'nullable|numeric',
+            'attack_speed_min' => 'nullable|numeric',
+            'move_speed' => 'nullable|numeric',
+            'sight_range' => 'nullable|numeric',
+        ]);
+
+        $character->update($validated);
+
+        return new CharacterResource($character);
+    }
+}
