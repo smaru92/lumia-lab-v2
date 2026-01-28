@@ -90,7 +90,7 @@ function TargetCombobox({ options, value, onChange, selectedLabel }: TargetCombo
                                     key={opt.value}
                                     value={opt.label}
                                     onSelect={() => {
-                                        onChange(opt.value === value ? null : opt.value);
+                                        onChange(opt.value === value ? null : Number(opt.value));
                                         setOpen(false);
                                     }}
                                 >

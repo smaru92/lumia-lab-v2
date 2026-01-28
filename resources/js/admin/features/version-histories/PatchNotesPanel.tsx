@@ -27,9 +27,9 @@ const categoryColors: Record<string, 'info' | 'warning' | 'success' | 'secondary
     '기타': 'secondary',
 };
 
-const patchTypeColors: Record<string, 'success' | 'destructive' | 'warning' | 'info' | 'secondary'> = {
-    '버프': 'success',
-    '너프': 'destructive',
+const patchTypeColors: Record<string, 'buff' | 'nerf' | 'warning' | 'info' | 'secondary' | 'success' | 'destructive'> = {
+    '버프': 'buff',
+    '너프': 'nerf',
     '조정': 'warning',
     '리워크': 'info',
     '신규': 'success',
@@ -180,6 +180,8 @@ export function PatchNotesPanel({ versionHistoryId }: PatchNotesPanelProps) {
                                 <TableRow>
                                     <TableHead>구분</TableHead>
                                     <TableHead>대상</TableHead>
+                                    <TableHead>무기</TableHead>
+                                    <TableHead>스킬</TableHead>
                                     <TableHead>패치 유형</TableHead>
                                     <TableHead>내용</TableHead>
                                     <TableHead className="w-[100px]">액션</TableHead>
@@ -194,6 +196,8 @@ export function PatchNotesPanel({ versionHistoryId }: PatchNotesPanelProps) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>{note.target_name || '-'}</TableCell>
+                                        <TableCell>{note.weapon_type || '-'}</TableCell>
+                                        <TableCell>{note.skill_type || '-'}</TableCell>
                                         <TableCell>
                                             <Badge variant={patchTypeColors[note.patch_type] || 'secondary'}>
                                                 {note.patch_type}
