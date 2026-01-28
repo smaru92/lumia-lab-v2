@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { PatchNote, Character, Equipment, SelectOption } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 const patchNoteSchema = z.object({
     category: z.string().min(1, '구분을 선택해주세요'),
@@ -40,6 +55,61 @@ const weaponTypes = [
     '권총', '돌격소총', '저격총', '카메라', 'VF의수', '아르카나',
 ];
 const skillTypes = ['Q', 'W', 'E', 'R', 'T', '기본', '패시브'];
+
+interface TargetComboboxProps {
+    options: { value: string | number; label: string }[];
+    value: number | null;
+    onChange: (value: number | null) => void;
+    selectedLabel?: string;
+}
+
+function TargetCombobox({ options, value, onChange, selectedLabel }: TargetComboboxProps) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between font-normal"
+                >
+                    {selectedLabel || '선택...'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                    <CommandInput placeholder="검색..." />
+                    <CommandList>
+                        <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                        <CommandGroup>
+                            {options.map((opt) => (
+                                <CommandItem
+                                    key={opt.value}
+                                    value={opt.label}
+                                    onSelect={() => {
+                                        onChange(opt.value === value ? null : opt.value);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            value === opt.value ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {opt.label}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+}
 
 interface PatchNoteDialogProps {
     open: boolean;
@@ -195,23 +265,20 @@ export function PatchNoteDialog({
                             <Controller
                                 name="target_id"
                                 control={control}
-                                render={({ field }) => (
-                                    <Select
-                                        value={field.value?.toString() || ''}
-                                        onValueChange={(v) => field.onChange(v ? Number(v) : null)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="선택..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {getTargetOptions().map((opt) => (
-                                                <SelectItem key={opt.value} value={String(opt.value)}>
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
+                                render={({ field }) => {
+                                    const options = getTargetOptions();
+                                    const selectedOption = options.find(
+                                        (opt) => opt.value === field.value
+                                    );
+                                    return (
+                                        <TargetCombobox
+                                            options={options}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            selectedLabel={selectedOption?.label}
+                                        />
+                                    );
+                                }}
                             />
                         </div>
                     )}
