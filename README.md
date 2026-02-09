@@ -1,4 +1,6 @@
-# Lumia Lab V2
+# 아글라이아 연구소 (Lumia Lab V2)
+
+> https://aglaia.dev
 
 **이터널 리턴(Eternal Return)** 게임의 실시간 통계 분석 플랫폼입니다.
 공식 API를 통해 게임 데이터를 수집하고, 캐릭터별 승률/픽률/장비/특성 등의 통계를 분석하여 제공합니다.
