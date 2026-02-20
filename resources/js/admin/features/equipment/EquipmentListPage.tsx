@@ -39,7 +39,7 @@ const GRADE_OPTIONS = [
 const TYPE3_CONFIG: Record<string, string> = {
     mt: '운석',
     tl: '생명의나무',
-    mr: '미스릴',
+    ml: '미스릴',
     fc: '포스코어',
     vf: '혈액샘플',
 };
@@ -48,7 +48,7 @@ const TYPE3_OPTIONS = [
     { value: 'all', label: '전체 재료' },
     { value: 'mt', label: '운석' },
     { value: 'tl', label: '생명의나무' },
-    { value: 'mr', label: '미스릴' },
+    { value: 'ml', label: '미스릴' },
     { value: 'fc', label: '포스코어' },
     { value: 'vf', label: '혈액샘플' },
 ];
