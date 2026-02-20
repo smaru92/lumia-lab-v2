@@ -210,8 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (selItemType3 && selectedType3 !== 'All') {
-                    if (row.dataset.itemType3 !== selectedType3) {
-                        showRow = false;
+                    const rowType3 = row.dataset.itemType3 || '';
+                    if (selectedType3 === '__none__') {
+                        if (rowType3 !== '') showRow = false;
+                    } else {
+                        if (rowType3 !== selectedType3) showRow = false;
                     }
                 }
 
@@ -253,8 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (selItemType3 && selectedType3 !== 'All') {
-                    if (iconContainer.dataset.itemType3 !== selectedType3) {
-                        showIcon = false;
+                    const iconType3 = iconContainer.dataset.itemType3 || '';
+                    if (selectedType3 === '__none__') {
+                        if (iconType3 !== '') showIcon = false;
+                    } else {
+                        if (iconType3 !== selectedType3) showIcon = false;
                     }
                 }
 

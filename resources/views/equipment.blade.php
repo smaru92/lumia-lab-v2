@@ -35,9 +35,10 @@
                 <label><strong>핵심 재료</strong></label>
                 <select id="sel-item-type3">
                     <option value="All" selected>전체 재료</option>
+                    <option value="__none__">없음</option>
                     <option value="mt">운석</option>
                     <option value="tl">생명의나무</option>
-                    <option value="mr">미스릴</option>
+                    <option value="ml">미스릴</option>
                     <option value="fc">포스코어</option>
                     <option value="vf">혈액샘플</option>
                 </select>

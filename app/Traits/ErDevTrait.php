@@ -279,7 +279,7 @@ trait ErDevTrait
             ],
             [
                 'ko' => '미스릴',
-                'en' => 'mr'
+                'en' => 'ml'
             ],
             [
                 'ko' => '포스코어',

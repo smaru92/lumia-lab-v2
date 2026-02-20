@@ -25,7 +25,7 @@ const equipmentSchema = z.object({
     name: z.string().nullable(),
     item_type1: z.string().nullable(),
     item_type2: z.string().nullable(),
-    item_type3: z.string().nullable(),
+    item_type3: z.string().nullable().optional(),
     item_grade: z.string().nullable(),
     attack_power: z.coerce.number().nullable(),
     attack_power_by_lv: z.coerce.number().nullable(),
@@ -297,7 +297,7 @@ export default function EquipmentEditPage() {
                                                 <SelectItem value="__none__">없음</SelectItem>
                                                 <SelectItem value="mt">운석</SelectItem>
                                                 <SelectItem value="tl">생명의나무</SelectItem>
-                                                <SelectItem value="mr">미스릴</SelectItem>
+                                                <SelectItem value="ml">미스릴</SelectItem>
                                                 <SelectItem value="fc">포스코어</SelectItem>
                                                 <SelectItem value="vf">혈액샘플</SelectItem>
                                             </SelectContent>

@@ -583,12 +583,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemType3Translation = {
             'mt': '운석',
             'tl': '생명의나무',
-            'mr': '미스릴',
+            'ml': '미스릴',
             'fc': '포스코어',
             'vf': '혈액샘플'
         };
 
-        const itemType3Codes = ['mt', 'tl', 'mr', 'fc', 'vf'];
+        const itemType3Codes = ['mt', 'tl', 'ml', 'fc', 'vf'];
 
         let html = '';
 
@@ -626,6 +626,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // 재료 필터
             html += '<div class="type3-filter-container" style="margin-bottom: 10px;">';
             html += '<strong>재료 필터:</strong>';
+            html += `
+                <label style="margin-right: 10px;">
+                    <input type="checkbox" class="type3-filter-checkbox" value="__none__" data-tab-key="${tabId}" checked> 없음
+                </label>
+            `;
             itemType3Codes.forEach(code => {
                 html += `
                     <label style="margin-right: 10px;">
@@ -780,7 +785,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const type3 = row.dataset.itemType3 || '';
 
                 const gradeMatch = selectedGrades.includes(grade);
-                const type3Match = selectedType3.length === 0 || type3 === '' || selectedType3.includes(type3);
+                // type3가 비어있으면(null) '__none__'으로 매칭
+                const type3Value = type3 === '' ? '__none__' : type3;
+                const type3Match = selectedType3.includes(type3Value);
 
                 row.style.display = (gradeMatch && type3Match) ? '' : 'none';
             });

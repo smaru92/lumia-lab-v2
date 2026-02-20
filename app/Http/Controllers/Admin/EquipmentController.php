@@ -28,7 +28,7 @@ class EquipmentController extends Controller
             'item_type1' => 'nullable|string',
             'item_type2' => 'nullable|string',
             'item_grade' => 'nullable|string',
-            'item_type3' => 'nullable|string|in:mt,tl,mr,fc,vf',
+            'item_type3' => 'nullable|string|in:mt,tl,ml,fc,vf',
             'attack_power' => 'nullable|numeric',
             'attack_power_by_lv' => 'nullable|numeric',
             'defense' => 'nullable|numeric',
