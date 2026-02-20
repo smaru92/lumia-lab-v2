@@ -260,6 +260,47 @@ trait ErDevTrait
     }
 
     /**
+     * 아이템 재료타입명 특정 언어로 변경, 가짓수가 적어서 하드코딩
+     * 기본적으로 한글 재료타입으로 변경
+     * @param string $itemType3
+     * @param string $lang
+     * @return string
+     */
+    public function replaceItemType3(string $itemType3, string $lang = 'ko')
+    {
+        $types = [
+            [
+                'ko' => '운석',
+                'en' => 'mt'
+            ],
+            [
+                'ko' => '생명의나무',
+                'en' => 'tl'
+            ],
+            [
+                'ko' => '미스릴',
+                'en' => 'mr'
+            ],
+            [
+                'ko' => '포스코어',
+                'en' => 'fc'
+            ],
+            [
+                'ko' => '혈액샘플',
+                'en' => 'vf'
+            ],
+        ];
+
+        foreach ($types as $type) {
+            if ($type['en'] == $itemType3 || $type['ko'] == $itemType3) {
+                return $type[$lang];
+            }
+        }
+
+        return $itemType3;
+    }
+
+    /**
      * 티어명 특정 언어로 변경, 가짓수가 적어서 하드코딩
      * 기본적으로 한글 티어로 변경
      * @param string $tierName

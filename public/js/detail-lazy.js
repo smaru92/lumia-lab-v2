@@ -580,6 +580,16 @@ document.addEventListener('DOMContentLoaded', function() {
             'Leg': '다리'
         };
 
+        const itemType3Translation = {
+            'mt': '운석',
+            'tl': '생명의나무',
+            'mr': '미스릴',
+            'fc': '포스코어',
+            'vf': '혈액샘플'
+        };
+
+        const itemType3Codes = ['mt', 'tl', 'mr', 'fc', 'vf'];
+
         let html = '';
 
         // 탭 링크 생성
@@ -608,6 +618,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 html += `
                     <label style="margin-right: 10px;">
                         <input type="checkbox" class="grade-filter-checkbox" value="${gradeEn}" data-tab-key="${tabId}" checked> ${gradeTranslation[gradeEn]}
+                    </label>
+                `;
+            });
+            html += '</div>';
+
+            // 재료 필터
+            html += '<div class="type3-filter-container" style="margin-bottom: 10px;">';
+            html += '<strong>재료 필터:</strong>';
+            itemType3Codes.forEach(code => {
+                html += `
+                    <label style="margin-right: 10px;">
+                        <input type="checkbox" class="type3-filter-checkbox" value="${code}" data-tab-key="${tabId}" checked> ${itemType3Translation[code]}
                     </label>
                 `;
             });
@@ -661,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 html += `
-                    <tr data-equipment-id="${item.equipment_id}" data-grade="${item.item_grade}">
+                    <tr data-equipment-id="${item.equipment_id}" data-grade="${item.item_grade}" data-item-type3="${item.item_type3 || ''}">
                         <td>${gradeTranslation[item.item_grade] || item.item_grade}</td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 5px;">
@@ -740,28 +762,41 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 등급 필터 설정
+     * 등급 필터 + 재료 필터 설정
      */
     function setupGradeFilters(container) {
-        const checkboxes = container.querySelectorAll('.grade-filter-checkbox');
-        checkboxes.forEach(checkbox => {
+        function applyEquipmentFilters(tabKey) {
+            const selectedGrades = Array.from(container.querySelectorAll(`.grade-filter-checkbox[data-tab-key="${tabKey}"]:checked`))
+                .map(cb => cb.value);
+            const selectedType3 = Array.from(container.querySelectorAll(`.type3-filter-checkbox[data-tab-key="${tabKey}"]:checked`))
+                .map(cb => cb.value);
+
+            const tabContent = container.querySelector(`#${tabKey}`);
+            if (!tabContent) return;
+
+            const rows = tabContent.querySelectorAll('tbody tr[data-grade]');
+            rows.forEach(row => {
+                const grade = row.dataset.grade;
+                const type3 = row.dataset.itemType3 || '';
+
+                const gradeMatch = selectedGrades.includes(grade);
+                const type3Match = selectedType3.length === 0 || type3 === '' || selectedType3.includes(type3);
+
+                row.style.display = (gradeMatch && type3Match) ? '' : 'none';
+            });
+        }
+
+        const gradeCheckboxes = container.querySelectorAll('.grade-filter-checkbox');
+        gradeCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
-                const tabKey = this.dataset.tabKey;
-                const selectedGrades = Array.from(container.querySelectorAll(`.grade-filter-checkbox[data-tab-key="${tabKey}"]:checked`))
-                    .map(cb => cb.value);
+                applyEquipmentFilters(this.dataset.tabKey);
+            });
+        });
 
-                const tabContent = container.querySelector(`#${tabKey}`);
-                if (!tabContent) return;
-
-                const rows = tabContent.querySelectorAll('tbody tr[data-grade]');
-                rows.forEach(row => {
-                    const grade = row.dataset.grade;
-                    if (selectedGrades.includes(grade)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+        const type3Checkboxes = container.querySelectorAll('.type3-filter-checkbox');
+        type3Checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                applyEquipmentFilters(this.dataset.tabKey);
             });
         });
     }

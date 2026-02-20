@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
@@ -35,6 +36,23 @@ const GRADE_OPTIONS = [
     { value: 'Mythic', label: '초월 (Mythic)' },
 ];
 
+const TYPE3_CONFIG: Record<string, string> = {
+    mt: '운석',
+    tl: '생명의나무',
+    mr: '미스릴',
+    fc: '포스코어',
+    vf: '혈액샘플',
+};
+
+const TYPE3_OPTIONS = [
+    { value: 'all', label: '전체 재료' },
+    { value: 'mt', label: '운석' },
+    { value: 'tl', label: '생명의나무' },
+    { value: 'mr', label: '미스릴' },
+    { value: 'fc', label: '포스코어' },
+    { value: 'vf', label: '혈액샘플' },
+];
+
 const columns: ColumnDef<Equipment>[] = [
     {
         accessorKey: 'id',
@@ -51,6 +69,15 @@ const columns: ColumnDef<Equipment>[] = [
     {
         accessorKey: 'item_type2',
         header: '타입2',
+    },
+    {
+        accessorKey: 'item_type3',
+        header: '핵심 재료',
+        cell: ({ row }) => {
+            const type3 = row.original.item_type3;
+            if (!type3) return '-';
+            return TYPE3_CONFIG[type3] || type3;
+        },
     },
     {
         accessorKey: 'item_grade',
@@ -87,6 +114,8 @@ const columns: ColumnDef<Equipment>[] = [
 ];
 
 export default function EquipmentListPage() {
+    const [type3Filter, setType3Filter] = useState('all');
+
     const { data: equipment = [], isLoading } = useQuery<Equipment[]>({
         queryKey: ['equipment'],
         queryFn: async () => {
@@ -94,6 +123,11 @@ export default function EquipmentListPage() {
             return response.data.data;
         },
     });
+
+    const filteredEquipment = useMemo(() => {
+        if (type3Filter === 'all') return equipment;
+        return equipment.filter(item => item.item_type3 === type3Filter);
+    }, [equipment, type3Filter]);
 
     if (isLoading) {
         return (
@@ -111,25 +145,42 @@ export default function EquipmentListPage() {
             />
             <DataTable
                 columns={columns}
-                data={equipment}
+                data={filteredEquipment}
                 searchKey="name"
                 searchPlaceholder="장비 이름으로 검색..."
                 filters={(_table, { filterValue, onFilterChange }) => (
-                    <Select
-                        value={filterValue}
-                        onValueChange={(value) => onFilterChange('item_grade', value)}
-                    >
-                        <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="등급 필터" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {GRADE_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                        <Select
+                            value={filterValue}
+                            onValueChange={(value) => onFilterChange('item_grade', value)}
+                        >
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="등급 필터" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {GRADE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select
+                            value={type3Filter}
+                            onValueChange={setType3Filter}
+                        >
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="재료 필터" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {TYPE3_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 )}
             />
         </div>

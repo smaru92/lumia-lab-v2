@@ -31,6 +31,17 @@
                     <option value="Leg">다리</option>
                 </select>
             </div>
+            <div class="custom-dropdown-container">
+                <label><strong>핵심 재료</strong></label>
+                <select id="sel-item-type3">
+                    <option value="All" selected>전체 재료</option>
+                    <option value="mt">운석</option>
+                    <option value="tl">생명의나무</option>
+                    <option value="mr">미스릴</option>
+                    <option value="fc">포스코어</option>
+                    <option value="vf">혈액샘플</option>
+                </select>
+            </div>
         </div>
 
         <!-- 하단 컨테이너 -->
@@ -76,7 +87,7 @@
                     $equipmentName = $item->equipment_name;
                     // item_grade_en과 item_type2를 data attribute로 추가
                 @endphp
-                <tr style="cursor: pointer;" data-item-grade="{{ $item->item_grade_en }}" data-item-type2="{{ $item->item_type2_en }}">
+                <tr style="cursor: pointer;" data-item-grade="{{ $item->item_grade_en }}" data-item-type2="{{ $item->item_type2_en }}" data-item-type3="{{ $item->item_type3_en }}">
                     <td>{{ $loop->iteration }}</td> {{-- 랭크 번호 표시 --}}
                     <td class="equipment-cell">
                         @if($preEquipmentName != $equipmentName)
@@ -196,6 +207,7 @@
                                          data-game-count="{{ $item->game_count }}"
                                          data-item-grade="{{ $item->item_grade_en }}"
                                          data-item-type2="{{ $item->item_type2_en }}"
+                                         data-item-type3="{{ $item->item_type3_en }}"
                                          data-equipment-name="{{ $item->equipment_name }}"
                                          data-tier="{{ $item->meta_tier }}"
                                          data-win-rate="{{ number_format($item->top1_count_percent, 2) }}"

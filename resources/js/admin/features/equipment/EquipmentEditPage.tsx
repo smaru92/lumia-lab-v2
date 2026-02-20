@@ -9,6 +9,13 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/useToast';
@@ -18,6 +25,7 @@ const equipmentSchema = z.object({
     name: z.string().nullable(),
     item_type1: z.string().nullable(),
     item_type2: z.string().nullable(),
+    item_type3: z.string().nullable(),
     item_grade: z.string().nullable(),
     attack_power: z.coerce.number().nullable(),
     attack_power_by_lv: z.coerce.number().nullable(),
@@ -188,6 +196,8 @@ export default function EquipmentEditPage() {
     const {
         register,
         handleSubmit,
+        setValue,
+        watch,
         formState: { errors },
     } = useForm<EquipmentFormData>({
         resolver: zodResolver(equipmentSchema),
@@ -269,7 +279,32 @@ export default function EquipmentEditPage() {
                                 <TabsTrigger value="skills">스킬</TabsTrigger>
                             </TabsList>
 
-                            <TabsContent value="basic">{renderFields(basicFields)}</TabsContent>
+                            <TabsContent value="basic">
+                                {renderFields(basicFields)}
+                                <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="item_type3">핵심 재료</Label>
+                                        <Select
+                                            value={watch('item_type3') ?? '__none__'}
+                                            onValueChange={(value) => {
+                                                setValue('item_type3', value === '__none__' ? null : value, { shouldDirty: true });
+                                            }}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="선택 없음" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="__none__">없음</SelectItem>
+                                                <SelectItem value="mt">운석</SelectItem>
+                                                <SelectItem value="tl">생명의나무</SelectItem>
+                                                <SelectItem value="mr">미스릴</SelectItem>
+                                                <SelectItem value="fc">포스코어</SelectItem>
+                                                <SelectItem value="vf">혈액샘플</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </TabsContent>
                             <TabsContent value="offense">{renderFields(offenseFields)}</TabsContent>
                             <TabsContent value="defense">{renderFields(defenseFields)}</TabsContent>
                             <TabsContent value="utility">{renderFields(utilityFields)}</TabsContent>

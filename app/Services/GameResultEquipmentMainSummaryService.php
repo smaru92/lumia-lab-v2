@@ -200,6 +200,7 @@ class GameResultEquipmentMainSummaryService
                 'ges.*',
                 'equipments.item_grade',
                 'equipments.item_type2',
+                'equipments.item_type3',
                 // 장비 스탯 정보 추가
                 'equipments.attack_power', 'equipments.attack_power_by_lv',
                 'equipments.defense', 'equipments.defense_by_lv',
