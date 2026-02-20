@@ -44,6 +44,7 @@ export interface Equipment {
     name: string | null;
     item_type1: string | null;
     item_type2: string | null;
+    item_type3: string | null;
     item_grade: string | null;
     attack_power: number | null;
     attack_power_by_lv: number | null;

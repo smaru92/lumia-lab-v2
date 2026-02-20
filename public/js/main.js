@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Equipment page specific filters
     const selItemGrade = document.getElementById('sel-item-grade');
     const selItemType2 = document.getElementById('sel-item-type2');
+    const selItemType3 = document.getElementById('sel-item-type3');
 
     // Modal elements
     const tierModal = document.getElementById('tierModal');
@@ -164,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const minPickRate = parseFloat(inputPickRate?.value) || 0;
         const selectedGrade = selItemGrade?.value || 'All';
         const selectedType2 = selItemType2?.value || 'All';
+        const selectedType3 = selItemType3?.value || 'All';
 
         // Filter main table rows
         if (tableBody) {
@@ -207,6 +209,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                if (selItemType3 && selectedType3 !== 'All') {
+                    if (row.dataset.itemType3 !== selectedType3) {
+                        showRow = false;
+                    }
+                }
+
                 row.style.display = showRow ? "" : "none";
             });
         }
@@ -240,6 +248,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (selItemType2 && selectedType2 !== 'All') {
                     if (iconContainer.dataset.itemType2 !== selectedType2) {
+                        showIcon = false;
+                    }
+                }
+
+                if (selItemType3 && selectedType3 !== 'All') {
+                    if (iconContainer.dataset.itemType3 !== selectedType3) {
                         showIcon = false;
                     }
                 }
@@ -333,6 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (selItemType2) {
         selItemType2.addEventListener('change', applyAllFilters);
+    }
+    if (selItemType3) {
+        selItemType3.addEventListener('change', applyAllFilters);
     }
 
     // --- Table Sorting Logic ---

@@ -14,6 +14,7 @@ class EquipmentResource extends JsonResource
             'name' => $this->name,
             'item_type1' => $this->item_type1,
             'item_type2' => $this->item_type2,
+            'item_type3' => $this->item_type3,
             'item_grade' => $this->item_grade,
             'attack_power' => $this->attack_power,
             'attack_power_by_lv' => $this->attack_power_by_lv,

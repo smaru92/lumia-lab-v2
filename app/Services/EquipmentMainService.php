@@ -54,6 +54,10 @@ class EquipmentMainService
             $gameResult->item_grade = $this->replaceItemGrade($gameResult->item_grade);
             $gameResult->item_type2_en = $gameResult->item_type2;
             $gameResult->item_type2 = $this->replaceItemType2($gameResult->item_type2);
+            $gameResult->item_type3_en = $gameResult->item_type3 ?? '';
+            if ($gameResult->item_type3) {
+                $gameResult->item_type3 = $this->replaceItemType3($gameResult->item_type3);
+            }
         }
         return $result;
     }

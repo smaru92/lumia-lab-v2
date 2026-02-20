@@ -138,9 +138,9 @@ class InfoController
             return $normalized;
         }, $upsertData);
 
-        // name 컬럼을 제외한 업데이트 컬럼 목록
+        // name, item_type3 컬럼을 제외한 업데이트 컬럼 목록 (item_type3는 수동 입력값이므로 upsert 시 보호)
         $updateColumns = array_filter($columns, function($column) {
-            return !in_array($column, ['name', 'id', 'created_at', 'updated_at']);
+            return !in_array($column, ['name', 'id', 'created_at', 'updated_at', 'item_type3']);
         });
 
         Equipment::upsert(
