@@ -19,9 +19,17 @@ class VersionHistory extends Model
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
     ];
+
+    /**
+     * 현재 시점에서 시작된 버전만 조회 (미래 버전 제외)
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('start_date', '<=', now());
+    }
 
     /**
      * 패치노트 관계

@@ -34,7 +34,7 @@ abstract class BaseSummaryService
     {
         Log::channel($this->logChannel)->info('S: update summary');
 
-        $latestVersion = VersionHistory::latest('created_at')->first();
+        $latestVersion = VersionHistory::active()->latest('created_at')->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;

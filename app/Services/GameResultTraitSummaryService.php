@@ -30,7 +30,7 @@ class GameResultTraitSummaryService
         $versionMinor = $filters['version_minor'] ?? null;
 
         if (!$versionSeason || !$versionMajor || !$versionMinor) {
-            $latestVersion = VersionHistory::latest('created_at')->first();
+            $latestVersion = VersionHistory::active()->latest('created_at')->first();
             $versionSeason = $versionSeason ?? $latestVersion->version_season;
             $versionMajor = $versionMajor ?? $latestVersion->version_major;
             $versionMinor = $versionMinor ?? $latestVersion->version_minor;
@@ -53,7 +53,7 @@ class GameResultTraitSummaryService
         DB::disableQueryLog(); // 쿼리 로그 비활성화
         Log::channel('updateGameResultTraitSummary')->info('S: game result trait summary');
 
-        $latestVersion = VersionHistory::latest('created_at')->first();
+        $latestVersion = VersionHistory::active()->latest('created_at')->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;

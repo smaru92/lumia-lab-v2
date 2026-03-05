@@ -31,7 +31,8 @@ class PatchComparisonService
      */
     public function getLatestVersion()
     {
-        return VersionHistory::orderBy('version_season', 'desc')
+        return VersionHistory::active()
+            ->orderBy('version_season', 'desc')
             ->orderBy('version_major', 'desc')
             ->orderBy('version_minor', 'desc')
             ->first();

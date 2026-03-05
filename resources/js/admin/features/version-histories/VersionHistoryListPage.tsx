@@ -62,13 +62,13 @@ export default function VersionHistoryListPage() {
         },
         {
             accessorKey: 'start_date',
-            header: '시작일',
-            cell: ({ row }) => row.original.start_date?.slice(0, 10),
+            header: '시작일시',
+            cell: ({ row }) => row.original.start_date?.replace('T', ' '),
         },
         {
             accessorKey: 'end_date',
-            header: '종료일',
-            cell: ({ row }) => row.original.end_date?.slice(0, 10),
+            header: '종료일시',
+            cell: ({ row }) => row.original.end_date?.replace('T', ' '),
         },
         {
             accessorKey: 'status',

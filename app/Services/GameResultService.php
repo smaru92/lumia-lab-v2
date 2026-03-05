@@ -266,8 +266,8 @@ class GameResultService
                     $firstPlayer = $data['userGames'][0];
 
                     // 버전 히스토리 데이터 저장
-                    $latestVersion = VersionHistory::latest('created_at')->first();
-                    $newEndDate = Carbon::parse($firstPlayer['startDtm'])->format('Y-m-d');
+                    $latestVersion = VersionHistory::active()->latest('created_at')->first();
+                    $newEndDate = Carbon::parse($firstPlayer['startDtm'])->format('Y-m-d H:i:s');
                     if (!$latestVersion
                         || $latestVersion->version_major !== ($firstPlayer['versionMajor'] ?? null)
                         || $latestVersion->version_minor !== ($firstPlayer['versionMinor'] ?? null)
@@ -280,7 +280,7 @@ class GameResultService
                             'start_date' => $newEndDate,
                             'end_date' => $newEndDate,
                         ]);
-                    } elseif ($latestVersion->end_date !== $newEndDate) {
+                    } else {
                         VersionHistory::where('id', $latestVersion->id)->update(['end_date' => $newEndDate]);
                     }
 

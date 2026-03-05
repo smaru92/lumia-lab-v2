@@ -39,8 +39,8 @@ export function VersionHistoryForm({
         defaultValues: version
             ? {
                   ...version,
-                  start_date: version.start_date?.slice(0, 10),
-                  end_date: version.end_date?.slice(0, 10),
+                  start_date: version.start_date?.slice(0, 16),
+                  end_date: version.end_date?.slice(0, 16),
               }
             : {
                   version_season: null,
@@ -98,8 +98,8 @@ export function VersionHistoryForm({
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="start_date">시작일 *</Label>
-                            <Input id="start_date" type="date" {...register('start_date')} />
+                            <Label htmlFor="start_date">시작일시 *</Label>
+                            <Input id="start_date" type="datetime-local" {...register('start_date')} />
                             {errors.start_date && (
                                 <p className="text-sm text-[hsl(var(--destructive))]">
                                     {errors.start_date.message}
@@ -107,8 +107,8 @@ export function VersionHistoryForm({
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="end_date">종료일 *</Label>
-                            <Input id="end_date" type="date" {...register('end_date')} />
+                            <Label htmlFor="end_date">종료일시 *</Label>
+                            <Input id="end_date" type="datetime-local" {...register('end_date')} />
                             {errors.end_date && (
                                 <p className="text-sm text-[hsl(var(--destructive))]">
                                     {errors.end_date.message}

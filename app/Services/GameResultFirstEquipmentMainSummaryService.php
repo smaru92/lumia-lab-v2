@@ -30,7 +30,7 @@ class GameResultFirstEquipmentMainSummaryService
         $versionMinor = $filters['version_minor'] ?? null;
 
         if (!$versionSeason || !$versionMajor || !$versionMinor) {
-            $latestVersion = VersionHistory::latest('created_at')->first();
+            $latestVersion = VersionHistory::active()->latest('created_at')->first();
             $versionSeason = $versionSeason ?? $latestVersion->version_season;
             $versionMajor = $versionMajor ?? $latestVersion->version_major;
             $versionMinor = $versionMinor ?? $latestVersion->version_minor;
@@ -51,7 +51,7 @@ class GameResultFirstEquipmentMainSummaryService
     {
         Log::channel('updateGameResultFirstEquipmentMainSummary')->info('S: game equipment main result summary');
 
-        $latestVersion = VersionHistory::latest('created_at')->first();
+        $latestVersion = VersionHistory::active()->latest('created_at')->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
