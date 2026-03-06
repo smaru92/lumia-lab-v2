@@ -113,7 +113,6 @@ class PatchComparisonService
     {
         $buffedCharacters = collect();
         $nerfedCharacters = collect();
-        $processedCombinations = [];
 
         // 1. 모든 캐릭터 ID 수집
         $characterIds = $patchNotes->pluck('target_id')->unique();
@@ -143,11 +142,29 @@ class PatchComparisonService
             ->get()
             ->groupBy('character_id');
 
-        // 5. 패치노트 처리
+        // 5. 캐릭터+무기별 patch_type 수집
+        $globalPatchTypes = []; // weapon_type이 없는 패치노트 (캐릭터 전체 적용)
+        $specificPatchTypes = []; // weapon_type이 있는 패치노트
+
         foreach ($patchNotes as $patchNote) {
             $characterId = $patchNote->target_id;
             $weaponType = $patchNote->weapon_type;
-            $patchType = $patchNote->patch_type;
+
+            if (empty($weaponType)) {
+                $globalPatchTypes[$characterId][] = $patchNote->patch_type;
+            } else {
+                $weaponTypeEn = $this->replaceWeaponType($weaponType, 'en');
+                $key = $characterId . '_' . $weaponTypeEn;
+                $specificPatchTypes[$key][] = $patchNote->patch_type;
+            }
+        }
+
+        // 6. 패치노트 처리 (캐릭터+무기 조합별로 한 번만)
+        $processedCombinations = [];
+
+        foreach ($patchNotes as $patchNote) {
+            $characterId = $patchNote->target_id;
+            $weaponType = $patchNote->weapon_type;
 
             $character = $characters[$characterId] ?? null;
             if (!$character) {
@@ -170,34 +187,29 @@ class PatchComparisonService
                         continue;
                     }
 
-                    // 중복 체크
                     $combinationKey = $characterId . '_' . $latestStat->weapon_type;
                     if (isset($processedCombinations[$combinationKey])) {
                         continue;
                     }
                     $processedCombinations[$combinationKey] = true;
 
-                    $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote);
+                    // 해당 조합의 모든 patch_type 수집 (전체 적용 + 무기별)
+                    $allTypes = array_unique(array_merge(
+                        $globalPatchTypes[$characterId] ?? [],
+                        $specificPatchTypes[$combinationKey] ?? []
+                    ));
 
-                    // patch_type 기준으로 버프/너프 판단
-                    if ($this->isBuffPatch($patchType)) {
-                        $buffedCharacters->push($comparison);
-                    } elseif ($this->isNerfPatch($patchType)) {
-                        $nerfedCharacters->push($comparison);
-                    }
+                    $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote);
+                    $this->classifyBuffNerf($allTypes, $comparison, $buffedCharacters, $nerfedCharacters);
                 }
             } else {
-                // 한글 weapon_type을 영어로 변환하여 매칭
                 $weaponTypeEn = $this->replaceWeaponType($weaponType, 'en');
-
-                // 중복 체크
                 $combinationKey = $characterId . '_' . $weaponTypeEn;
                 if (isset($processedCombinations[$combinationKey])) {
                     continue;
                 }
                 $processedCombinations[$combinationKey] = true;
 
-                // 특정 weapon_type 통계 찾기 (영어로 변환된 값으로 비교)
                 $latestStat = $latestStatsForChar->where('weapon_type', $weaponTypeEn)->first();
                 $previousStat = $previousStatsForChar->where('weapon_type', $weaponTypeEn)->first();
 
@@ -205,14 +217,14 @@ class PatchComparisonService
                     continue;
                 }
 
-                $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote);
+                // 해당 조합의 모든 patch_type 수집 (전체 적용 + 무기별)
+                $allTypes = array_unique(array_merge(
+                    $globalPatchTypes[$characterId] ?? [],
+                    $specificPatchTypes[$combinationKey] ?? []
+                ));
 
-                // patch_type 기준으로 버프/너프 판단
-                if ($this->isBuffPatch($patchType)) {
-                    $buffedCharacters->push($comparison);
-                } elseif ($this->isNerfPatch($patchType)) {
-                    $nerfedCharacters->push($comparison);
-                }
+                $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote);
+                $this->classifyBuffNerf($allTypes, $comparison, $buffedCharacters, $nerfedCharacters);
             }
         }
 
@@ -220,6 +232,26 @@ class PatchComparisonService
             'buffed' => $buffedCharacters->sortByDesc('meta_score_diff')->values(),
             'nerfed' => $nerfedCharacters->sortBy('meta_score_diff')->values(),
         ];
+    }
+
+    /**
+     * patch_type 조합에 따라 버프/너프 목록에 분류
+     * - 조정+버프 → 버프 목록
+     * - 조정+너프 → 너프 목록
+     * - 버프+너프 → 양쪽 모두
+     * - 조정만 → 추가하지 않음
+     */
+    private function classifyBuffNerf($patchTypes, $comparison, &$buffedCharacters, &$nerfedCharacters)
+    {
+        $hasBuff = collect($patchTypes)->contains(fn($t) => $this->isBuffPatch($t));
+        $hasNerf = collect($patchTypes)->contains(fn($t) => $this->isNerfPatch($t));
+
+        if ($hasBuff) {
+            $buffedCharacters->push($comparison);
+        }
+        if ($hasNerf) {
+            $nerfedCharacters->push($comparison);
+        }
     }
 
     /**
