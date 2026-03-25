@@ -4,6 +4,7 @@ use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\EquipmentFirstController;
 use App\Http\Controllers\MainController;
+use App\Http\Controllers\TacticalSkillComparisonController;
 use App\Http\Controllers\TraitController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +31,7 @@ Route::get('/equipment', [EquipmentController::class, 'index']);
 Route::get('/equipment-first', [EquipmentFirstController::class, 'index']);
 Route::get('/trait', [TraitController::class, 'index']);
 Route::get('/detail/{types}', [CharacterController::class, 'show']);
+Route::get('/tactical-skill-comparison', [TacticalSkillComparisonController::class, 'index']);
 
 // React Admin SPA - catch all admin routes
 Route::get('/admin/{any?}', function () {

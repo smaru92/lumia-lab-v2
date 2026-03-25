@@ -38,28 +38,28 @@ class GameResultService
      * weapon_type을 결정하는 SQL CASE 문을 생성합니다.
      * @return string
      */
-    private function getWeaponTypeCaseStatement(): string
+    private function getWeaponTypeCaseStatement(string $grAlias = 'gr', string $eAlias = 'e'): string
     {
         $weaponTypeMapping = config('erDev.characterWeaponTypeMapping', []);
 
         $caseParts = ["CASE"];
-        $caseParts[] = "WHEN gr.character_id = 27 THEN 'All'";
+        $caseParts[] = "WHEN {$grAlias}.character_id = 27 THEN 'All'";
 
         // 각 캐릭터별 무기 분류 로직 추가
         foreach ($weaponTypeMapping as $characterId => $weaponTypes) {
-            $caseParts[] = "WHEN gr.character_id = {$characterId} THEN";
+            $caseParts[] = "WHEN {$grAlias}.character_id = {$characterId} THEN";
             $caseParts[] = "CASE";
 
             foreach ($weaponTypes as $weaponTypeName => $weaponIds) {
                 $weaponIdsStr = implode(', ', $weaponIds);
-                $caseParts[] = "WHEN gr.weapon_id IN ({$weaponIdsStr}) THEN '{$weaponTypeName}'";
+                $caseParts[] = "WHEN {$grAlias}.weapon_id IN ({$weaponIdsStr}) THEN '{$weaponTypeName}'";
             }
 
-            $caseParts[] = "ELSE e.item_type2";
+            $caseParts[] = "ELSE {$eAlias}.item_type2";
             $caseParts[] = "END";
         }
 
-        $caseParts[] = "ELSE e.item_type2";
+        $caseParts[] = "ELSE {$eAlias}.item_type2";
         $caseParts[] = "END";
 
         return implode("\n                    ", $caseParts);
@@ -1935,5 +1935,118 @@ class GameResultService
             'metaTier' => $metaTier,
             'metaScore' => $metaScore,
         ];
+    }
+
+    /**
+     * 캐릭터+무기 시너지 통계 조회
+     * 같은 game_id + game_rank = 같은 팀
+     * 기준 캐릭터+무기(gr1) 관점에서 파트너 캐릭터+무기(gr2)와 함께할 때의 통계
+     */
+    public function getGameResultSynergy(array $filters): array
+    {
+        DB::disableQueryLog();
+
+        $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
+        $weaponTypeCaseGr1 = $this->getWeaponTypeCaseStatement('gr1', 'e1');
+        $weaponTypeCaseGr2 = $this->getWeaponTypeCaseStatement('gr2', 'e2');
+
+        $results = DB::table($gameResultTableName . ' as gr1')
+            ->join($gameResultTableName . ' as gr2', function ($join) {
+                $join->on('gr1.game_id', '=', 'gr2.game_id')
+                    ->on('gr1.game_rank', '=', 'gr2.game_rank')
+                    ->whereColumn('gr1.id', '!=', 'gr2.id');
+            })
+            ->join('characters as c1', 'gr1.character_id', '=', 'c1.id')
+            ->join('characters as c2', 'gr2.character_id', '=', 'c2.id')
+            ->leftJoin('equipments as e1', 'gr1.weapon_id', '=', 'e1.id')
+            ->leftJoin('equipments as e2', 'gr2.weapon_id', '=', 'e2.id')
+            ->select(
+                'gr1.character_id',
+                DB::raw('MAX(c1.name) as character_name'),
+                DB::raw("{$weaponTypeCaseGr1} AS weapon_type"),
+                'gr2.character_id as synergy_character_id',
+                DB::raw('MAX(c2.name) as synergy_character_name'),
+                DB::raw("{$weaponTypeCaseGr2} AS synergy_weapon_type"),
+                DB::raw('COUNT(*) as game_count'),
+                DB::raw('SUM(CASE WHEN (gr1.mmr_gain + gr1.mmr_cost) > 0 THEN 1 ELSE 0 END) as positive_count'),
+                DB::raw('SUM(CASE WHEN (gr1.mmr_gain + gr1.mmr_cost) < 0 THEN 1 ELSE 0 END) as negative_count'),
+                DB::raw('AVG(gr1.mmr_gain) as avg_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr1.mmr_gain + gr1.mmr_cost) > 0 THEN (gr1.mmr_gain + gr1.mmr_cost) END) as avg_positive_mmr_gain'),
+                DB::raw('AVG(CASE WHEN (gr1.mmr_gain + gr1.mmr_cost) < 0 THEN (gr1.mmr_gain + gr1.mmr_cost) END) as avg_negative_mmr_gain'),
+                DB::raw('AVG(gr1.team_kill_score) as avg_team_kill_score'),
+                DB::raw('SUM(CASE WHEN gr1.game_rank <= 4 THEN 1 ELSE 0 END) AS top4_count'),
+                DB::raw('SUM(CASE WHEN gr1.game_rank <= 2 THEN 1 ELSE 0 END) AS top2_count'),
+                DB::raw('SUM(CASE WHEN gr1.game_rank = 1 THEN 1 ELSE 0 END) AS top1_count')
+            )
+            ->where('gr1.matching_mode', 3)
+            ->whereNotNull('e1.item_type2')
+            ->whereNotNull('e2.item_type2')
+            ->groupBy(
+                'gr1.character_id',
+                DB::raw($weaponTypeCaseGr1),
+                'gr2.character_id',
+                DB::raw($weaponTypeCaseGr2)
+            )
+            ->orderBy('game_count', 'desc');
+
+        if (isset($filters['min_score'])) {
+            $results = $results->where('gr1.mmr_before', '>=', $filters['min_score']);
+        }
+
+        $gameResults = $results->get();
+
+        // 기준 캐릭터+무기별 전체 게임 수 계산 (game_count_percent용)
+        $characterTotalGames = [];
+        foreach ($gameResults as $item) {
+            $key = $item->character_id . '-' . $item->weapon_type;
+            if (!isset($characterTotalGames[$key])) {
+                $characterTotalGames[$key] = 0;
+            }
+            $characterTotalGames[$key] += $item->game_count;
+        }
+
+        $data = [];
+        foreach ($gameResults as $item) {
+            $key = $item->character_id . '-' . $item->weapon_type;
+            $total = $characterTotalGames[$key] ?? 1;
+            $gameCountPercent = round(($item->game_count / $total) * 100, 2);
+            $positiveGameCountPercent = $item->game_count ? round(($item->positive_count / $item->game_count) * 100, 2) : 0;
+            $negativeGameCountPercent = $item->game_count ? round(($item->negative_count / $item->game_count) * 100, 2) : 0;
+            $top1CountPercent = $item->game_count ? round(($item->top1_count / $item->game_count) * 100, 2) : 0;
+            $top2CountPercent = $item->game_count ? round(($item->top2_count / $item->game_count) * 100, 2) : 0;
+            $top4CountPercent = $item->game_count ? round(($item->top4_count / $item->game_count) * 100, 2) : 0;
+            $endgameWinPercent = $item->top2_count ? round(($item->top1_count / $item->top2_count) * 100, 2) : 0;
+
+            $data[] = [
+                'characterId' => $item->character_id,
+                'characterName' => $item->character_name,
+                'weaponType' => $item->weapon_type,
+                'synergyCharacterId' => $item->synergy_character_id,
+                'synergyCharacterName' => $item->synergy_character_name,
+                'synergyWeaponType' => $item->synergy_weapon_type,
+                'gameCount' => $item->game_count,
+                'positiveGameCount' => $item->positive_count,
+                'negativeGameCount' => $item->negative_count,
+                'gameCountPercent' => $gameCountPercent,
+                'positiveGameCountPercent' => $positiveGameCountPercent,
+                'negativeGameCountPercent' => $negativeGameCountPercent,
+                'top1Count' => $item->top1_count,
+                'top2Count' => $item->top2_count,
+                'top4Count' => $item->top4_count,
+                'top1CountPercent' => $top1CountPercent,
+                'top2CountPercent' => $top2CountPercent,
+                'top4CountPercent' => $top4CountPercent,
+                'endgameWinPercent' => $endgameWinPercent,
+                'avgMmrGain' => round($item->avg_mmr_gain, 1),
+                'positiveAvgMmrGain' => round($item->avg_positive_mmr_gain ?? 0, 1),
+                'negativeAvgMmrGain' => round($item->avg_negative_mmr_gain ?? 0, 1),
+                'avgTeamKillScore' => $item->avg_team_kill_score !== null ? round($item->avg_team_kill_score, 2) : 0,
+            ];
+        }
+
+        unset($gameResults, $characterTotalGames);
+        gc_collect_cycles();
+
+        return $data;
     }
 }

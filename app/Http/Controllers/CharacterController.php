@@ -513,6 +513,50 @@ class CharacterController extends Controller
         return response()->json($data);
     }
 
+    public function getDetailSynergy(Request $request, $types)
+    {
+        $defaultTier = config('erDev.defaultTier');
+        $defaultVersion = config('erDev.defaultVersion');
+        $minTier = $request->input('min_tier', $defaultTier);
+        $version = $request->input('version', $defaultVersion);
+
+        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+            $version = $defaultVersion;
+        }
+
+        $version = explode('.', $version);
+        $versionSeason = $version[0];
+        $versionMajor = $version[1];
+        $versionMinor = $version[2];
+
+        [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
+        $weaponType = empty($weaponType) ? 'All' : $weaponType;
+
+        $filters = [
+            'version_season' => $versionSeason,
+            'version_major' => $versionMajor,
+            'version_minor' => $versionMinor,
+            'character_name' => $characterName,
+            'weapon_type' => $weaponType,
+            'min_tier' => $minTier,
+        ];
+
+        $cacheKey = "game_detail_synergy_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheDuration = config('erDev.cacheDuration');
+
+        $data = cache()->get($cacheKey);
+
+        if (empty($data)) {
+            $data = $this->mainService->getGameResultSynergySummary($filters);
+
+            if ($data && count($data) > 0) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
     public function getDetailTraitCombinations(Request $request, $types)
     {
         $defaultTier = config('erDev.defaultTier');

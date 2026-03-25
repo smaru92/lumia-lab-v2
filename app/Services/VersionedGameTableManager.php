@@ -376,6 +376,43 @@ class VersionedGameTableManager
         }
     }
 
+    public function ensureGameResultSynergySummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('character_id')->comment('기준 캐릭터 id');
+                $table->string('character_name')->comment('기준 캐릭터 이름');
+                $table->string('weapon_type')->comment('기준 캐릭터 무기타입');
+                $table->integer('synergy_character_id')->comment('파트너 캐릭터 id');
+                $table->string('synergy_character_name')->comment('파트너 캐릭터 이름');
+                $table->string('synergy_weapon_type')->comment('파트너 캐릭터 무기타입');
+                $table->string('min_tier');
+                $table->integer('min_score');
+                $table->integer('game_count');
+                $table->integer('positive_game_count');
+                $table->integer('negative_game_count');
+                $table->decimal('game_count_percent', 10, 3)->comment('기준 캐릭터 전체 게임 대비 비율');
+                $table->decimal('positive_game_count_percent', 10, 3);
+                $table->decimal('negative_game_count_percent', 10, 3);
+                $table->integer('top1_count');
+                $table->integer('top2_count');
+                $table->integer('top4_count');
+                $table->decimal('top1_count_percent', 10, 3);
+                $table->decimal('top2_count_percent', 10, 3);
+                $table->decimal('top4_count_percent', 10, 3);
+                $table->decimal('endgame_win_percent', 10, 3)->nullable();
+                $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('positive_avg_mmr_gain', 10, 3);
+                $table->decimal('negative_avg_mmr_gain', 10, 3);
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
+                $table->unique(['character_id', 'weapon_type', 'synergy_character_id', 'synergy_weapon_type', 'min_tier'], 'synergy_summary_unique');
+                $table->index(['character_id', 'weapon_type', 'min_tier'], 'synergy_char_weapon_tier_idx');
+                $table->timestamps();
+            });
+        }
+    }
+
     public function ensureGameResultTraitMainSummaryTableExists(string $tableName): void
     {
         if (!Schema::hasTable($tableName)) {

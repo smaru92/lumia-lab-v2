@@ -18,6 +18,7 @@ class MainService
     protected GameResultEquipmentSummaryService $gameResultEquipmentSummaryService;
     protected GameResultTraitSummaryService $gameResultTraitSummaryService;
     protected GameResultTacticalSkillSummaryService $gameResultTacticalSkillSummaryService;
+    protected GameResultSynergySummaryService $gameResultSynergySummaryService;
 
     public function __construct(
         GameResultSummaryService $gameResultSummaryService,
@@ -25,6 +26,7 @@ class MainService
         GameResultEquipmentSummaryService $gameResultEquipmentSummaryService,
         GameResultTraitSummaryService $gameResultTraitSummaryService,
         GameResultTacticalSkillSummaryService $gameResultTacticalSkillSummaryService,
+        GameResultSynergySummaryService $gameResultSynergySummaryService,
         VersionHistoryService $versionHistoryService,
         RankRangeService $rankRangeService
     )
@@ -34,6 +36,7 @@ class MainService
         $this->gameResultTacticalSkillSummaryService = $gameResultTacticalSkillSummaryService;
         $this->gameResultTraitSummaryService = $gameResultTraitSummaryService;
         $this->gameResultEquipmentSummaryService = $gameResultEquipmentSummaryService;
+        $this->gameResultSynergySummaryService = $gameResultSynergySummaryService;
         $this->versionHistoryService = $versionHistoryService;
         $this->rankRangeService = $rankRangeService;
     }
@@ -107,6 +110,23 @@ class MainService
     {
         return $this->gameResultEquipmentSummaryService->getDetail($filters);
     }
+    public function getGameResultSynergySummary(array $filters = [])
+    {
+        // 한글 weapon_type을 영문으로 변환 (DB에는 영문 저장)
+        if (!empty($filters['weapon_type'])) {
+            $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
+        }
+        $result = $this->gameResultSynergySummaryService->getList($filters);
+
+        // 파트너 weapon_type을 한글로 변환
+        foreach ($result as $item) {
+            $item->synergy_weapon_type_en = $item->synergy_weapon_type;
+            $item->synergy_weapon_type = $this->replaceWeaponType($item->synergy_weapon_type);
+        }
+
+        return $result;
+    }
+
     public function getGameResultTraitSummary(array $filters = [])
     {
         return $this->gameResultTraitSummaryService->getDetail($filters);

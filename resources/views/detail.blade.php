@@ -225,9 +225,31 @@
             <p>로딩 중...</p>
         </div>
     </div>
+
+    <h3>시너지 통계</h3>
+    <p style="margin: -8px 0 8px 0; font-size: 12px; color: #999;">최소 10게임 이상</p>
+    <div data-lazy-section="synergy">
+        <div class="loading-placeholder" style="padding: 20px; text-align: center;">
+            <p>로딩 중...</p>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
+    <script>
+        window.baseStats = {
+            avg_mmr_gain: {{ $byMain->avg_mmr_gain ?? 0 }},
+            top1_count_percent: {{ $byMain->top1_count_percent ?? 0 }},
+            top2_count_percent: {{ $byMain->top2_count_percent ?? 0 }},
+            top4_count_percent: {{ $byMain->top4_count_percent ?? 0 }},
+            endgame_win_percent: {{ $byMain->endgame_win_percent ?? 0 }},
+            avg_team_kill_score: {{ $byMain->avg_team_kill_score ?? 0 }},
+            positive_game_count_percent: {{ $byMain->positive_game_count_percent ?? 0 }},
+            negative_game_count_percent: {{ $byMain->negative_game_count_percent ?? 0 }},
+            positive_avg_mmr_gain: {{ $byMain->positive_avg_mmr_gain ?? 0 }},
+            negative_avg_mmr_gain: {{ $byMain->negative_avg_mmr_gain ?? 0 }}
+        };
+    </script>
     <script src="{{ asset('js/detail.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/detail-lazy.js') }}?v={{ time() }}"></script>
 @endpush

@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tiers: false,
         tacticalSkills: false,
         equipment: false,
-        traitStats: false
+        traitStats: false,
+        synergy: false
     };
 
     /**
@@ -97,6 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'equipment':
                     endpoint = `/api/detail/${types}/equipment?version=${version}&min_tier=${minTier}`;
                     break;
+                case 'synergy':
+                    endpoint = `/api/detail/${types}/synergy?version=${version}&min_tier=${minTier}`;
+                    break;
                 case 'traitStats':
                     // 특성 통계는 두 API를 병렬로 호출
                     await loadTraitStats(sectionElement);
@@ -161,6 +165,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case 'equipment':
                 renderEquipmentSection(data, element);
+                break;
+            case 'synergy':
+                renderSynergySection(data, element);
                 break;
         }
     }
@@ -761,6 +768,129 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 등급 필터 이벤트 리스너 추가
         setupGradeFilters(element);
+
+        // 툴팁 포지셔닝 이벤트 추가
+        setupTooltips(element);
+    }
+
+    /**
+     * 시너지 통계 렌더링
+     */
+    function renderSynergySection(data, element) {
+        const synergyList = data.data || [];
+        const base = window.baseStats || {};
+
+        if (synergyList.length === 0) {
+            element.innerHTML = '<p style="text-align: center; color: #999;">시너지 데이터가 없습니다.</p>';
+            return;
+        }
+
+        // diff 표시 헬퍼 (higher=좋은방향, 기본 true)
+        function diffHtml(val, baseVal, decimals, isPercent, higherIsBetter) {
+            if (higherIsBetter === undefined) higherIsBetter = true;
+            const diff = val - baseVal;
+            if (Math.abs(diff) < 0.01) return '';
+            const isPositive = higherIsBetter ? diff > 0 : diff < 0;
+            const color = isPositive ? '#4caf50' : '#f44336';
+            const sign = diff > 0 ? '+' : '';
+            const formatted = sign + Number(diff).toFixed(decimals) + (isPercent ? '%' : '');
+            return `<div class="sub-stat" style="color: ${color}; font-weight: bold;">${formatted}</div>`;
+        }
+
+        let html = '';
+        html += '<div class="equipment-scroll-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #333;">';
+        html += '<div class="table-wrapper" style="margin: 0;"><table class="sortable-table" id="synergyTable">';
+        html += `
+            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                <tr>
+                    <th style="width: 120px; min-width: 100px;">캐릭터</th>
+                    <th>게임수</th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>승률</th>
+                    <th class="hide-on-mobile">TOP2</th>
+                    <th class="hide-on-mobile">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균TK</th>
+                    <th class="hide-on-mobile">이득확률</th>
+                    <th class="hide-on-mobile">손실확률</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        synergyList.forEach(item => {
+            const charId = String(item.synergy_character_id).padStart(3, '0');
+            const iconPath = `/storage/Character/icon/${charId}.png`;
+            const defaultIcon = '/storage/Character/icon/default.png';
+            const weaponType = item.synergy_weapon_type || '';
+            const weaponIconPath = `/storage/Weapon/${weaponType}.png`;
+            const defaultWeaponIcon = '/storage/Weapon/icon/default.png';
+
+            const weaponTypeEn = item.synergy_weapon_type_en || weaponType;
+            const detailPath = weaponTypeEn && weaponTypeEn !== 'All'
+                ? `/detail/${item.synergy_character_name}-${weaponTypeEn}?version=${version}&min_tier=${minTier}`
+                : `/detail/${item.synergy_character_name}?version=${version}&min_tier=${minTier}`;
+
+            html += `
+                <tr style="cursor: pointer;" onclick="window.location.href='${detailPath}'">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div class="icon-container" style="position: relative; display: inline-block;">
+                                <img src="${iconPath}"
+                                     alt="${item.synergy_character_name}"
+                                     class="character-icon"
+                                     onerror="this.onerror=null; this.src='${defaultIcon}';">
+                                ${weaponType && weaponType !== 'All' ? `<img src="${weaponIconPath}"
+                                     alt="${weaponType}"
+                                     class="weapon-icon"
+                                     onerror="this.onerror=null; this.src='${defaultWeaponIcon}';">` : ''}
+                            </div>
+                            <div class="character-name-weapon">
+                                ${item.synergy_character_name}
+                                ${weaponType && weaponType !== 'All' ? `<br><small>${weaponType}</small>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="number">${formatNumber(item.game_count)}</td>
+                    <td class="number">
+                        ${formatNumber(item.avg_mmr_gain, 1)}
+                        ${diffHtml(item.avg_mmr_gain, base.avg_mmr_gain, 1, false, true)}
+                    </td>
+                    <td class="number">
+                        <div>${formatPercent(item.top1_count_percent)}%</div>
+                        ${diffHtml(item.top1_count_percent, base.top1_count_percent, 2, true, true)}
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top2_count_percent)}%</div>
+                        ${diffHtml(item.top2_count_percent, base.top2_count_percent, 2, true, true)}
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top4_count_percent)}%</div>
+                        ${diffHtml(item.top4_count_percent, base.top4_count_percent, 2, true, true)}
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">
+                        ${formatPercent(item.endgame_win_percent)}%
+                        ${diffHtml(item.endgame_win_percent, base.endgame_win_percent, 2, true, true)}
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">
+                        ${formatNumber(item.avg_team_kill_score, 2)}
+                        ${diffHtml(item.avg_team_kill_score, base.avg_team_kill_score, 2, false, true)}
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                        ${diffHtml(item.positive_game_count_percent, base.positive_game_count_percent, 2, true, true)}
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                        ${diffHtml(item.negative_game_count_percent, base.negative_game_count_percent, 2, true, false)}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div></div>';
+
+        element.innerHTML = html;
 
         // 툴팁 포지셔닝 이벤트 추가
         setupTooltips(element);
