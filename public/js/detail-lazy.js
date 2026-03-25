@@ -823,10 +823,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const iconPath = `/storage/Character/icon/${charId}.png`;
             const defaultIcon = '/storage/Character/icon/default.png';
             const weaponType = item.synergy_weapon_type || '';
-            const weaponIconPath = `/storage/Weapon/${weaponType}.png`;
-            const defaultWeaponIcon = '/storage/Weapon/icon/default.png';
-
             const weaponTypeEn = item.synergy_weapon_type_en || weaponType;
+            const weaponIconPath = `/storage/Weapon/${weaponTypeEn}.png`;
+            const defaultWeaponIcon = '/storage/Weapon/icon/default.png';
             const detailPath = weaponTypeEn && weaponTypeEn !== 'All'
                 ? `/detail/${item.synergy_character_name}-${weaponTypeEn}?version=${version}&min_tier=${minTier}`
                 : `/detail/${item.synergy_character_name}?version=${version}&min_tier=${minTier}`;
@@ -835,7 +834,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr style="cursor: pointer;" onclick="window.location.href='${detailPath}'">
                     <td>
                         <div style="display: flex; align-items: center; gap: 5px;">
-                            <div class="icon-container" style="position: relative; display: inline-block;">
+                            <div class="icon-container">
                                 <img src="${iconPath}"
                                      alt="${item.synergy_character_name}"
                                      class="character-icon"
