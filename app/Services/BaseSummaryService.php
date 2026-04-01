@@ -49,20 +49,20 @@ abstract class BaseSummaryService
             $this->getSummaryTableBaseName(),
             $versionFilters
         );
+        $shadowTableName = $versionedTableName . '_new';
 
         Log::channel($this->logChannel)->info("Using versioned table: {$versionedTableName}");
 
-        // 테이블 존재 확인 및 생성
+        // 원본 테이블 존재 확인 및 생성 (최초 실행 시)
         $this->ensureTableExists($versionedTableName);
 
-        $summaryModel = $this->getSummaryModel();
+        // 섀도 테이블 생성 (원본 테이블 구조 복사)
+        // LIKE는 DDL이므로 트랜잭션 밖에서 실행
+        DB::statement("DROP TABLE IF EXISTS `{$shadowTableName}`");
+        DB::statement("CREATE TABLE `{$shadowTableName}` LIKE `{$versionedTableName}`");
+        Log::channel($this->logChannel)->info("Created shadow table: {$shadowTableName}");
 
-        // TRUNCATE는 DDL이므로 트랜잭션 밖에서 실행 (암묵적 커밋 방지)
-        Log::channel($this->logChannel)->info('Truncating table...');
-        DB::table($versionedTableName)->truncate();
-        Log::channel($this->logChannel)->info("Truncated table {$versionedTableName}");
-
-        // 데이터 처리하면서 바로 insert (메모리에 모두 쌓지 않음)
+        // 데이터 처리하면서 섀도 테이블에 insert (원본 테이블은 변경 없음)
         $insertChunkSize = 500;
         $totalInserted = 0;
         $batchData = [];
@@ -86,7 +86,7 @@ abstract class BaseSummaryService
 
                     // 일정 크기마다 insert
                     if (count($batchData) >= $insertChunkSize) {
-                        DB::table($versionedTableName)->insert($batchData);
+                        DB::table($shadowTableName)->insert($batchData);
                         $totalInserted += count($batchData);
                         $batchData = [];
 
@@ -104,13 +104,23 @@ abstract class BaseSummaryService
 
             // 남은 데이터 insert
             if (!empty($batchData)) {
-                DB::table($versionedTableName)->insert($batchData);
+                DB::table($shadowTableName)->insert($batchData);
                 $totalInserted += count($batchData);
             }
 
-            Log::channel($this->logChannel)->info("Inserted {$totalInserted} new records");
+            Log::channel($this->logChannel)->info("Inserted {$totalInserted} new records into shadow table");
+
+            // 원자적 테이블 교체: 사용자에게 데이터 공백 없이 교체됨
+            $oldTableName = $versionedTableName . '_old';
+            DB::statement("DROP TABLE IF EXISTS `{$oldTableName}`");
+            DB::statement("RENAME TABLE `{$versionedTableName}` TO `{$oldTableName}`, `{$shadowTableName}` TO `{$versionedTableName}`");
+            DB::statement("DROP TABLE IF EXISTS `{$oldTableName}`");
+
+            Log::channel($this->logChannel)->info("Swapped shadow table to production: {$versionedTableName}");
             Log::channel($this->logChannel)->info('E: update summary');
         } catch (\Exception $e) {
+            // 실패 시 섀도 테이블 정리
+            DB::statement("DROP TABLE IF EXISTS `{$shadowTableName}`");
             Log::channel($this->logChannel)->error('Error: ' . $e->getMessage());
             Log::channel($this->logChannel)->error($e->getTraceAsString());
             throw $e;
