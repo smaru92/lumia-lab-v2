@@ -10,6 +10,12 @@ import EquipmentEditPage from '@/features/equipment/EquipmentEditPage';
 import EquipmentSkillListPage from '@/features/equipment-skills/EquipmentSkillListPage';
 import EquipmentSkillCreatePage from '@/features/equipment-skills/EquipmentSkillCreatePage';
 import EquipmentSkillEditPage from '@/features/equipment-skills/EquipmentSkillEditPage';
+import TraitListPage from '@/features/traits/TraitListPage';
+import TraitCreatePage from '@/features/traits/TraitCreatePage';
+import TraitEditPage from '@/features/traits/TraitEditPage';
+import TacticalSkillListPage from '@/features/tactical-skills/TacticalSkillListPage';
+import TacticalSkillCreatePage from '@/features/tactical-skills/TacticalSkillCreatePage';
+import TacticalSkillEditPage from '@/features/tactical-skills/TacticalSkillEditPage';
 import VersionHistoryListPage from '@/features/version-histories/VersionHistoryListPage';
 import VersionHistoryCreatePage from '@/features/version-histories/VersionHistoryCreatePage';
 import VersionHistoryEditPage from '@/features/version-histories/VersionHistoryEditPage';
@@ -50,6 +56,12 @@ export default function App() {
                                 <Route path="/equipment-skills" element={<EquipmentSkillListPage />} />
                                 <Route path="/equipment-skills/create" element={<EquipmentSkillCreatePage />} />
                                 <Route path="/equipment-skills/:id/edit" element={<EquipmentSkillEditPage />} />
+                                <Route path="/traits" element={<TraitListPage />} />
+                                <Route path="/traits/create" element={<TraitCreatePage />} />
+                                <Route path="/traits/:id/edit" element={<TraitEditPage />} />
+                                <Route path="/tactical-skills" element={<TacticalSkillListPage />} />
+                                <Route path="/tactical-skills/create" element={<TacticalSkillCreatePage />} />
+                                <Route path="/tactical-skills/:id/edit" element={<TacticalSkillEditPage />} />
                                 <Route path="/version-histories" element={<VersionHistoryListPage />} />
                                 <Route path="/version-histories/create" element={<VersionHistoryCreatePage />} />
                                 <Route path="/version-histories/:id/edit" element={<VersionHistoryEditPage />} />

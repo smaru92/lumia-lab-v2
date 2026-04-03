@@ -4,14 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '@/lib/axios';
-import { Character, CharacterTag } from '@/types';
+import { Character } from '@/types';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/useToast';
-import { CharacterTagsManager } from './CharacterTagsManager';
+import { CharacterWeaponTagsManager } from './CharacterWeaponTagsManager';
 
 const characterSchema = z.object({
     name: z.string().nullable(),
@@ -74,18 +74,6 @@ export default function CharacterEditPage() {
         },
     });
 
-    const { data: allTags = [] } = useQuery<CharacterTag[]>({
-        queryKey: ['character-tags'],
-        queryFn: async () => {
-            try {
-                const response = await api.get('/character-tags');
-                return response.data.data;
-            } catch {
-                return [];
-            }
-        },
-    });
-
     const {
         register,
         handleSubmit,
@@ -102,18 +90,11 @@ export default function CharacterEditPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['characters'] });
-            toast({
-                title: '저장 완료',
-                description: '캐릭터 정보가 저장되었습니다.',
-            });
+            toast({ title: '저장 완료', description: '캐릭터 정보가 저장되었습니다.' });
             navigate(-1);
         },
         onError: () => {
-            toast({
-                title: '저장 실패',
-                description: '캐릭터 정보 저장에 실패했습니다.',
-                variant: 'destructive',
-            });
+            toast({ title: '저장 실패', description: '캐릭터 정보 저장에 실패했습니다.', variant: 'destructive' });
         },
     });
 
@@ -133,19 +114,13 @@ export default function CharacterEditPage() {
                 showBack
             />
 
-            {/* 태그 관리 섹션 */}
+            {/* 무기별 태그 관리 */}
             <Card>
                 <CardHeader>
-                    <CardTitle>태그</CardTitle>
+                    <CardTitle>무기별 태그</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {character && (
-                        <CharacterTagsManager
-                            characterId={character.id}
-                            currentTags={character.tags || []}
-                            allTags={allTags}
-                        />
-                    )}
+                    {character && <CharacterWeaponTagsManager characterId={character.id} />}
                 </CardContent>
             </Card>
 
@@ -174,11 +149,7 @@ export default function CharacterEditPage() {
                             ))}
                         </div>
                         <div className="mt-6 flex justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => navigate(-1)}
-                            >
+                            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
                                 취소
                             </Button>
                             <Button type="submit" disabled={mutation.isPending}>

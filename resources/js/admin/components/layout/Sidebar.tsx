@@ -6,6 +6,8 @@ import {
     History,
     LayoutDashboard,
     X,
+    Swords,
+    Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,8 @@ const navigation = [
     { name: '캐릭터', href: '/characters', icon: Users },
     { name: '장비', href: '/equipment', icon: Package },
     { name: '장비 스킬', href: '/equipment-skills', icon: Sparkles },
+    { name: '특성', href: '/traits', icon: Swords },
+    { name: '전술스킬', href: '/tactical-skills', icon: Zap },
     { name: '버전 히스토리', href: '/version-histories', icon: History },
 ];
 

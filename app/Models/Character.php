@@ -18,6 +18,8 @@ class Character extends Model
     protected $primaryKey = 'id';
 
 
+    protected $guarded = [];
+
     public function getColumns()
     {
         return Schema::getColumnListing('characters');

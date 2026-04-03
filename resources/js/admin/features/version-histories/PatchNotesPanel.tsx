@@ -74,7 +74,10 @@ export function PatchNotesPanel({ versionHistoryId }: PatchNotesPanelProps) {
         queryKey: ['traits-options'],
         queryFn: async () => {
             const response = await api.get('/traits');
-            return response.data.data;
+            return response.data.data.map((t: { id: number; name: string }) => ({
+                value: t.id,
+                label: t.name,
+            }));
         },
     });
 
@@ -82,7 +85,10 @@ export function PatchNotesPanel({ versionHistoryId }: PatchNotesPanelProps) {
         queryKey: ['tactical-skills-options'],
         queryFn: async () => {
             const response = await api.get('/tactical-skills');
-            return response.data.data;
+            return response.data.data.map((s: { id: number; name: string }) => ({
+                value: s.id,
+                label: s.name,
+            }));
         },
     });
 

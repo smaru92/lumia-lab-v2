@@ -9,6 +9,7 @@ use App\Services\PerformanceMonitor;
 use App\Services\RankRangeService;
 use App\Traits\ErDevTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CharacterController extends Controller
 {
@@ -107,9 +108,28 @@ class CharacterController extends Controller
             }
         }
 
+        // 태그 데이터는 캐시 외부에서 별도 조회 (즉시 반영)
+        $weaponTagMap = $this->getWeaponTagMap();
+
+        $data['weaponTagMap'] = $weaponTagMap;
+
         return view('character', $data);
     }
 
+    private function getWeaponTagMap(): array
+    {
+        $rows = DB::table('character_weapon_character_tag as cwct')
+            ->join('character_tags as ct', 'ct.id', '=', 'cwct.character_tag_id')
+            ->select('cwct.character_id', 'cwct.weapon_type', 'ct.name as tag_name')
+            ->get();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $key = $row->character_id . '_' . $row->weapon_type;
+            $map[$key][] = $row->tag_name;
+        }
+        return $map;
+    }
 
     public function show(Request $request, $types)
     {

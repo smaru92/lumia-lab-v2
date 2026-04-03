@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Custom dropdown elements
     const versionDropdown = document.getElementById('version-dropdown');
     const tierDropdown = document.getElementById('tier-dropdown');
+    const tagDropdown = document.getElementById('tag-dropdown');
 
     // --- Custom Dropdown Logic ---
     function initCustomDropdowns() {
@@ -65,6 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Close dropdown
                     dropdown.classList.remove('open');
 
+                    // 태그 드롭다운은 클라이언트 사이드 필터 (리로드 없음)
+                    if (dropdown === tagDropdown) return;
+
                     // Trigger URL update
                     updateUrlFromDropdowns();
                 });
@@ -93,11 +97,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tierSelected) {
             currentUrl.searchParams.set('min_tier', tierSelected.dataset.value);
         }
+        // 버전/티어 변경으로 리로드 시 현재 태그 값을 URL에 유지
+        if (activeTagName && activeTagName !== 'all') {
+            currentUrl.searchParams.set('tag', activeTagName);
+        } else {
+            currentUrl.searchParams.delete('tag');
+        }
 
         if (window.location.href !== currentUrl.href) {
             window.location.href = currentUrl.href;
         }
     }
+
+    // --- Tag Dropdown 클라이언트 사이드 필터 (리로드 없음) ---
+    function initTagDropdownFilter() {
+        if (!tagDropdown) return;
+        tagDropdown.querySelectorAll('.dropdown-option').forEach(option => {
+            option.addEventListener('click', () => {
+                activeTagName = option.dataset.value || 'all';
+                // URL을 조용히 업데이트 (히스토리 변경 없이 - 리로드 없음)
+                const url = new URL(window.location.href);
+                if (activeTagName !== 'all') {
+                    url.searchParams.set('tag', activeTagName);
+                } else {
+                    url.searchParams.delete('tag');
+                }
+                history.replaceState(null, '', url.href);
+                applyAllFilters();
+            });
+        });
+    }
+    initTagDropdownFilter();
 
     // Initialize custom dropdowns
     initCustomDropdowns();
@@ -157,6 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = currentUrl.href;
         }
     }
+
+    // --- Tag Filter State ---
+    let activeTagName = new URLSearchParams(window.location.search).get('tag') || 'all';
 
     function applyAllFilters() {
         if (!tableBody && !tierModal) return;
@@ -218,6 +251,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                // Tag filter
+                if (activeTagName && activeTagName !== 'all') {
+                    const rowTags = (row.dataset.tags || '').split(',').filter(Boolean);
+                    if (!rowTags.includes(activeTagName)) {
+                        showRow = false;
+                    }
+                }
+
                 row.style.display = showRow ? "" : "none";
             });
         }
@@ -239,6 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (inputPickRate) {
                     const pickRateValue = parseFloat(iconContainer.dataset.pickRate) || 0;
                     if (pickRateValue < minPickRate) {
+                        showIcon = false;
+                    }
+                }
+
+                // Tag filter
+                if (activeTagName && activeTagName !== 'all') {
+                    const iconTags = (iconContainer.dataset.tags || '').split(',').filter(Boolean);
+                    if (!iconTags.includes(activeTagName)) {
                         showIcon = false;
                     }
                 }
@@ -287,9 +336,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Hide OP/RIP tiers when they have no visible items
                         row.style.display = "none";
                     } else {
-                        // Show regular tiers as empty with proper height
+                        // Show regular tiers as empty with proper height (icons hidden, not removed)
                         row.style.display = "";
-                        tierContent.innerHTML = "&nbsp;";
                         row.classList.add("empty-tier-row");
                         tierContent.classList.add("empty-tier-content");
                     }

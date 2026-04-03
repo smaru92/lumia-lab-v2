@@ -7,8 +7,27 @@
     <h2><a href="/character">캐릭터 통계</a></h2>
     <div style="margin-bottom: 15px;">
     <!-- 중앙 정렬 컨테이너 -->
+    @php
+        $fixedTags = ['공격력-근거리', '공격력-원거리', '스킬증폭-근거리', '스킬증폭-원거리', '탱커'];
+        $currentTag = request('tag', 'all');
+    @endphp
     <div class="main-filter-container">
         @include('partials.filter-dropdowns')
+        {{-- 태그 필터 --}}
+        <div class="custom-dropdown-container">
+            <label><strong>태그</strong></label>
+            <div class="custom-dropdown" id="tag-dropdown">
+                <div class="dropdown-selected" data-value="{{ $currentTag }}">
+                    {{ $currentTag === 'all' ? '전체' : $currentTag }}
+                </div>
+                <div class="dropdown-options">
+                    <div class="dropdown-option {{ $currentTag === 'all' ? 'selected' : '' }}" data-value="all">전체</div>
+                    @foreach($fixedTags as $tagName)
+                        <div class="dropdown-option {{ $currentTag === $tagName ? 'selected' : '' }}" data-value="{{ $tagName }}">{{ $tagName }}</div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
         <div class="custom-dropdown-container">
             <label><strong>최소 픽률(%)</strong></label>
             <input type="number" id="input-pick-rate" min="0" max="100" step="0.1" value="0.5" style="padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; width: 100px;">
@@ -50,9 +69,13 @@
         @endphp
         @foreach($data as $item)
                 @php
-                    $characterName = $item->character_name . ' ' . $item->weapon_type
+                    $characterName = $item->character_name . ' ' . $item->weapon_type;
+                    $tagKey = $item->character_id . '_' . $item->weapon_type_en;
+                    $itemTagNames = $weaponTagMap[$tagKey] ?? [];
                 @endphp
-                <tr style="cursor: pointer;" data-href="/detail/{{ $item->character_name }}-{{ $item->weapon_type }}?min_tier={{ request('min_tier', $defaultTier) }}&version={{ request('version', $defaultVersion) }}">
+                <tr style="cursor: pointer;"
+                    data-href="/detail/{{ $item->character_name }}-{{ $item->weapon_type }}?min_tier={{ request('min_tier', $defaultTier) }}&version={{ request('version', $defaultVersion) }}"
+                    data-tags="{{ implode(',', $itemTagNames) }}">
                     <td>{{ $loop->iteration }}</td> {{-- 랭크 번호 표시 --}}
                     <td class="character-cell">
                         @if($preCharacter != $characterName)
@@ -156,8 +179,13 @@
                             <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }} ">{{ $tier }}</span></td>
                             <td>
                                 @foreach($groupedByTier[$tier] as $item)
+                                    @php
+                                        $modalTagKey = $item->character_id . '_' . $item->weapon_type_en;
+                                        $modalTagNames = $weaponTagMap[$modalTagKey] ?? [];
+                                    @endphp
                                     <div class="tier-character-icon-container"
-                                         data-pick-rate="{{ $item->game_count_percent }}">
+                                         data-pick-rate="{{ $item->game_count_percent }}"
+                                         data-tags="{{ implode(',', $modalTagNames) }}">
                                     @php
                                         $formattedCharacterId = str_pad($item->character_id, 3, '0', STR_PAD_LEFT);
                                         $characterIconPath = image_asset('storage/Character/icon/' . $formattedCharacterId . '.png');

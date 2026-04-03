@@ -41,6 +41,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/characters/{character}', [AdminCharacterController::class, 'show']);
         Route::put('/characters/{character}', [AdminCharacterController::class, 'update']);
         Route::post('/characters/{character}/tags', [AdminCharacterController::class, 'syncTags']);
+        Route::get('/characters/{character}/weapon-tags', [AdminCharacterController::class, 'getWeaponTags']);
+        Route::post('/characters/{character}/weapon-tags', [AdminCharacterController::class, 'syncWeaponTags']);
 
         // Character Tags
         Route::get('/character-tags', [CharacterTagController::class, 'index']);
@@ -65,9 +67,19 @@ Route::prefix('admin')->group(function () {
         Route::put('/patch-notes/{patchNote}', [PatchNoteController::class, 'update']);
         Route::delete('/patch-notes/{patchNote}', [PatchNoteController::class, 'destroy']);
 
-        // Options for PatchNote form
+        // Traits CRUD
         Route::get('/traits', [AdminTraitController::class, 'index']);
+        Route::post('/traits', [AdminTraitController::class, 'store']);
+        Route::get('/traits/{trait}', [AdminTraitController::class, 'show']);
+        Route::put('/traits/{trait}', [AdminTraitController::class, 'update']);
+        Route::delete('/traits/{trait}', [AdminTraitController::class, 'destroy']);
+
+        // Tactical Skills CRUD
         Route::get('/tactical-skills', [AdminTacticalSkillController::class, 'index']);
+        Route::post('/tactical-skills', [AdminTacticalSkillController::class, 'store']);
+        Route::get('/tactical-skills/{tacticalSkill}', [AdminTacticalSkillController::class, 'show']);
+        Route::put('/tactical-skills/{tacticalSkill}', [AdminTacticalSkillController::class, 'update']);
+        Route::delete('/tactical-skills/{tacticalSkill}', [AdminTacticalSkillController::class, 'destroy']);
     });
 });
 

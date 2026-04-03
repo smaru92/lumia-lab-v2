@@ -122,6 +122,24 @@ export interface EquipmentSkill {
     updated_at: string;
 }
 
+export interface GameTrait {
+    id: number;
+    name: string;
+    tooltip: string | null;
+    is_main: number | null;
+    category: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TacticalSkill {
+    id: number;
+    name: string;
+    tooltip: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface VersionHistory {
     id: number;
     version_season: number | null;
