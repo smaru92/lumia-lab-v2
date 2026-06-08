@@ -1400,10 +1400,21 @@ document.addEventListener('DOMContentLoaded', function() {
             '삭제': '#795548'
         };
 
-        // 연속 버프/너프 streak 계산 (최신부터)
+        // 현재 페이지의 weapon_type 추출 (URL: "캐릭터명-무기명")
+        const urlParts = types.split('-');
+        const currentWeaponType = urlParts.length > 1 ? urlParts.slice(1).join('-') : null;
+
+        // 현재 무기에 해당하는 노트만 필터 (weapon_type=null은 전 무기 공통)
+        function filterNotes(notes) {
+            if (!currentWeaponType) return notes;
+            return notes.filter(n => !n.weapon_type_en || n.weapon_type_en === currentWeaponType);
+        }
+
+        // 연속 버프/너프 streak 계산 (현재 무기 기준)
         function getVersionType(notes) {
-            const hasBuff = notes.some(n => n.patch_type === '버프');
-            const hasNerf = notes.some(n => n.patch_type === '너프');
+            const relevant = filterNotes(notes);
+            const hasBuff = relevant.some(n => n.patch_type === '버프');
+            const hasNerf = relevant.some(n => n.patch_type === '너프');
             if (hasBuff && !hasNerf) return '버프';
             if (hasNerf && !hasBuff) return '너프';
             return null;
@@ -1412,6 +1423,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let streak = 0;
         let streakType = null;
         for (const ver of versions) {
+            if (filterNotes(ver.patch_notes).length === 0) continue;
             const vType = getVersionType(ver.patch_notes);
             if (streak === 0 && vType) {
                 streakType = vType;
@@ -1437,6 +1449,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         versions.forEach(ver => {
+            const relevantNotes = filterNotes(ver.patch_notes);
+            if (relevantNotes.length === 0) return;
+
             const vType = getVersionType(ver.patch_notes);
             const vTypeColor = vType ? patchTypeColors[vType] : '#888';
             const vTypeBorder = vType ? vTypeColor : '#ccc';
@@ -1452,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             html += `</div>`;
 
-            ver.patch_notes.forEach(note => {
+            relevantNotes.forEach(note => {
                 const color = patchTypeColors[note.patch_type] || '#555';
                 html += `<div style="display: flex; gap: 8px; padding: 5px 10px; border-bottom: 1px solid #eee; align-items: flex-start;">`;
                 html += `<span style="background: ${color}; color: #fff; padding: 2px 7px; border-radius: 3px; font-size: 0.78em; white-space: nowrap; flex-shrink: 0; margin-top: 1px;">${note.patch_type}</span>`;

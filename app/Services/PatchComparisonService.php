@@ -107,7 +107,8 @@ class PatchComparisonService
     }
 
     /**
-     * 캐릭터별 연속 버프/너프 streak 계산
+     * 캐릭터+무기 조합별 연속 버프/너프 streak 계산
+     * 키: "{charId}_{weaponTypeEn}" (무기별) 또는 "{charId}_all" (전체 공통)
      */
     public function getCharacterStreaks(array $characterIds): array
     {
@@ -116,34 +117,57 @@ class PatchComparisonService
         $allNotes = PatchNote::where('category', '캐릭터')
             ->whereIn('target_id', $characterIds)
             ->orderBy('version_history_id', 'desc')
-            ->get()
-            ->groupBy('target_id');
+            ->get();
 
+        $byCharacter = $allNotes->groupBy('target_id');
         $streaks = [];
-        foreach ($allNotes as $charId => $notes) {
-            $byVersion = $notes->groupBy('version_history_id');
-            $streak = 0;
-            $streakType = null;
 
-            foreach ($byVersion as $versionNotes) {
-                $hasBuff = $versionNotes->contains('patch_type', '버프');
-                $hasNerf = $versionNotes->contains('patch_type', '너프');
-                $vType = null;
-                if ($hasBuff && !$hasNerf) $vType = '버프';
-                elseif ($hasNerf && !$hasBuff) $vType = '너프';
+        foreach ($byCharacter as $charId => $notes) {
+            $globalNotes = $notes->whereNull('weapon_type');
+            $weaponTypes = $notes->whereNotNull('weapon_type')->pluck('weapon_type')->unique();
 
-                if ($streak === 0 && $vType) {
-                    $streakType = $vType;
-                    $streak = 1;
-                } elseif ($vType === $streakType) {
-                    $streak++;
-                } else {
-                    break;
-                }
+            // 무기별 streak: 전체 공통 노트 + 해당 무기 노트 합산
+            foreach ($weaponTypes as $weaponType) {
+                $weaponTypeEn = $this->replaceWeaponType($weaponType, 'en');
+                $combined = $notes->filter(fn($n) => $n->weapon_type === $weaponType || $n->weapon_type === null);
+                $streaks[(int)$charId . '_' . $weaponTypeEn] = $this->calculateStreak($combined->groupBy('version_history_id'));
             }
-            $streaks[(int)$charId] = ['streak' => $streak, 'streak_type' => $streakType];
+
+            // 전체 공통 streak (무기 미지정 노트만)
+            if ($globalNotes->isNotEmpty()) {
+                $streaks[(int)$charId . '_all'] = $this->calculateStreak($globalNotes->groupBy('version_history_id'));
+            }
         }
+
         return $streaks;
+    }
+
+    /**
+     * 버전별 그룹에서 streak 계산 (최신순 정렬 후 연속 횟수 반환)
+     */
+    private function calculateStreak($byVersion): array
+    {
+        $streak = 0;
+        $streakType = null;
+
+        foreach ($byVersion->sortKeysDesc() as $versionNotes) {
+            $hasBuff = $versionNotes->contains('patch_type', '버프');
+            $hasNerf = $versionNotes->contains('patch_type', '너프');
+            $vType = null;
+            if ($hasBuff && !$hasNerf) $vType = '버프';
+            elseif ($hasNerf && !$hasBuff) $vType = '너프';
+
+            if ($streak === 0 && $vType) {
+                $streakType = $vType;
+                $streak = 1;
+            } elseif ($vType === $streakType) {
+                $streak++;
+            } else {
+                break;
+            }
+        }
+
+        return ['streak' => $streak, 'streak_type' => $streakType];
     }
 
     /**
@@ -242,7 +266,11 @@ class PatchComparisonService
                         $specificPatchTypes[$combinationKey] ?? []
                     ));
 
-                    $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote, $streaks[$characterId] ?? null);
+                    $statWeaponTypeEn = $latestStat->weapon_type;
+                    $streakData = $streaks[$characterId . '_' . $statWeaponTypeEn]
+                        ?? $streaks[$characterId . '_all']
+                        ?? null;
+                    $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote, $streakData);
                     $this->classifyBuffNerf($allTypes, $comparison, $buffedCharacters, $nerfedCharacters);
                 }
             } else {
@@ -266,7 +294,10 @@ class PatchComparisonService
                     $specificPatchTypes[$combinationKey] ?? []
                 ));
 
-                $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote, $streaks[$characterId] ?? null);
+                $streakData = $streaks[$characterId . '_' . $weaponTypeEn]
+                    ?? $streaks[$characterId . '_all']
+                    ?? null;
+                $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote, $streakData);
                 $this->classifyBuffNerf($allTypes, $comparison, $buffedCharacters, $nerfedCharacters);
             }
         }

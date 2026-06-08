@@ -682,6 +682,7 @@ class CharacterController extends Controller
                     'patch_type' => $note->patch_type,
                     'content' => $note->content,
                     'weapon_type' => $note->weapon_type,
+                    'weapon_type_en' => $note->weapon_type ? $this->replaceWeaponType($note->weapon_type, 'en') : null,
                     'skill_type' => $note->skill_type,
                 ])->values(),
             ];
