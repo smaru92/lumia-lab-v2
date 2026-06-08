@@ -461,6 +461,11 @@ tr:hover { background-color: #e8f4ff; }
     background-color: #f44336;
     color: #fff;
 }
+.character-name-weapon.streak-name-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
 
 /* Tier Badge Styles (Adapted from detail.css) */
 .tier-badge {
@@ -763,6 +768,12 @@ body > .tier-tooltip {
 
 /* Mobile Responsive Styles */
 @media screen and (max-width: 599px) {
+    .character-name-weapon.streak-name-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+
     body {
         padding-top: 50px;
     }

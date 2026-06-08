@@ -411,7 +411,7 @@
                                      onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                 @endif
                             </div>
-                            <div class="character-name-weapon" style="flex-direction: row; align-items: center; gap: 6px;">
+                            <div class="character-name-weapon streak-name-row">
                                 <div>
                                     {{ $item['character_name'] }}<br>
                                     @if($weaponType && $weaponType !== 'All')
@@ -593,7 +593,7 @@
                                      onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                 @endif
                             </div>
-                            <div class="character-name-weapon" style="flex-direction: row; align-items: center; gap: 6px;">
+                            <div class="character-name-weapon streak-name-row">
                                 <div>
                                     {{ $item['character_name'] }}<br>
                                     @if($weaponType && $weaponType !== 'All')
@@ -1010,7 +1010,7 @@
                                 <img src="/storage/Character/icon/${charId}.png" alt="${item.character_name}" class="character-icon" loading="lazy" onerror="this.src='/storage/Character/icon/default.png';">
                                 ${item.weapon_type !== 'All' ? `<img src="/storage/Weapon/${weaponTypeEn}.png" alt="${item.weapon_type}" class="weapon-icon" loading="lazy" onerror="this.src='/storage/Weapon/icon/default.png';">` : ''}
                             </div>
-                            <div class="character-name-weapon" style="flex-direction: row; align-items: center; gap: 6px;">
+                            <div class="character-name-weapon streak-name-row">
                                 <div>
                                     ${item.character_name}<br>
                                     ${item.weapon_type && item.weapon_type !== 'All' ? `<small>${item.weapon_type}</small>` : ''}
