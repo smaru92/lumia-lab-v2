@@ -107,6 +107,46 @@ class PatchComparisonService
     }
 
     /**
+     * 캐릭터별 연속 버프/너프 streak 계산
+     */
+    public function getCharacterStreaks(array $characterIds): array
+    {
+        if (empty($characterIds)) return [];
+
+        $allNotes = PatchNote::where('category', '캐릭터')
+            ->whereIn('target_id', $characterIds)
+            ->orderBy('version_history_id', 'desc')
+            ->get()
+            ->groupBy('target_id');
+
+        $streaks = [];
+        foreach ($allNotes as $charId => $notes) {
+            $byVersion = $notes->groupBy('version_history_id');
+            $streak = 0;
+            $streakType = null;
+
+            foreach ($byVersion as $versionNotes) {
+                $hasBuff = $versionNotes->contains('patch_type', '버프');
+                $hasNerf = $versionNotes->contains('patch_type', '너프');
+                $vType = null;
+                if ($hasBuff && !$hasNerf) $vType = '버프';
+                elseif ($hasNerf && !$hasBuff) $vType = '너프';
+
+                if ($streak === 0 && $vType) {
+                    $streakType = $vType;
+                    $streak = 1;
+                } elseif ($vType === $streakType) {
+                    $streak++;
+                } else {
+                    break;
+                }
+            }
+            $streaks[(int)$charId] = ['streak' => $streak, 'streak_type' => $streakType];
+        }
+        return $streaks;
+    }
+
+    /**
      * 패치 비교 데이터 생성 (최적화 버전)
      */
     public function comparePatches($latestVersion, $previousVersion, $patchNotes, $characters, $minTier)
@@ -129,7 +169,10 @@ class PatchComparisonService
             ];
         }
 
-        // 4. 한 번에 모든 통계 조회 (N+1 해결!)
+        // 4. streak 계산 (한 번에 모든 캐릭터)
+        $streaks = $this->getCharacterStreaks($characterIds->toArray());
+
+        // 5. 한 번에 모든 통계 조회 (N+1 해결!)
         $latestStats = DB::table($latestTableName)
             ->where('min_tier', $minTier)
             ->whereIn('character_id', $characterIds)
@@ -142,7 +185,7 @@ class PatchComparisonService
             ->get()
             ->groupBy('character_id');
 
-        // 5. 캐릭터+무기별 patch_type 수집
+        // 6. 캐릭터+무기별 patch_type 수집
         $globalPatchTypes = []; // weapon_type이 없는 패치노트 (캐릭터 전체 적용)
         $specificPatchTypes = []; // weapon_type이 있는 패치노트
 
@@ -159,7 +202,7 @@ class PatchComparisonService
             }
         }
 
-        // 6. 패치노트 처리 (캐릭터+무기 조합별로 한 번만)
+        // 7. 패치노트 처리 (캐릭터+무기 조합별로 한 번만)
         $processedCombinations = [];
 
         foreach ($patchNotes as $patchNote) {
@@ -199,7 +242,7 @@ class PatchComparisonService
                         $specificPatchTypes[$combinationKey] ?? []
                     ));
 
-                    $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote);
+                    $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote, $streaks[$characterId] ?? null);
                     $this->classifyBuffNerf($allTypes, $comparison, $buffedCharacters, $nerfedCharacters);
                 }
             } else {
@@ -223,7 +266,7 @@ class PatchComparisonService
                     $specificPatchTypes[$combinationKey] ?? []
                 ));
 
-                $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote);
+                $comparison = $this->createComparison($character, $latestStat, $previousStat, $patchNote, $streaks[$characterId] ?? null);
                 $this->classifyBuffNerf($allTypes, $comparison, $buffedCharacters, $nerfedCharacters);
             }
         }
@@ -257,7 +300,7 @@ class PatchComparisonService
     /**
      * 비교 데이터 생성
      */
-    private function createComparison($character, $latestStat, $previousStat, $patchNote)
+    private function createComparison($character, $latestStat, $previousStat, $patchNote, $streakData = null)
     {
         // weapon_type을 한글로 변환
         $weaponTypeEn = $latestStat->weapon_type_en ?? $latestStat->weapon_type;
@@ -276,6 +319,8 @@ class PatchComparisonService
             'top4_rate_diff' => $latestStat->top4_count_percent - $previousStat->top4_count_percent,
             'latest' => $latestStat,
             'previous' => $previousStat,
+            'streak' => $streakData['streak'] ?? 0,
+            'streak_type' => $streakData['streak_type'] ?? null,
         ];
     }
 

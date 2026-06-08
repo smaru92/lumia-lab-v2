@@ -443,6 +443,25 @@ tr:hover { background-color: #e8f4ff; }
     font-size: 0.9em; /* Reduce font size to prevent line breaks */
 }
 
+/* 연속 버프/너프 streak 배지 */
+.streak-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.75em;
+    font-weight: bold;
+    white-space: nowrap;
+    margin-top: 2px;
+}
+.streak-badge.streak-buff {
+    background-color: #4caf50;
+    color: #fff;
+}
+.streak-badge.streak-nerf {
+    background-color: #f44336;
+    color: #fff;
+}
+
 /* Tier Badge Styles (Adapted from detail.css) */
 .tier-badge {
     display: inline-block;

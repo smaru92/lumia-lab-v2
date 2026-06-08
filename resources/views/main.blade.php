@@ -411,10 +411,15 @@
                                      onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                 @endif
                             </div>
-                            <div class="character-name-weapon">
-                                {{ $item['character_name'] }}<br>
-                                @if($weaponType && $weaponType !== 'All')
-                                <small>{{ $weaponType }}</small>
+                            <div class="character-name-weapon" style="flex-direction: row; align-items: center; gap: 6px;">
+                                <div>
+                                    {{ $item['character_name'] }}<br>
+                                    @if($weaponType && $weaponType !== 'All')
+                                    <small>{{ $weaponType }}</small>
+                                    @endif
+                                </div>
+                                @if(($item['streak'] ?? 0) >= 2)
+                                <span class="streak-badge streak-{{ $item['streak_type'] === '버프' ? 'buff' : 'nerf' }}">{{ $item['streak'] }}연속 {{ $item['streak_type'] }}</span>
                                 @endif
                             </div>
                         </div>
@@ -588,10 +593,15 @@
                                      onerror="this.onerror=null; this.src='{{ $defaultWeaponIconPath }}';">
                                 @endif
                             </div>
-                            <div class="character-name-weapon">
-                                {{ $item['character_name'] }}<br>
-                                @if($weaponType && $weaponType !== 'All')
-                                <small>{{ $weaponType }}</small>
+                            <div class="character-name-weapon" style="flex-direction: row; align-items: center; gap: 6px;">
+                                <div>
+                                    {{ $item['character_name'] }}<br>
+                                    @if($weaponType && $weaponType !== 'All')
+                                    <small>{{ $weaponType }}</small>
+                                    @endif
+                                </div>
+                                @if(($item['streak'] ?? 0) >= 2)
+                                <span class="streak-badge streak-{{ $item['streak_type'] === '버프' ? 'buff' : 'nerf' }}">{{ $item['streak'] }}연속 {{ $item['streak_type'] }}</span>
                                 @endif
                             </div>
                         </div>
@@ -988,6 +998,10 @@
             const endgameDiff = item.latest.endgame_win_percent - item.previous.endgame_win_percent;
             const tkDiff = item.latest.avg_team_kill_score - item.previous.avg_team_kill_score;
 
+            const streakBadge = (item.streak >= 2 && item.streak_type)
+                ? `<span class="streak-badge streak-${item.streak_type === '버프' ? 'buff' : 'nerf'}">${item.streak}연속 ${item.streak_type}</span>`
+                : '';
+
             html += `
                 <tr data-href="${detailUrl}" class="${type}-row ${hiddenClass}">
                     <td>
@@ -996,9 +1010,12 @@
                                 <img src="/storage/Character/icon/${charId}.png" alt="${item.character_name}" class="character-icon" loading="lazy" onerror="this.src='/storage/Character/icon/default.png';">
                                 ${item.weapon_type !== 'All' ? `<img src="/storage/Weapon/${weaponTypeEn}.png" alt="${item.weapon_type}" class="weapon-icon" loading="lazy" onerror="this.src='/storage/Weapon/icon/default.png';">` : ''}
                             </div>
-                            <div class="character-name-weapon">
-                                ${item.character_name}<br>
-                                ${item.weapon_type && item.weapon_type !== 'All' ? `<small>${item.weapon_type}</small>` : ''}
+                            <div class="character-name-weapon" style="flex-direction: row; align-items: center; gap: 6px;">
+                                <div>
+                                    ${item.character_name}<br>
+                                    ${item.weapon_type && item.weapon_type !== 'All' ? `<small>${item.weapon_type}</small>` : ''}
+                                </div>
+                                ${streakBadge}
                             </div>
                         </div>
                     </td>

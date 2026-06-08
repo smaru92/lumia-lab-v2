@@ -283,6 +283,8 @@ class MainController extends Controller
                     'endgame_win_percent' => $item['latest']->endgame_win_percent,
                     'avg_team_kill_score' => $item['latest']->avg_team_kill_score,
                 ],
+                'streak' => $item['streak'] ?? 0,
+                'streak_type' => $item['streak_type'] ?? null,
             ];
         })->values()->toArray();
     }
