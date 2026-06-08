@@ -98,6 +98,7 @@ Route::get('/detail/{types}/equipment', [\App\Http\Controllers\CharacterControll
 Route::get('/detail/{types}/traits', [\App\Http\Controllers\CharacterController::class, 'getDetailTraits']);
 Route::get('/detail/{types}/trait-combinations', [\App\Http\Controllers\CharacterController::class, 'getDetailTraitCombinations']);
 Route::get('/detail/{types}/synergy', [\App\Http\Controllers\CharacterController::class, 'getDetailSynergy']);
+Route::get('/detail/{types}/patch-history', [\App\Http\Controllers\CharacterController::class, 'getDetailPatchHistory']);
 
 // 메인페이지 패치 비교 API
 Route::get('/patch-comparison', [\App\Http\Controllers\MainController::class, 'getPatchComparison']);

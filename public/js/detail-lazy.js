@@ -1336,6 +1336,141 @@ document.addEventListener('DOMContentLoaded', function() {
         return formatNumber(value, 2);
     }
 
+    /**
+     * 순위 통계 / 패치 히스토리 탭 전환
+     */
+    window.openRankSectionTab = function(evt, tabName) {
+        const container = document.getElementById('rank-patch-section');
+        if (!container) return;
+
+        container.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        container.querySelectorAll('.tab-link').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        const target = container.querySelector('#' + tabName);
+        if (target) target.classList.add('active');
+        if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+
+        if (tabName === 'patch-history-content') {
+            const patchContainer = container.querySelector('#patch-history-content');
+            if (patchContainer && patchContainer.dataset.patchHistoryLoaded !== 'true') {
+                loadPatchHistory(patchContainer);
+            }
+        }
+    };
+
+    /**
+     * 패치 히스토리 로드
+     */
+    async function loadPatchHistory(element) {
+        showLoading(element);
+        try {
+            const response = await fetch(`/api/detail/${types}/patch-history`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            renderPatchHistorySection(data, element);
+        } catch (error) {
+            console.error('Error loading patch history:', error);
+            showError(element, `패치 히스토리를 불러오는데 실패했습니다: ${error.message}`);
+        }
+    }
+
+    /**
+     * 패치 히스토리 렌더링
+     * 최신 버전부터 연속 버프/너프 streak 계산 후 배지 표시
+     */
+    function renderPatchHistorySection(data, element) {
+        const versions = data.data || [];
+
+        if (versions.length === 0) {
+            element.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">패치 기록이 없습니다.</p>';
+            element.dataset.patchHistoryLoaded = 'true';
+            return;
+        }
+
+        const patchTypeColors = {
+            '버프': '#4caf50',
+            '너프': '#f44336',
+            '조정': '#ff9800',
+            '리워크': '#9c27b0',
+            '신규': '#2196f3',
+            '삭제': '#795548'
+        };
+
+        // 연속 버프/너프 streak 계산 (최신부터)
+        function getVersionType(notes) {
+            const hasBuff = notes.some(n => n.patch_type === '버프');
+            const hasNerf = notes.some(n => n.patch_type === '너프');
+            if (hasBuff && !hasNerf) return '버프';
+            if (hasNerf && !hasBuff) return '너프';
+            return null;
+        }
+
+        let streak = 0;
+        let streakType = null;
+        for (const ver of versions) {
+            const vType = getVersionType(ver.patch_notes);
+            if (streak === 0 && vType) {
+                streakType = vType;
+                streak = 1;
+            } else if (vType === streakType) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+
+        let html = '';
+
+        // streak 배지 (2연속 이상만 표시)
+        if (streak >= 2 && streakType) {
+            const streakColor = streakType === '버프' ? '#4caf50' : '#f44336';
+            html += `
+                <div style="margin-bottom: 14px; padding: 10px 14px; background: ${streakColor}18; border: 1px solid ${streakColor}55; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                    <span style="background: ${streakColor}; color: #fff; padding: 3px 10px; border-radius: 4px; font-weight: bold; font-size: 0.9em;">${streak}연속 ${streakType}</span>
+                    <span style="font-size: 0.85em; color: #555;">최근 ${streak}개 패치 연속 ${streakType}</span>
+                </div>
+            `;
+        }
+
+        versions.forEach(ver => {
+            const vType = getVersionType(ver.patch_notes);
+            const vTypeColor = vType ? patchTypeColors[vType] : '#888';
+            const vTypeBorder = vType ? vTypeColor : '#ccc';
+
+            html += `<div class="patch-history-version" style="margin-bottom: 14px;">`;
+            html += `<div style="font-weight: bold; font-size: 0.92em; padding: 6px 10px; background: #f0f0f0; border-left: 3px solid ${vTypeBorder}; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">`;
+            html += `<span>${ver.version}</span>`;
+            if (ver.start_date) {
+                html += `<span style="font-weight: normal; color: #888; font-size: 0.88em;">${ver.start_date}</span>`;
+            }
+            if (vType) {
+                html += `<span style="background: ${vTypeColor}; color: #fff; padding: 1px 7px; border-radius: 3px; font-size: 0.8em; margin-left: auto;">${vType}</span>`;
+            }
+            html += `</div>`;
+
+            ver.patch_notes.forEach(note => {
+                const color = patchTypeColors[note.patch_type] || '#555';
+                html += `<div style="display: flex; gap: 8px; padding: 5px 10px; border-bottom: 1px solid #eee; align-items: flex-start;">`;
+                html += `<span style="background: ${color}; color: #fff; padding: 2px 7px; border-radius: 3px; font-size: 0.78em; white-space: nowrap; flex-shrink: 0; margin-top: 1px;">${note.patch_type}</span>`;
+                if (note.weapon_type || note.skill_type) {
+                    const tag = note.weapon_type || note.skill_type;
+                    html += `<span style="color: #888; font-size: 0.82em; white-space: nowrap; flex-shrink: 0; margin-top: 2px;">[${tag}]</span>`;
+                }
+                html += `<span style="font-size: 0.88em; line-height: 1.5;">${(note.content || '').replace(/\n/g, '<br>')}</span>`;
+                html += `</div>`;
+            });
+
+            html += `</div>`;
+        });
+
+        element.innerHTML = `<div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd; padding: 12px;">${html}</div>`;
+        element.dataset.patchHistoryLoaded = 'true';
+    }
+
     // 필터 변경 시 페이지 리로드 (기존 동작 유지)
     const versionFilter = document.getElementById('sel-version-filter');
     const tierFilter = document.getElementById('sel-tier-filter');

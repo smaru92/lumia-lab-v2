@@ -643,4 +643,50 @@ class CharacterController extends Controller
 
         return response()->json($data);
     }
+
+    public function getDetailPatchHistory(Request $request, $types)
+    {
+        [$characterName] = array_pad(explode('-', $types), 2, null);
+
+        if (empty($characterName)) {
+            return response()->json(['data' => []]);
+        }
+
+        $character = \App\Models\Character::where('name', $characterName)->first();
+
+        if (!$character) {
+            return response()->json(['data' => []]);
+        }
+
+        $patchNotes = \App\Models\PatchNote::with('versionHistory')
+            ->where('category', '캐릭터')
+            ->where('target_id', $character->id)
+            ->orderBy('version_history_id', 'desc')
+            ->get();
+
+        if ($patchNotes->isEmpty()) {
+            return response()->json(['data' => []]);
+        }
+
+        $grouped = $patchNotes->groupBy('version_history_id');
+
+        $data = [];
+        foreach ($grouped as $notes) {
+            $versionHistory = $notes->first()->versionHistory;
+            if (!$versionHistory) continue;
+
+            $data[] = [
+                'version' => $versionHistory->version,
+                'start_date' => $versionHistory->start_date?->format('Y-m-d'),
+                'patch_notes' => $notes->map(fn($note) => [
+                    'patch_type' => $note->patch_type,
+                    'content' => $note->content,
+                    'weapon_type' => $note->weapon_type,
+                    'skill_type' => $note->skill_type,
+                ])->values(),
+            ];
+        }
+
+        return response()->json(['data' => $data]);
+    }
 }
