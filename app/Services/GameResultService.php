@@ -1316,8 +1316,8 @@ class GameResultService
             $performanceScore *= 0.3 + 0.7 * ($pickRate / 0.01);
         }
 
-        // 점수 스케일을 5점 만점 기준으로 확장 (가중치 1.4배)
-        $metaScore = $performanceScore * 0.84 + $pickRateScore * 5.88;
+        // 5점 만점 기준 스케일, perf:pick 비중 50:50 (균형)
+        $metaScore = $performanceScore * 0.98 + $pickRateScore * 5.90;
 
         // 5점 = 일반 만점, 초과 시 OP / 대칭 5단계
         $metaTier = match (true) {
@@ -1377,8 +1377,8 @@ class GameResultService
             $performanceScore *= 0.3 + 0.7 * ($pickRate / 0.01);
         }
 
-        // 점수 스케일을 5점 만점 기준으로 확장 (가중치 1.4배)
-        $metaScore = $performanceScore * 0.84 + $pickRateScore * 5.88;
+        // 5점 만점 기준 스케일, perf:pick 비중 50:50 (균형)
+        $metaScore = $performanceScore * 0.98 + $pickRateScore * 5.90;
 
         // 5점 = 일반 만점, 초과 시 OP / 대칭 5단계
         $metaTier = match (true) {
@@ -1825,8 +1825,8 @@ class GameResultService
             $performanceScore *= 0.3 + 0.7 * ($pickRate / 0.01);
         }
 
-        // 점수 스케일을 5점 만점 기준으로 확장 (가중치 1.4배)
-        $metaScore = $performanceScore * 0.84 + $pickRateScore * 5.88;
+        // 5점 만점 기준 스케일, perf:pick 비중 50:50 (균형)
+        $metaScore = $performanceScore * 0.98 + $pickRateScore * 5.90;
 
         // 5점 = 일반 만점, 초과 시 OP / 대칭 5단계
         $metaTier = match (true) {
