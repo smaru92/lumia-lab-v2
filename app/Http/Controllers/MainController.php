@@ -3,26 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Services\PatchComparisonService;
+use App\Services\RankRangeService;
 use Illuminate\Http\Request;
 
 class MainController extends Controller
 {
     protected PatchComparisonService $patchComparisonService;
+    protected RankRangeService $rankRangeService;
 
-    public function __construct(PatchComparisonService $patchComparisonService)
-    {
+    public function __construct(
+        PatchComparisonService $patchComparisonService,
+        RankRangeService $rankRangeService
+    ) {
         $this->patchComparisonService = $patchComparisonService;
+        $this->rankRangeService = $rankRangeService;
     }
 
-    public function index(Request $request)
+    /**
+     * 최신 버전 기준 최상위큐 최소 점수 조회
+     */
+    private function getTopRankScore($latestVersion): int
     {
-        $defaultTier = config('erDev.mainPageTier'); // 환경변수에서 메인페이지 기준티어 가져오기 (Meteorite)
-        $minTier = $request->input('min_tier', $defaultTier);
-        $mithrilHighScore = 8000;
-        $topRankScore = 8000;
+        $versionFilters = [];
+        if ($latestVersion) {
+            $versionFilters = [
+                'version_season' => $latestVersion->version_season,
+                'version_major' => $latestVersion->version_major,
+                'version_minor' => $latestVersion->version_minor,
+            ];
+        }
 
-        // 사용 가능한 티어 목록 (캐릭터 통계 페이지와 동일)
-        $availableTiers = [
+        return $this->rankRangeService->getTopTierMinScore($versionFilters);
+    }
+
+    /**
+     * 티어 드롭다운 목록 생성 (캐릭터 통계 페이지와 동일)
+     */
+    private function buildAvailableTiers(int $topRankScore): array
+    {
+        $mithrilHighScore = 8000;
+
+        return [
             'All' => ['name' => '전체', 'icon' => 'All'],
             'Platinum' => ['name' => '플래티넘', 'icon' => 'Platinum'],
             'Diamond' => ['name' => '다이아', 'icon' => 'Diamond'],
@@ -32,6 +53,21 @@ class MainController extends Controller
             'Mithrilhigh' => ['name' => '미스릴(' . $mithrilHighScore . '+)', 'icon' => 'Mithril'],
             'Top' => ['name' => '최상위큐(' . $topRankScore . '+)', 'icon' => 'Demigod'],
         ];
+    }
+
+    public function index(Request $request)
+    {
+        $defaultTier = config('erDev.mainPageTier'); // 환경변수에서 메인페이지 기준티어 가져오기 (Meteorite)
+        $minTier = $request->input('min_tier', $defaultTier);
+
+        // 최신 버전 조회 (최상위큐 점수 및 패치 비교에 재사용)
+        $latestVersion = $this->patchComparisonService->getLatestVersion();
+
+        // 최상위큐 최소 점수를 버전별 rank_ranges에서 동적으로 조회
+        $topRankScore = $this->getTopRankScore($latestVersion);
+
+        // 사용 가능한 티어 목록 (캐릭터 통계 페이지와 동일)
+        $availableTiers = $this->buildAvailableTiers($topRankScore);
 
         // 유효한 티어인지 확인
         if (!array_key_exists($minTier, $availableTiers)) {
@@ -47,9 +83,6 @@ class MainController extends Controller
 
         // 캐시가 없거나 latestVersion이 없으면 새로 조회 (데이터 갱신 중일 수 있음)
         if (!$data || empty($data['latestVersion'])) {
-            // 최신 버전과 그 이전 버전 조회
-            $latestVersion = $this->patchComparisonService->getLatestVersion();
-
             if (!$latestVersion) {
                 // 데이터가 없으면 캐싱하지 않음
                 return view('main', [
@@ -133,20 +166,15 @@ class MainController extends Controller
     {
         $defaultTier = config('erDev.mainPageTier');
         $minTier = $request->input('min_tier', $defaultTier);
-        $mithrilHighScore = 8000;
-        $topRankScore = 8000;
+
+        // 최신 버전 조회 (최상위큐 점수 및 패치 비교에 재사용)
+        $latestVersion = $this->patchComparisonService->getLatestVersion();
+
+        // 최상위큐 최소 점수를 버전별 rank_ranges에서 동적으로 조회
+        $topRankScore = $this->getTopRankScore($latestVersion);
 
         // 사용 가능한 티어 목록 (캐릭터 통계 페이지와 동일)
-        $availableTiers = [
-            'All' => ['name' => '전체', 'icon' => 'All'],
-            'Platinum' => ['name' => '플래티넘', 'icon' => 'Platinum'],
-            'Diamond' => ['name' => '다이아', 'icon' => 'Diamond'],
-            'Diamond2' => ['name' => '다이아2', 'icon' => 'Diamond'],
-            'Meteorite' => ['name' => '메테오라이트', 'icon' => 'Meteorite'],
-            'Mithrillow' => ['name' => '미스릴', 'icon' => 'Mithril'],
-            'Mithrilhigh' => ['name' => '미스릴(' . $mithrilHighScore . '+)', 'icon' => 'Mithril'],
-            'Top' => ['name' => '최상위큐(' . $topRankScore . '+)', 'icon' => 'Demigod'],
-        ];
+        $availableTiers = $this->buildAvailableTiers($topRankScore);
 
         // 유효한 티어인지 확인
         if (!array_key_exists($minTier, $availableTiers)) {
@@ -162,8 +190,6 @@ class MainController extends Controller
 
         // 캐시가 없거나 latestVersion이 없으면 새로 조회
         if (!$data || empty($data['latestVersion'])) {
-            $latestVersion = $this->patchComparisonService->getLatestVersion();
-
             if (!$latestVersion) {
                 return response()->json([
                     'buffedCharacters' => [],
