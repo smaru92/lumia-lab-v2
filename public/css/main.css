@@ -511,7 +511,7 @@ tr:hover { background-color: #e8f4ff; }
     padding: 20px;
     border: 1px solid #888;
     width: 80%; /* Could be more or less, depending on screen size */
-    max-width: 900px;
+    max-width: 760px;
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
     position: relative;
@@ -535,6 +535,54 @@ tr:hover { background-color: #e8f4ff; }
     color: black;
     text-decoration: none;
     cursor: pointer;
+}
+
+/* Tier modal watermark (bottom-right site address) */
+.tier-modal-watermark {
+    text-align: right;
+    font-size: 13px;
+    font-weight: bold;
+    color: #888;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    padding-right: 4px;
+}
+
+/* Button row under the tier table */
+.modal-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-btn-row .modal-close-btn-bottom,
+.modal-btn-row .tier-download-btn {
+    margin-top: 0;
+    flex: 1;
+}
+
+/* Download tier table as image */
+.tier-download-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: 1px solid #0069d9;
+    border-radius: 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tier-download-btn:hover {
+    background-color: #0069d9;
+}
+
+.tier-download-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
 }
 
 /* Bottom close button for modal */
@@ -579,27 +627,47 @@ tr:hover { background-color: #e8f4ff; }
     color: #fff !important;
 }
 
+.tier-capture-area h3 {
+    margin: 4px 0 8px;
+    font-size: 1.3em;
+    font-weight: 800;
+    color: #1a1a1a;
+    padding-right: 50px; /* room for the close (X) button in the modal */
+}
+
 .tier-table {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    margin-bottom: 20px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 12px;
+    margin-bottom: 16px;
     table-layout: fixed;
     overflow: visible; /* Allow tooltips to extend beyond table boundaries */
-    border: 1px solid #333;
+    border: 1px solid #e2e2e8;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
 }
 
 .tier-table th,
 .tier-table td {
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-    border-left: none;
-    border-right: none;
+    border: none;
+    border-bottom: 1px solid #ededf1;
     padding: 8px;
     text-align: left;
     vertical-align: middle;
     overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
 }
+
+.tier-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Rounded outer corners */
+.tier-table tr:first-child td:first-child { border-top-left-radius: 12px; }
+.tier-table tr:first-child td:last-child { border-top-right-radius: 12px; }
+.tier-table tr:last-child td:first-child { border-bottom-left-radius: 12px; }
+.tier-table tr:last-child td:last-child { border-bottom-right-radius: 12px; }
 
 .tier-table tr {
     overflow: visible; /* Allow tooltips to extend beyond row boundaries */
@@ -609,11 +677,32 @@ tr:hover { background-color: #e8f4ff; }
     background-color: #f2f2f2;
 }
 
-/* First column for tier badges */
+/* First column: full-height colored tier label */
 .tier-table td:first-child {
-    width: 60px;
+    width: 68px;
+    padding: 0;
     text-align: center;
     vertical-align: middle;
+}
+
+/* Tier label colors are applied inline (style="background-color:...") in the
+   blade so they render identically in the exported image (html2canvas does not
+   support :has()). See .tier-label-cell in the views. */
+
+/* Badge becomes just the label text inside the colored cell */
+.tier-table .tier-badge {
+    display: block;
+    width: 100%;
+    background: transparent !important;
+    color: #ffffff;
+    font-size: 1.2em;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    box-shadow: none;
 }
 
 /* Second column for icons */
@@ -624,9 +713,10 @@ tr:hover { background-color: #e8f4ff; }
     flex-direction: row;
     column-gap: 8px;
     row-gap: 8px;
-    align-items: flex-start;
+    align-items: center;
     justify-content: flex-start;
     min-width: 0;
+    background: #fafafb;
 }
 
 .tier-character-icon-container {
@@ -637,6 +727,41 @@ tr:hover { background-color: #e8f4ff; }
     position: relative;
     cursor: pointer;
     z-index: 1; /* Base z-index for icon containers */
+}
+
+/* Thumbnail wrapper keeps the weapon overlay anchored to the icon (not the caption) */
+.tier-icon-thumb {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+
+/* Small name / weapon caption under the icon */
+.tier-icon-caption {
+    margin-top: 3px;
+    max-width: 64px;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+}
+
+.tier-icon-name {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #2a2a2a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tier-icon-weapon {
+    display: block;
+    font-size: 9px;
+    color: #8a8a8a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tier-character-icon-container:hover {
@@ -655,18 +780,18 @@ tr:hover { background-color: #e8f4ff; }
     position: relative;
 }
 
-/* Empty tier row styling */
+/* Empty tier row styling - keep a consistent 63px height with 8px padding */
 .tier-table tr.empty-tier-row {
-    height: auto;
-    min-height: 48px; /* Match typical tier row height */
+    height: 63px;
 }
 
 .tier-table tr.empty-tier-row td.empty-tier-content {
-    padding: 12px 8px; /* Match normal tier row padding */
+    padding: 8px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    min-height: 48px;
+    min-height: 63px;
+    background: #fafafb;
 }
 
 /* Tooltip styles for tier modal */
@@ -1004,11 +1129,11 @@ body > .tier-tooltip {
 
     /* First column (tier badge column) */
     .tier-table td:first-child {
-        width: 35px;
-        min-width: 35px;
+        width: 44px;
+        min-width: 44px;
         text-align: center;
         vertical-align: middle;
-        padding: 5px 2px;
+        padding: 0;
     }
 
     /* Second column (icons container) */
@@ -1018,7 +1143,7 @@ body > .tier-tooltip {
         flex-wrap: wrap !important;
         flex-direction: row !important;
         gap: 4px;
-        align-items: flex-start;
+        align-items: center;
         justify-content: flex-start;
         min-width: 0;
         overflow: visible; /* Allow tooltips to extend beyond cell boundaries */
@@ -1082,13 +1207,22 @@ body > .tier-tooltip {
         margin: 0 5px;
     }
 
+    /* Stack modal buttons on mobile */
+    .modal-btn-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
     /* Modal bottom close button mobile adjustments */
     .modal-close-btn-bottom {
         padding: 15px 20px;
         font-size: 18px;
         margin-top: 15px;
     }
-}
+
+    .modal-btn-row .modal-close-btn-bottom {
+        margin-top: 0;
+    }
 
 /* Small phone specific adjustments */
 @media screen and (max-width: 380px) {
@@ -1271,9 +1405,9 @@ body > .tier-tooltip {
     }
 
     .tier-table td:first-child {
-        width: 30px;
-        min-width: 30px;
-        padding: 3px 1px;
+        width: 40px;
+        min-width: 40px;
+        padding: 0;
     }
 
     .tier-table td:nth-child(2) {

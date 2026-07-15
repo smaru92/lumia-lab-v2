@@ -164,24 +164,30 @@
 <div id="tierModal" class="modal">
     <div class="modal-content">
         <span class="close-button">&times;</span>
+        <div class="tier-capture-area">
         <h3>티어표</h3>
         <table class="tier-table">
             <tbody>
                 @php
                     $tiers = ['OP', '1', '2', '3', '4', '5', 'RIP'];
                     $groupedByTier = $data->groupBy('meta_tier');
+                    $tierColors = [
+                        'OP' => '#8A2BE2', '1' => '#E23B3B', '2' => '#FF8C00',
+                        '3' => '#F4C020', '4' => '#5CBF6A', '5' => '#4A9DF0', 'RIP' => '#6B6B6B',
+                    ];
                 @endphp
                 @foreach($tiers as $tier)
                     @php
                         $hasItems = isset($groupedByTier[$tier]) && count($groupedByTier[$tier]) > 0;
                         $isSpecialTier = in_array($tier, ['OP', 'RIP']); // OP and RIP tiers should be hidden when empty
+                        $tierColor = $tierColors[$tier] ?? '#6B6B6B';
                     @endphp
                     @if($hasItems)
                         @php
                             $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-op, tier-1, tier-rip
                         @endphp
                         <tr>
-                            <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }} ">{{ $tier }}</span></td>
+                            <td class="tier-label-cell" style="text-align: center; vertical-align: middle; background-color: {{ $tierColor }};"><span class="tier-badge {{ $tierClass }} ">{{ $tier }}</span></td>
                             <td>
                                 @foreach($groupedByTier[$tier] as $item)
                                     <div class="tier-character-icon-container"
@@ -212,14 +218,19 @@
                             $tierClass = 'tier-' . strtolower(str_replace(' ', '-', $tier)); // e.g., tier-1, tier-2, etc.
                         @endphp
                         <tr class="empty-tier-row">
-                            <td style="text-align: center; vertical-align: middle;"><span class="tier-badge {{ $tierClass }}">{{ $tier }}</span></td>
+                            <td class="tier-label-cell" style="text-align: center; vertical-align: middle; background-color: {{ $tierColor }};"><span class="tier-badge {{ $tierClass }}">{{ $tier }}</span></td>
                             <td class="empty-tier-content">&nbsp;</td>
                         </tr>
                     @endif
                 @endforeach
             </tbody>
         </table>
-        <button class="modal-close-btn-bottom close-modal">닫기</button>
+        <div class="tier-modal-watermark">aglaia.dev</div>
+        </div>
+        <div class="modal-btn-row">
+            <button class="tier-download-btn" type="button">이미지 다운로드</button>
+            <button class="modal-close-btn-bottom close-modal">닫기</button>
+        </div>
     </div>
 </div>
 @endsection

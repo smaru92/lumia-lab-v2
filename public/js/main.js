@@ -517,6 +517,99 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Tier Table Image Download ---
+    function loadHtml2Canvas() {
+        return new Promise((resolve, reject) => {
+            if (window.html2canvas) return resolve(window.html2canvas);
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = () => resolve(window.html2canvas);
+            script.onerror = () => reject(new Error('html2canvas load failed'));
+            document.head.appendChild(script);
+        });
+    }
+
+    document.addEventListener('click', async (event) => {
+        const btn = event.target.closest('.tier-download-btn');
+        if (!btn) return;
+
+        const captureArea = btn.closest('.modal-content')?.querySelector('.tier-capture-area');
+        if (!captureArea) return;
+
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '이미지 생성 중...';
+
+        let clone = null;
+        try {
+            const html2canvas = await loadHtml2Canvas();
+
+            // Render an off-screen clone at the SAME inner width the user sees on
+            // screen, so the exported image wraps icons identically to the modal.
+            const contentWidth = captureArea.clientWidth || 700;
+            clone = captureArea.cloneNode(true);
+            clone.style.position = 'fixed';
+            clone.style.top = '0';
+            clone.style.left = '-10000px';
+            clone.style.boxSizing = 'content-box';
+            clone.style.width = contentWidth + 'px';
+            clone.style.margin = '0';
+            clone.style.padding = '20px';
+            clone.style.background = '#ffffff';
+            document.body.appendChild(clone);
+
+            // Ensure all (lazy-loaded) images are fully loaded before capture
+            const imgs = Array.from(clone.querySelectorAll('img'));
+            await Promise.all(imgs.map((img) => {
+                if (img.complete && img.naturalWidth) return Promise.resolve();
+                img.loading = 'eager';
+                return new Promise((res) => { img.onload = img.onerror = res; });
+            }));
+
+            // html2canvas does not honor object-fit:cover, so it would stretch the
+            // portraits. Convert those icons to background-image divs so the export
+            // keeps the exact cropped ratio the user sees on the web.
+            clone.querySelectorAll('img.tier-character-icon').forEach((img) => {
+                const cs = window.getComputedStyle(img);
+                const div = document.createElement('div');
+                div.className = img.className;
+                div.style.width = cs.width;
+                div.style.height = cs.height;
+                div.style.display = 'inline-block';
+                div.style.verticalAlign = cs.verticalAlign;
+                div.style.borderRadius = cs.borderRadius;
+                div.style.border = cs.border;
+                div.style.boxSizing = cs.boxSizing;
+                div.style.backgroundImage = 'url("' + img.src + '")';
+                div.style.backgroundSize = 'cover';
+                div.style.backgroundPosition = 'center';
+                div.style.backgroundRepeat = 'no-repeat';
+                img.replaceWith(div);
+            });
+
+            const canvas = await html2canvas(clone, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: clone.offsetWidth,
+                height: clone.offsetHeight
+            });
+
+            const link = document.createElement('a');
+            link.download = 'lumia-tier-list.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (e) {
+            console.error('Tier image download failed:', e);
+            alert('이미지 다운로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        } finally {
+            if (clone && clone.parentNode) clone.parentNode.removeChild(clone);
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+
     // --- Initial Load ---
     applyAllFilters(); // Apply all filters on initial page load
     // Set initial sort state if any header has 'active-sort' (e.g. from server-side preference or previous state)
