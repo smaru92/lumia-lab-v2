@@ -135,8 +135,11 @@ export function DataTable<TData, TValue>({
     });
 
     // 검색 변경 핸들러
+    // 빈 문자열("")을 그대로 전달해야 마지막(첫) 글자를 지웠을 때 search 파라미터가
+    // 삭제됨. `value || undefined`로 넘기면 ""가 undefined가 되어 updateUrl이
+    // 검색어를 지우지 않고, 입력값이 이전 글자로 되돌아가는 버그가 있었음.
     const handleSearchChange = (value: string) => {
-        updateUrl({ search: value || undefined });
+        updateUrl({ search: value });
     };
 
     // 필터 변경 핸들러

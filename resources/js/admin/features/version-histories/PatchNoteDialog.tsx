@@ -259,85 +259,90 @@ export function PatchNoteDialog({
                         </div>
                     </div>
 
-                    {showTargetSelect && (
+                    {/* 항상 렌더링하고 visibility만 토글 → 구분 변경 시 모달 높이 고정 */}
+                    <div
+                        className={cn('space-y-2', !showTargetSelect && 'invisible')}
+                        aria-hidden={!showTargetSelect}
+                    >
+                        <Label>대상</Label>
+                        <Controller
+                            name="target_id"
+                            control={control}
+                            render={({ field }) => {
+                                const options = getTargetOptions();
+                                const selectedOption = options.find(
+                                    (opt) => opt.value === field.value
+                                );
+                                return (
+                                    <TargetCombobox
+                                        options={options}
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        selectedLabel={selectedOption?.label}
+                                    />
+                                );
+                            }}
+                        />
+                    </div>
+
+                    {/* 무기/스킬 행도 항상 렌더링하고 visibility만 토글 → 높이 고정 */}
+                    <div
+                        className={cn('grid gap-4 md:grid-cols-2', !showWeaponType && 'invisible')}
+                        aria-hidden={!showWeaponType}
+                    >
                         <div className="space-y-2">
-                            <Label>대상</Label>
+                            <Label>무기</Label>
                             <Controller
-                                name="target_id"
+                                name="weapon_type"
                                 control={control}
-                                render={({ field }) => {
-                                    const options = getTargetOptions();
-                                    const selectedOption = options.find(
-                                        (opt) => opt.value === field.value
-                                    );
-                                    return (
-                                        <TargetCombobox
-                                            options={options}
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            selectedLabel={selectedOption?.label}
-                                        />
-                                    );
-                                }}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ''}
+                                        onValueChange={(v) => field.onChange(v || null)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="선택 안함" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {weaponTypes.map((weapon) => (
+                                                <SelectItem key={weapon} value={weapon}>
+                                                    {weapon}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             />
                         </div>
-                    )}
 
-                    {showWeaponType && (
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label>무기</Label>
-                                <Controller
-                                    name="weapon_type"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Select
-                                            value={field.value || ''}
-                                            onValueChange={(v) => field.onChange(v || null)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="선택 안함" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {weaponTypes.map((weapon) => (
-                                                    <SelectItem key={weapon} value={weapon}>
-                                                        {weapon}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                />
-                            </div>
-
-                            {showSkillType && (
-                                <div className="space-y-2">
-                                    <Label>스킬</Label>
-                                    <Controller
-                                        name="skill_type"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select
-                                                value={field.value || ''}
-                                                onValueChange={(v) => field.onChange(v || null)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="선택 안함" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {skillTypes.map((skill) => (
-                                                        <SelectItem key={skill} value={skill}>
-                                                            {skill}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                    />
-                                </div>
-                            )}
+                        <div
+                            className={cn('space-y-2', !showSkillType && 'invisible')}
+                            aria-hidden={!showSkillType}
+                        >
+                            <Label>스킬</Label>
+                            <Controller
+                                name="skill_type"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ''}
+                                        onValueChange={(v) => field.onChange(v || null)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="선택 안함" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {skillTypes.map((skill) => (
+                                                <SelectItem key={skill} value={skill}>
+                                                    {skill}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
-                    )}
+                    </div>
 
                     <div className="space-y-2">
                         <Label>패치 내용 *</Label>
