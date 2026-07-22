@@ -544,19 +544,32 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const html2canvas = await loadHtml2Canvas();
 
-            // Render an off-screen clone at the SAME inner width the user sees on
-            // screen, so the exported image wraps icons identically to the modal.
-            const contentWidth = captureArea.clientWidth || 700;
+            // Always export using the PC layout (10 icons per row) regardless of the
+            // current device, at a fixed PC content width.
+            const PC_CONTENT_WIDTH = 860;
             clone = captureArea.cloneNode(true);
             clone.style.position = 'fixed';
             clone.style.top = '0';
             clone.style.left = '-10000px';
             clone.style.boxSizing = 'content-box';
-            clone.style.width = contentWidth + 'px';
+            clone.style.width = PC_CONTENT_WIDTH + 'px';
             clone.style.margin = '0';
             clone.style.padding = '20px';
             clone.style.background = '#ffffff';
             document.body.appendChild(clone);
+
+            // Force the PC (10-per-row) layout inline. Inline !important beats the
+            // mobile media-query rules so the exported image looks like the PC modal.
+            clone.querySelectorAll('.tier-table td:nth-child(2)').forEach((cell) => {
+                cell.style.setProperty('display', 'flex', 'important');
+                cell.style.setProperty('flex-wrap', 'wrap', 'important');
+                cell.style.setProperty('gap', '8px', 'important');
+            });
+            clone.querySelectorAll('.tier-character-icon-container').forEach((c) => {
+                c.style.setProperty('flex', '0 0 calc((100% - 9 * 8px) / 10)', 'important');
+                c.style.setProperty('max-width', 'calc((100% - 9 * 8px) / 10)', 'important');
+                c.style.setProperty('width', 'auto', 'important');
+            });
 
             // Ensure all (lazy-loaded) images are fully loaded before capture
             const imgs = Array.from(clone.querySelectorAll('img'));

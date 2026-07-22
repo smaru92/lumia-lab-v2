@@ -510,8 +510,8 @@ tr:hover { background-color: #e8f4ff; }
     margin: 5% auto; /* 15% from the top and centered */
     padding: 20px;
     border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
-    max-width: 760px;
+    width: 90%; /* Could be more or less, depending on screen size */
+    max-width: 880px; /* PC: 1행 10개 아이콘이 여유있게 들어가는 너비 */
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
     position: relative;
@@ -1590,5 +1590,67 @@ body > .tier-tooltip {
 
     thead tr {
         position: static !important;
+    }
+}
+
+/* =========================================================
+   Tier modal: fixed number of icons per row
+   PC(>=1025) 10개 / 태블릿(600~1024) 7개 / 모바일(<=599) 5개
+   아이콘은 유동(width:100%)으로 열 너비에 맞춰 크기가 조정됨.
+   (다운로드 이미지는 JS에서 PC 레이아웃으로 강제 렌더링)
+   ========================================================= */
+.tier-table td:nth-child(2) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 8px !important;
+}
+
+/* PC 기본: 1행 10개 */
+.tier-table .tier-character-icon-container {
+    flex: 0 0 calc((100% - 9 * 8px) / 10) !important;
+    max-width: calc((100% - 9 * 8px) / 10) !important;
+    min-width: 0;
+    width: auto;
+    box-sizing: border-box;
+}
+
+/* 아이콘을 열 너비에 맞춰 정사각형으로 유동 리사이즈 */
+.tier-table .tier-icon-thumb {
+    display: block;
+    width: 100%;
+    position: relative;
+    line-height: 0;
+}
+
+.tier-table .tier-character-icon {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+.tier-table .tier-icon-caption {
+    max-width: 100%;
+}
+
+/* 태블릿: 1행 7개 */
+@media screen and (min-width: 600px) and (max-width: 1024px) {
+    .tier-table .tier-character-icon-container {
+        flex: 0 0 calc((100% - 6 * 8px) / 7) !important;
+        max-width: calc((100% - 6 * 8px) / 7) !important;
+    }
+}
+
+/* 모바일: 1행 5개 */
+@media screen and (max-width: 599px) {
+    .tier-table td:nth-child(2) {
+        gap: 6px !important;
+    }
+    .tier-table .tier-character-icon-container {
+        flex: 0 0 calc((100% - 4 * 6px) / 5) !important;
+        max-width: calc((100% - 4 * 6px) / 5) !important;
     }
 }
