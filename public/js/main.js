@@ -529,6 +529,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Character icons are served at 80px wide for the web, which is too small for
+    // the 2x export (icons render ~70px = 140 device px) and looks blurry.
+    // The pre-resize originals (122x160) are kept under /icon/origin, so use those
+    // for the exported image only. Falls back to the served icon if origin is missing.
+    const hiResIconCache = new Map();
+    function hiResIconSrc(src) {
+        return src.replace(/\/Character\/icon\/([^/?]+)(\?.*)?$/i, '/Character/icon/origin/$1$2');
+    }
+    function resolveHiResIcon(src) {
+        const hiRes = hiResIconSrc(src);
+        if (hiRes === src) return Promise.resolve(src);
+        if (!hiResIconCache.has(hiRes)) {
+            hiResIconCache.set(hiRes, new Promise((resolve) => {
+                const probe = new Image();
+                probe.onload = () => resolve(probe.naturalWidth ? hiRes : src);
+                probe.onerror = () => resolve(src);
+                probe.src = hiRes;
+            }));
+        }
+        return hiResIconCache.get(hiRes);
+    }
+
     document.addEventListener('click', async (event) => {
         const btn = event.target.closest('.tier-download-btn');
         if (!btn) return;
@@ -581,8 +603,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // html2canvas does not honor object-fit:cover, so it would stretch the
             // portraits. Convert those icons to background-image divs so the export
-            // keeps the exact cropped ratio the user sees on the web.
-            clone.querySelectorAll('img.tier-character-icon').forEach((img) => {
+            // keeps the exact cropped ratio the user sees on the web, swapping in the
+            // higher-resolution originals so the 2x capture stays sharp.
+            const iconImgs = Array.from(clone.querySelectorAll('img.tier-character-icon'));
+            const iconSrcs = await Promise.all(iconImgs.map((img) => resolveHiResIcon(img.src)));
+            iconImgs.forEach((img, index) => {
                 const cs = window.getComputedStyle(img);
                 const div = document.createElement('div');
                 div.className = img.className;
@@ -593,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 div.style.borderRadius = cs.borderRadius;
                 div.style.border = cs.border;
                 div.style.boxSizing = cs.boxSizing;
-                div.style.backgroundImage = 'url("' + img.src + '")';
+                div.style.backgroundImage = 'url("' + iconSrcs[index] + '")';
                 div.style.backgroundSize = 'cover';
                 div.style.backgroundPosition = 'center';
                 div.style.backgroundRepeat = 'no-repeat';

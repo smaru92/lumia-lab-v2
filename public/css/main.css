@@ -1223,6 +1223,7 @@ body > .tier-tooltip {
     .modal-btn-row .modal-close-btn-bottom {
         margin-top: 0;
     }
+}
 
 /* Small phone specific adjustments */
 @media screen and (max-width: 380px) {
