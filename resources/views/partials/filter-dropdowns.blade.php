@@ -2,13 +2,14 @@
 <div class="custom-dropdown-container">
     <label><strong>버전</strong></label>
     <div class="custom-dropdown" id="version-dropdown">
+        {{-- data-value 는 집계/URL 용 원본 키, 표시 텍스트는 핫픽스 알파벳이 붙은 표기 --}}
         <div class="dropdown-selected" data-value="{{ request('version', $defaultVersion) }}">
-            {{ request('version', $defaultVersion) }}
+            {{ version_label(request('version', $defaultVersion)) }}
         </div>
         <div class="dropdown-options">
             @foreach($versions as $version)
                 <div class="dropdown-option {{ request('version', $defaultVersion) === $version ? 'selected' : '' }}" data-value="{{ $version }}">
-                    {{ $version }}
+                    {{ version_label($version) }}
                 </div>
             @endforeach
         </div>

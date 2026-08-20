@@ -145,11 +145,13 @@ export interface VersionHistory {
     version_season: number | null;
     version_major: number;
     version_minor: number;
+    version_hotfix: string | null;
     start_date: string;
     end_date: string;
     created_at: string;
     updated_at: string;
     version?: string;
+    display_version?: string;
     status?: string;
     patch_notes?: PatchNote[];
 }

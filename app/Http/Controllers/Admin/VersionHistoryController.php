@@ -21,9 +21,12 @@ class VersionHistoryController extends Controller
             'version_season' => 'nullable|integer',
             'version_major' => 'required|integer|min:0',
             'version_minor' => 'required|integer|min:0',
+            'version_hotfix' => 'nullable|string|max:2|regex:/^[a-zA-Z]*$/',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
+
+        $validated['version_hotfix'] = $this->normalizeHotfix($validated['version_hotfix'] ?? null);
 
         $version = VersionHistory::create($validated);
 
@@ -41,13 +44,26 @@ class VersionHistoryController extends Controller
             'version_season' => 'nullable|integer',
             'version_major' => 'required|integer|min:0',
             'version_minor' => 'required|integer|min:0',
+            'version_hotfix' => 'nullable|string|max:2|regex:/^[a-zA-Z]*$/',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
+        $validated['version_hotfix'] = $this->normalizeHotfix($validated['version_hotfix'] ?? null);
+
         $versionHistory->update($validated);
 
         return new VersionHistoryResource($versionHistory);
+    }
+
+    /**
+     * 핫픽스 알파벳 정규화 (빈 값은 null, 대문자는 소문자로)
+     */
+    private function normalizeHotfix(?string $hotfix): ?string
+    {
+        $hotfix = trim((string) $hotfix);
+
+        return $hotfix === '' ? null : strtolower($hotfix);
     }
 
     public function destroy(VersionHistory $versionHistory)

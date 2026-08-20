@@ -28,8 +28,9 @@ class TacticalSkillComparisonController extends Controller
 
         $versionOptions = $versions->map(function ($v) {
             return [
-                'value' => "{$v->version_season}.{$v->version_major}.{$v->version_minor}",
-                'label' => "v{$v->version_season}.{$v->version_major}.{$v->version_minor}",
+                // value 는 집계/조회용 원본 키, label 은 핫픽스 알파벳이 붙은 표기
+                'value' => $v->version_key,
+                'label' => "v{$v->display_version}",
             ];
         });
 

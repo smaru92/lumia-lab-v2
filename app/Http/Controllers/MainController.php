@@ -266,8 +266,11 @@ class MainController extends Controller
             'version_season' => $version->version_season,
             'version_major' => $version->version_major,
             'version_minor' => $version->version_minor,
+            'version_hotfix' => $version->version_hotfix,
             'start_date' => $version->start_date->format('Y-m-d'),
-            'full_version' => "{$version->version_season}.{$version->version_major}.{$version->version_minor}",
+            // full_version 은 집계/URL 용 키, display_version 은 핫픽스 알파벳이 붙은 표기용
+            'full_version' => $version->version_key,
+            'display_version' => version_label($version->version_key),
         ];
     }
 

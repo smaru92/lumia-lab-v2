@@ -312,11 +312,11 @@
     <div class="version-info-box">
         <h3>버전 비교</h3>
         <p>
-            <strong>최신 버전:</strong> {{ $latestVersion->version_season }}.{{ $latestVersion->version_major }}.{{ $latestVersion->version_minor }}
+            <strong>최신 버전:</strong> {{ version_label($latestVersion->version_key) }}
             ({{ $latestVersion->start_date->format('Y-m-d') }})
         </p>
         <p>
-            <strong>비교 버전:</strong> {{ $previousVersion->version_season }}.{{ $previousVersion->version_major }}.{{ $previousVersion->version_minor }}
+            <strong>비교 버전:</strong> {{ version_label($previousVersion->version_key) }}
             ({{ $previousVersion->start_date->format('Y-m-d') }})
         </p>
         <div class="tier-selector-container">
@@ -841,7 +841,7 @@
 
     // 현재 선택된 티어
     let currentTier = '{{ $minTier }}';
-    let latestVersionInfo = @json($latestVersion ? ['full_version' => $latestVersion->version_season . '.' . $latestVersion->version_major . '.' . $latestVersion->version_minor] : null);
+    let latestVersionInfo = @json($latestVersion ? ['full_version' => $latestVersion->version_key] : null);
 
     // 티어 드롭다운 초기화
     const mainTierDropdown = document.getElementById('main-tier-dropdown');

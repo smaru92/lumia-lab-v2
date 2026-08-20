@@ -11,6 +11,11 @@ const versionSchema = z.object({
     version_season: z.coerce.number().nullable(),
     version_major: z.coerce.number().min(0, '필수 입력'),
     version_minor: z.coerce.number().min(0, '필수 입력'),
+    version_hotfix: z
+        .string()
+        .max(2, '최대 2자까지 입력할 수 있습니다')
+        .regex(/^[a-zA-Z]*$/, '알파벳만 입력할 수 있습니다')
+        .optional(),
     start_date: z.string().min(1, '시작일을 입력해주세요'),
     end_date: z.string().min(1, '종료일을 입력해주세요'),
 });
@@ -39,6 +44,7 @@ export function VersionHistoryForm({
         defaultValues: version
             ? {
                   ...version,
+                  version_hotfix: version.version_hotfix ?? '',
                   start_date: version.start_date?.slice(0, 16),
                   end_date: version.end_date?.slice(0, 16),
               }
@@ -46,6 +52,7 @@ export function VersionHistoryForm({
                   version_season: null,
                   version_major: 0,
                   version_minor: 0,
+                  version_hotfix: '',
                   start_date: '',
                   end_date: '',
               },
@@ -58,7 +65,7 @@ export function VersionHistoryForm({
                     <CardTitle>버전 정보</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-4">
                         <div className="space-y-2">
                             <Label htmlFor="version_season">시즌</Label>
                             <Input
@@ -93,6 +100,24 @@ export function VersionHistoryForm({
                                     {errors.version_minor.message}
                                 </p>
                             )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="version_hotfix">핫픽스</Label>
+                            <Input
+                                id="version_hotfix"
+                                type="text"
+                                maxLength={2}
+                                placeholder="예: a (선택 사항)"
+                                {...register('version_hotfix')}
+                            />
+                            {errors.version_hotfix && (
+                                <p className="text-sm text-[hsl(var(--destructive))]">
+                                    {errors.version_hotfix.message}
+                                </p>
+                            )}
+                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                입력하면 해당 버전이 12.1.1a 형태로 표기됩니다. 통계 집계는 영향받지 않습니다.
+                            </p>
                         </div>
                     </div>
 

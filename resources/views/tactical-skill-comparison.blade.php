@@ -369,8 +369,8 @@
                     <tr>
                         <th rowspan="2">#</th>
                         <th rowspan="2">전술스킬</th>
-                        <th colspan="7" class="header-version-a section-border-left">v{{ $versionA }} (이전)</th>
-                        <th colspan="7" class="header-version-b section-border-left">v{{ $versionB }} (최신)</th>
+                        <th colspan="7" class="header-version-a section-border-left">v{{ version_label($versionA) }} (이전)</th>
+                        <th colspan="7" class="header-version-b section-border-left">v{{ version_label($versionB) }} (최신)</th>
                         <th colspan="5" class="header-diff section-border-left">변동</th>
                     </tr>
                     <tr>
