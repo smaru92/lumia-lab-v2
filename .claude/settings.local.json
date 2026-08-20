@@ -10,7 +10,17 @@
       "Bash(dir \"C:\\ondoc\\lumia-lab-v2\\public\\storage\" /b)",
       "Bash(dir \"C:\\ondoc\\lumia-lab-v2\\public\\storage\" /b /s)",
       "Bash(findstr:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mysql --version)",
+      "PowerShell(php \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--showm-lumia-lab-v2\\\\1ba42e40-fdfd-4ddb-9322-348e0222fabf\\\\scratchpad\\\\diag_equipment.php\")",
+      "Bash(git -C C:/showm/lumia-lab-v2 show 79ec9c9 --stat)",
+      "Bash(git -C C:/showm/lumia-lab-v2 show 79ec9c9 -- public/js/main.js public/css/main.css)",
+      "PowerShell($d=0;$i=0;Get-Content C:\\\\showm\\\\lumia-lab-v2\\\\public\\\\css\\\\main.css | ForEach-Object { $i++; $line=$_; if\\($line -match '@media' -and $d -gt 0\\){ \"line $i depth $d : $\\($line.Trim\\(\\)\\)\" }; $o=\\([regex]::Matches\\($line,'\\\\{'\\)\\).Count; $c=\\([regex]::Matches\\($line,'\\\\}'\\)\\).Count; $d=$d+$o-$c })",
+      "PowerShell($d=0;$i=0;$bad=@\\(\\);Get-Content C:\\\\showm\\\\lumia-lab-v2\\\\public\\\\css\\\\main.css | ForEach-Object { $i++; $o=\\([regex]::Matches\\($_,'\\\\{'\\)\\).Count; $c=\\([regex]::Matches\\($_,'\\\\}'\\)\\).Count; $d=$d+$o-$c; if\\($d -lt 0\\){$script:bad+=$i} }; \"final depth = $d\"; \"negatives: $\\($script:bad -join ','\\)\")",
+      "PowerShell(git *)",
+      "PowerShell($p='C:\\\\showm\\\\lumia-lab-v2\\\\public\\\\storage\\\\Character\\\\icon'; if\\(Test-Path $p\\){ Get-ChildItem $p -File | Select-Object -First 5 Name,Length; Add-Type -AssemblyName System.Drawing; Get-ChildItem $p -File | Select-Object -First 5 | ForEach-Object { $img=[System.Drawing.Image]::FromFile\\($_.FullName\\); \"{0}: {1}x{2}\" -f $_.Name,$img.Width,$img.Height; $img.Dispose\\(\\) } } else { \"not found: $p\"; Get-ChildItem C:\\\\showm\\\\lumia-lab-v2\\\\public -Directory | Select-Object Name })",
+      "PowerShell(Get-ChildItem C:\\\\showm\\\\lumia-lab-v2\\\\public\\\\storage\\\\Character -Directory | ForEach-Object { $d=$_; $f=Get-ChildItem $d.FullName -File | Select-Object -First 1; if\\($f\\){ Add-Type -AssemblyName System.Drawing; $img=[System.Drawing.Image]::FromFile\\($f.FullName\\); \"{0}: {1} -> {2}x{3} \\({4} files\\)\" -f $d.Name,$f.Name,$img.Width,$img.Height,\\(Get-ChildItem $d.FullName -File\\).Count; $img.Dispose\\(\\) } else { \"{0}: \\(empty or subdirs\\)\" -f $d.Name } }; \"---- root files ----\"; Get-ChildItem C:\\\\showm\\\\lumia-lab-v2\\\\public\\\\storage\\\\Character -File | Select-Object -First 3 Name,Length)",
+      "PowerShell($paths=@\\('C:\\\\showm\\\\lumia-lab-v2\\\\storage\\\\app\\\\public\\\\Character\\\\icon\\\\origin','C:\\\\showm\\\\lumia-lab-v2\\\\public\\\\storage\\\\Character\\\\icon\\\\origin'\\); foreach\\($p in $paths\\){ if\\(Test-Path $p\\){ Add-Type -AssemblyName System.Drawing; $files=Get-ChildItem $p -File; \"$p : $\\($files.Count\\) files\"; $files | Select-Object -First 3 | ForEach-Object { $img=[System.Drawing.Image]::FromFile\\($_.FullName\\); \"  {0}: {1}x{2} \\({3} bytes\\)\" -f $_.Name,$img.Width,$img.Height,$_.Length; $img.Dispose\\(\\) } } else { \"missing: $p\" } })"
     ],
     "deny": [],
     "ask": []
