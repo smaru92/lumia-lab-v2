@@ -15,13 +15,66 @@ if (!function_exists('image_asset')) {
     }
 }
 
+if (!function_exists('parse_version_key')) {
+    /**
+     * 버전 키 문자열을 파싱한다. (예: "12.2.0", "12.2.0b")
+     *
+     * 핫픽스가 붙은 버전은 별도 통계로 분리되므로 키 자체에 알파벳이 포함된다.
+     * 형식이 잘못됐거나 범위를 벗어나면 $fallback(기본: erDev.defaultVersion)을 사용한다.
+     *
+     * @param string|null $version
+     * @param string|null $fallback
+     * @return array{version_season:int,version_major:int,version_minor:int,version_hotfix:?string,key:string,cache_key:string}
+     */
+    function parse_version_key($version, $fallback = null)
+    {
+        $parsed = _parse_version_key_raw($version);
+
+        if ($parsed === null) {
+            $parsed = _parse_version_key_raw($fallback ?? config('erDev.defaultVersion'));
+        }
+
+        // 폴백까지 잘못된 경우를 대비한 최후 방어
+        if ($parsed === null) {
+            $parsed = ['version_season' => 0, 'version_major' => 0, 'version_minor' => 0, 'version_hotfix' => null];
+        }
+
+        $hotfix = $parsed['version_hotfix'] ?? '';
+        $parsed['key'] = "{$parsed['version_season']}.{$parsed['version_major']}.{$parsed['version_minor']}{$hotfix}";
+        $parsed['cache_key'] = "{$parsed['version_season']}_{$parsed['version_major']}_{$parsed['version_minor']}{$hotfix}";
+
+        return $parsed;
+    }
+}
+
+if (!function_exists('_parse_version_key_raw')) {
+    /**
+     * parse_version_key 내부용 - 형식/범위 검증 후 실패하면 null
+     *
+     * @param string|null $version
+     * @return array|null
+     */
+    function _parse_version_key_raw($version)
+    {
+        if (!is_string($version) || !preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})([a-z]{1,2})?$/i', $version, $m)) {
+            return null;
+        }
+
+        return [
+            'version_season' => (int) $m[1],
+            'version_major' => (int) $m[2],
+            'version_minor' => (int) $m[3],
+            'version_hotfix' => isset($m[4]) && $m[4] !== '' ? strtolower($m[4]) : null,
+        ];
+    }
+}
+
 if (!function_exists('version_label')) {
     /**
      * 버전 표기 헬퍼
-     * 집계/URL 에 쓰이는 버전 키("12.1.1")를 화면 표기용("12.1.1a")으로 변환한다.
-     * 핫픽스 알파벳은 관리자에서 수기로 등록하며, 등록이 없으면 원본 키를 그대로 반환한다.
+     * 버전 키에 이미 핫픽스가 포함되므로 표기는 키와 동일하다.
      *
-     * @param string|\App\Models\VersionHistory|null $version 버전 키 문자열 또는 VersionHistory 모델
+     * @param string|\App\Models\VersionHistory|null $version
      * @return string
      */
     function version_label($version)
@@ -31,13 +84,12 @@ if (!function_exists('version_label')) {
         }
 
         if ($version instanceof \App\Models\VersionHistory) {
-            $version = $version->version_key;
+            return $version->version_key;
         }
 
-        return \App\Models\VersionHistory::displayVersion((string) $version);
+        return (string) $version;
     }
 }
-
 
 if (!function_exists('trait_group_label')) {
     /**

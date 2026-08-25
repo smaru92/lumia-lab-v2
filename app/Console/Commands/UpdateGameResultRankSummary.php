@@ -12,7 +12,7 @@ class UpdateGameResultRankSummary extends Command
      *
      * @var string
      */
-    protected $signature = 'update:game-results-rank-summary {version_season?} {version_major?} {version_minor?}';
+    protected $signature = 'update:game-results-rank-summary {version_season?} {version_major?} {version_minor?} {version_hotfix?}';
 
     /**
      * The console command description.
@@ -29,6 +29,7 @@ class UpdateGameResultRankSummary extends Command
         $versionSeason = $this->argument('version_season') ?? null;
         $versionMajor = $this->argument('version_major') ?? null;
         $versionMinor = $this->argument('version_minor') ?? null;
-        $gameResultRankSummaryService->updateGameResultRankSummary($versionSeason, $versionMajor, $versionMinor);
+        $versionHotfix = $this->argument('version_hotfix') ?? null;
+        $gameResultRankSummaryService->updateGameResultRankSummary($versionSeason, $versionMajor, $versionMinor, $versionHotfix);
     }
 }

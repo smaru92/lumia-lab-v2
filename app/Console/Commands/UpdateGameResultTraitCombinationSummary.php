@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class UpdateGameResultTraitCombinationSummary extends Command
 {
-    protected $signature = 'update:game-result-trait-combination-summary {version_season?} {version_major?} {version_minor?}';
+    protected $signature = 'update:game-result-trait-combination-summary {version_season?} {version_major?} {version_minor?} {version_hotfix?}';
 
     protected $description = '캐릭터별 특성 조합 통계 데이터를 갱신합니다.';
 
@@ -18,9 +18,10 @@ class UpdateGameResultTraitCombinationSummary extends Command
         $versionSeason = $this->argument('version_season') ?? null;
         $versionMajor = $this->argument('version_major') ?? null;
         $versionMinor = $this->argument('version_minor') ?? null;
+        $versionHotfix = $this->argument('version_hotfix') ?? null;
 
         try {
-            $service->updateGameResultTraitCombinationSummary($versionSeason, $versionMajor, $versionMinor);
+            $service->updateGameResultTraitCombinationSummary($versionSeason, $versionMajor, $versionMinor, $versionHotfix);
 
             $this->info('특성 조합 통계 갱신이 완료되었습니다.');
         } catch (\Exception $e) {

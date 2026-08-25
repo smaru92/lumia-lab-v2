@@ -30,20 +30,27 @@ abstract class BaseSummaryService
     abstract protected function transformData(object|array $gameResult, string $minTier, int $minScore): array;
     abstract protected function ensureTableExists(string $tableName): void;
 
-    public function updateSummary($versionSeason = null, $versionMajor = null, $versionMinor = null)
+    public function updateSummary($versionSeason = null, $versionMajor = null, $versionMinor = null, $versionHotfix = null)
     {
         Log::channel($this->logChannel)->info('S: update summary');
 
+        // 버전 인자가 하나도 없으면 최신 버전(핫픽스 포함)을 대상으로 집계한다.
+        // 일부만 넘어온 경우 핫픽스를 임의로 채우면 다른 버전을 덮어쓰므로 넘어온 값만 쓴다.
+        $versionGiven = $versionSeason !== null || $versionMajor !== null || $versionMinor !== null;
         $latestVersion = VersionHistory::active()->latest('created_at')->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        if (!$versionGiven) {
+            $versionHotfix = $versionHotfix ?? $latestVersion->version_hotfix;
+        }
 
-        // 버전별 테이블명 생성
+        // 버전별 테이블명 생성 (핫픽스가 붙으면 별도 테이블로 분리됨)
         $versionFilters = [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
-            'version_minor' => $versionMinor
+            'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
         ];
         $versionedTableName = VersionedGameTableManager::getTableName(
             $this->getSummaryTableBaseName(),
@@ -77,6 +84,7 @@ abstract class BaseSummaryService
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,
                     'version_minor' => $versionMinor,
+                    'version_hotfix' => $versionHotfix,
                     'min_tier' => $minTier,
                     'min_score' => $minScore,
                 ]);

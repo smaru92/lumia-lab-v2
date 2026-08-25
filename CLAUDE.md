@@ -218,15 +218,27 @@ ER_STAT_MAIN_PAGE_TIER=Meteorite  # 메인 페이지 기본 티어
 
 ## 최근 변경사항 (2026-08-21)
 
-### 1. 버전 핫픽스 알파벳 수기 관리
-- 공식 API에 없는 핫픽스 알파벳(12.1.1a)을 관리자에서 직접 입력
+### 1. 버전 핫픽스 알파벳 수기 관리 + 통계 분리
+- 공식 API에 없는 핫픽스 알파벳(12.2.0b)을 관리자에서 직접 입력
 - **컬럼**: `version_histories.version_hotfix` (nullable, 2자)
-- **중요**: 알파벳은 **표기에만** 붙는다. URL `?version=`, 캐시 키, 버전별 테이블명은 계속 `season.major.minor` 사용
-  - 이 문자열을 `explode('.')`로 파싱하는 곳이 많아 값에 알파벳을 넣으면 전부 깨짐
-- **모델**: `VersionHistory::$version_key`(집계용) / `$display_version`(표기용) / `hotfixMap()`
-- **헬퍼**: `version_label('12.1.1')` → `'12.1.1a'` (블레이드용)
-  - 페이지 데이터 캐시에 옛 모델이 들어있어도 표기는 항상 DB 최신값을 쓰도록 별도 맵으로 조회
-  - 버전 저장/삭제 시 `Cache::forget`으로 자동 무효화
+- **핫픽스는 별도 통계다.** 버전 키에 알파벳이 포함되고, 그대로 테이블 접미사가 된다
+  - `12.2.0` -> `game_results_v12_2_0` / `12.2.0b` -> `game_results_v12_2_0b`
+  - 전적/요약 테이블 전부 동일하게 분리됨
+- **버전 필터 배열이 전 구간의 운반체**: `version_season/major/minor/hotfix` 4개를 묶어서
+  `VersionedGameTableManager::getTableName()` 까지 그대로 흘려보낸다
+  - `$filters` 를 `where()` 에 넘기기 전 `unset()` 할 때 `version_hotfix` 도 반드시 같이 제거
+- **파싱**: `parse_version_key('12.2.0b')` 헬퍼 (형식/범위 검증 + 폴백 포함)
+  - 반환: `version_season/major/minor/hotfix`, `key`(12.2.0b), `cache_key`(12_2_0b)
+  - 컨트롤러의 `explode('.', $version)` 는 전부 이 헬퍼로 대체됨
+- **수집**: ER API가 핫픽스를 안 주므로 `GameResultService::resolveVersionHotfix()` 가
+  게임 시작 시각(`startDtm`)을 `version_histories.start_date` 와 대조해 판정
+- **집계 명령어**: `update:game-results-summary {season?} {major?} {minor?} {hotfix?}`
+  - 인자 없이 실행하면 최신 버전(핫픽스 포함)이 대상. 스케줄러는 인자 없이 돌므로 자동 추종
+  - 인자를 일부만 주면 핫픽스는 폴백하지 않는다 (다른 버전을 덮어쓰지 않도록)
+- **기존 데이터 분리**: `php artisan versions:split-hotfix [--dry-run]`
+  - 핫픽스 등록 전에 기본 테이블에 쌓인 데이터를 시작 시각 기준으로 옮긴다. 반복 실행 안전
+  - `INSERT ... SELECT` 는 컬럼명을 명시한다 (ALTER로 추가된 컬럼 때문에 순서가 다를 수 있음)
+- **주의**: `.env` 의 `ER_STAT_DEFALT_VERSION` 은 기본 표시 버전이라 패치마다 갱신 필요
 
 ### 2. 특성 그룹(메인/서브1/서브2) 관리
 - 그룹 역시 공식 API에 없어 수기 관리하며, **패치마다 바뀔 수 있음**

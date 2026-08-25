@@ -19,11 +19,7 @@ class PatchComparisonService
      */
     protected function getVersionedTableName($version): string
     {
-        return VersionedGameTableManager::getTableName('game_results_summary', [
-            'version_season' => $version->version_season,
-            'version_major' => $version->version_major,
-            'version_minor' => $version->version_minor,
-        ]);
+        return VersionedGameTableManager::getTableName('game_results_summary', $version->version_filters);
     }
 
     /**
@@ -35,6 +31,7 @@ class PatchComparisonService
             ->orderBy('version_season', 'desc')
             ->orderBy('version_major', 'desc')
             ->orderBy('version_minor', 'desc')
+            ->orderBy('version_hotfix', 'desc')
             ->first();
     }
 
@@ -53,11 +50,19 @@ class PatchComparisonService
                     $q->where('version_season', '=', $latestVersion->version_season)
                         ->where('version_major', '=', $latestVersion->version_major)
                         ->where('version_minor', '<', $latestVersion->version_minor);
+                })
+                // 같은 마이너 버전 안에서 핫픽스만 다른 경우 (12.2.0b 의 직전은 12.2.0)
+                ->orWhere(function ($q) use ($latestVersion) {
+                    $q->where('version_season', '=', $latestVersion->version_season)
+                        ->where('version_major', '=', $latestVersion->version_major)
+                        ->where('version_minor', '=', $latestVersion->version_minor)
+                        ->whereRaw("COALESCE(version_hotfix, '') < ?", [$latestVersion->version_hotfix ?? '']);
                 });
         })
             ->orderBy('version_season', 'desc')
             ->orderBy('version_major', 'desc')
             ->orderBy('version_minor', 'desc')
+            ->orderBy('version_hotfix', 'desc')
             ->first();
     }
 

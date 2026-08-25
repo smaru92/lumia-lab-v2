@@ -33,30 +33,15 @@ class EquipmentController
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        // 버전 형식 검증
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version =  explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
-
-        // 추가 검증 - 숫자 범위 확인
-        if (!is_numeric($versionSeason) || !is_numeric($versionMajor) || !is_numeric($versionMinor) ||
-            $versionSeason < 0 || $versionSeason > 999 ||
-            $versionMajor < 0 || $versionMajor > 999 ||
-            $versionMinor < 0 || $versionMinor > 999) {
-            // 잘못된 버전이면 기본값 사용
-            $version =  explode('.', $defaultVersion);
-            $versionSeason = $version[0];
-            $versionMajor = $version[1];
-            $versionMinor = $version[2];
-        }
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         // 캐시 키 생성
-        $cacheKey = "game_equipment_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_equipment_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration'); // 캐시 지속 시간
 
         // 캐시에서 데이터 조회
@@ -68,13 +53,15 @@ class EquipmentController
             $versionFilters = [
                 'version_season' => $versionSeason,
                 'version_major' => $versionMajor,
-                'version_minor' => $versionMinor
+                'version_minor' => $versionMinor,
+                'version_hotfix' => $versionHotfix,
             ];
             $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
             $filters = [
                 'version_season' => $versionSeason,
                 'version_major' => $versionMajor,
                 'version_minor' => $versionMinor,
+                'version_hotfix' => $versionHotfix,
                 'min_tier' => $minTier,
             ];
             $lastData = $this->equipmentMainService->getGameResultEquipmentMainSummary($filters);

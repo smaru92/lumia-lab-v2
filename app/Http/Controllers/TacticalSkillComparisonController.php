@@ -24,6 +24,7 @@ class TacticalSkillComparisonController extends Controller
             ->orderBy('version_season', 'desc')
             ->orderBy('version_major', 'desc')
             ->orderBy('version_minor', 'desc')
+            ->orderBy('version_hotfix', 'desc')
             ->get();
 
         $versionOptions = $versions->map(function ($v) {
@@ -123,16 +124,13 @@ class TacticalSkillComparisonController extends Controller
      */
     private function fetchTacticalSkillStats(string $versionStr, string $minTier, bool $byLevel = false): ?\Illuminate\Support\Collection
     {
-        $parts = explode('.', $versionStr);
-        if (count($parts) !== 3) {
+        // 핫픽스가 붙은 버전(12.2.0b)은 별도 테이블이므로 키를 그대로 파싱해서 넘긴다.
+        $parts = parse_version_key($versionStr);
+        if ($parts['key'] !== strtolower($versionStr)) {
             return null;
         }
 
-        $tableName = VersionedGameTableManager::getTableName('game_results_tactical_skill_summary', [
-            'version_season' => $parts[0],
-            'version_major' => $parts[1],
-            'version_minor' => $parts[2],
-        ]);
+        $tableName = VersionedGameTableManager::getTableName('game_results_tactical_skill_summary', $parts);
 
         if (!Schema::hasTable($tableName)) {
             return null;

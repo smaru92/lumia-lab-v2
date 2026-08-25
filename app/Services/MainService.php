@@ -142,7 +142,8 @@ class MainService
         $versions = $this->versionHistoryService->getLatestVersionList();
         $result = [];
         foreach ($versions as $version) {
-            $result[] = $version->version_season . '.' . $version->version_major . '.' . $version->version_minor;
+            // 핫픽스가 붙은 버전은 별도 통계이므로 키에 알파벳이 포함된다 (예: 12.2.0b)
+            $result[] = $version->version_key;
         }
 
         return $result;

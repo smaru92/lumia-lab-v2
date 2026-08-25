@@ -30,18 +30,23 @@ class GameResultTraitSummaryService
         $versionSeason = $filters['version_season'] ?? null;
         $versionMajor = $filters['version_major'] ?? null;
         $versionMinor = $filters['version_minor'] ?? null;
+        $versionHotfix = $filters['version_hotfix'] ?? null;
 
-        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+        // 버전이 아예 지정되지 않은 경우에만 최신 버전으로 채운다.
+        // 핫픽스는 null 자체가 "핫픽스 없는 버전"을 뜻하므로 개별 폴백을 하면 안 된다.
+        if ($versionSeason === null || $versionMajor === null || $versionMinor === null) {
             $latestVersion = VersionHistory::active()->latest('created_at')->first();
             $versionSeason = $versionSeason ?? $latestVersion->version_season;
             $versionMajor = $versionMajor ?? $latestVersion->version_major;
             $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+            $versionHotfix = $versionHotfix ?? $latestVersion->version_hotfix;
         }
 
         return VersionedGameTableManager::getTableName('game_results_trait_summary', [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
         ]);
     }
 
@@ -50,21 +55,27 @@ class GameResultTraitSummaryService
      * 게임 결과 데이터 삽입
      * @return void
      */
-    public function updateGameResultTraitSummary($versionSeason = null, $versionMajor = null, $versionMinor = null)
+    public function updateGameResultTraitSummary($versionSeason = null, $versionMajor = null, $versionMinor = null, $versionHotfix = null)
     {
         DB::disableQueryLog(); // 쿼리 로그 비활성화
         Log::channel('updateGameResultTraitSummary')->info('S: game result trait summary');
 
+        // 버전 인자가 하나도 없으면 최신 버전(핫픽스 포함)을 대상으로 집계한다.
+        $versionGiven = $versionSeason !== null || $versionMajor !== null || $versionMinor !== null;
         $latestVersion = VersionHistory::active()->latest('created_at')->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+        if (!$versionGiven) {
+            $versionHotfix = $versionHotfix ?? $latestVersion->version_hotfix;
+        }
 
         // 버전별 테이블명 생성
         $versionFilters = [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
-            'version_minor' => $versionMinor
+            'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
         ];
         $tableName = VersionedGameTableManager::getTableName('game_results_trait_summary', $versionFilters);
 
@@ -94,6 +105,7 @@ class GameResultTraitSummaryService
                     'version_season' => $versionSeason,
                     'version_major' => $versionMajor,
                     'version_minor' => $versionMinor,
+                    'version_hotfix' => $versionHotfix,
                     'min_tier' => $minTier,
                     'min_score' => $minScore,
                 ]);
@@ -174,7 +186,7 @@ class GameResultTraitSummaryService
             'version_minor' => $filters['version_minor'] ?? null,
         ]);
 
-        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor'], $filters['version_hotfix']);
 
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
         if (isset($filters['character_name'])) {

@@ -17,9 +17,9 @@ class GameResultRankSummaryService extends BaseSummaryService
         parent::__construct('updateGameResultRankSummary');
     }
 
-    public function updateGameResultRankSummary($versionSeason = null, $versionMajor = null, $versionMinor = null)
+    public function updateGameResultRankSummary($versionSeason = null, $versionMajor = null, $versionMinor = null, $versionHotfix = null)
     {
-        $this->updateSummary($versionSeason, $versionMajor, $versionMinor);
+        $this->updateSummary($versionSeason, $versionMajor, $versionMinor, $versionHotfix);
     }
 
     protected function getSummaryModel(): string
@@ -68,18 +68,23 @@ class GameResultRankSummaryService extends BaseSummaryService
         $versionSeason = $filters['version_season'] ?? null;
         $versionMajor = $filters['version_major'] ?? null;
         $versionMinor = $filters['version_minor'] ?? null;
+        $versionHotfix = $filters['version_hotfix'] ?? null;
 
-        if (!$versionSeason || !$versionMajor || !$versionMinor) {
+        // 버전이 아예 지정되지 않은 경우에만 최신 버전으로 채운다.
+        // 핫픽스는 null 자체가 "핫픽스 없는 버전"을 뜻하므로 개별 폴백을 하면 안 된다.
+        if ($versionSeason === null || $versionMajor === null || $versionMinor === null) {
             $latestVersion = VersionHistory::active()->latest('created_at')->first();
             $versionSeason = $versionSeason ?? $latestVersion->version_season;
             $versionMajor = $versionMajor ?? $latestVersion->version_major;
             $versionMinor = $versionMinor ?? $latestVersion->version_minor;
+            $versionHotfix = $versionHotfix ?? $latestVersion->version_hotfix;
         }
 
         return VersionedGameTableManager::getTableName($this->getSummaryTableBaseName(), [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
         ]);
     }
 
@@ -93,7 +98,7 @@ class GameResultRankSummaryService extends BaseSummaryService
         }
 
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
-        unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
+        unset($filters['version_season'], $filters['version_major'], $filters['version_minor'], $filters['version_hotfix']);
 
         $data = DB::table($tableName)
             ->where($filters)

@@ -39,30 +39,15 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        // 버전 형식 검증
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version =  explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
-
-        // 추가 검증 - 숫자 범위 확인
-        if (!is_numeric($versionSeason) || !is_numeric($versionMajor) || !is_numeric($versionMinor) ||
-            $versionSeason < 0 || $versionSeason > 999 ||
-            $versionMajor < 0 || $versionMajor > 999 ||
-            $versionMinor < 0 || $versionMinor > 999) {
-            // 잘못된 버전이면 기본값 사용
-            $version =  explode('.', $defaultVersion);
-            $versionSeason = $version[0];
-            $versionMajor = $version[1];
-            $versionMinor = $version[2];
-        }
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         // 캐시 키 생성
-        $cacheKey = "game_character_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_character_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration'); // 캐시 지속 시간
 
         // 캐시에서 데이터 조회
@@ -74,6 +59,7 @@ class CharacterController extends Controller
                 'version_season' => $versionSeason,
                 'version_major' => $versionMajor,
                 'version_minor' => $versionMinor,
+                'version_hotfix' => $versionHotfix,
                 'min_tier' => $minTier,
             ];
 
@@ -81,7 +67,8 @@ class CharacterController extends Controller
             $versionFilters = [
                 'version_season' => $versionSeason,
                 'version_major' => $versionMajor,
-                'version_minor' => $versionMinor
+                'version_minor' => $versionMinor,
+                'version_hotfix' => $versionHotfix,
             ];
             $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
 
@@ -148,27 +135,12 @@ class CharacterController extends Controller
             ]);
         }
 
-        // 버전 형식 검증
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version =  explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
-
-        // 추가 검증 - 숫자 범위 확인
-        if (!is_numeric($versionSeason) || !is_numeric($versionMajor) || !is_numeric($versionMinor) ||
-            $versionSeason < 0 || $versionSeason > 999 ||
-            $versionMajor < 0 || $versionMajor > 999 ||
-            $versionMinor < 0 || $versionMinor > 999) {
-            // 잘못된 버전이면 기본값 사용
-            $version =  explode('.', $defaultVersion);
-            $versionSeason = $version[0];
-            $versionMajor = $version[1];
-            $versionMinor = $version[2];
-        }
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         // 파라미터 파싱
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
@@ -188,7 +160,8 @@ class CharacterController extends Controller
         $versionFilters = [
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
-            'version_minor' => $versionMinor
+            'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
         ];
         $topRankScore = $this->rankRangeService->getTopTierMinScore($versionFilters);
 
@@ -196,6 +169,7 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
@@ -204,7 +178,7 @@ class CharacterController extends Controller
         $versions = $this->mainService->getLatestVersionList();
 
         // 기본 정보만 로드 (레이지 로딩)
-        $cacheKey = "game_detail_basic_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_basic_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $byMain = cache()->get($cacheKey);
@@ -234,7 +208,7 @@ class CharacterController extends Controller
         $byMainCount = $byMain->rank_count ?? 0;
 
         // 순위 통계도 서버에서 미리 로드 (항상 보이는 핵심 데이터)
-        $rankCacheKey = "game_detail_ranks_{$types}_{$minTier}_" . implode('_', $version);
+        $rankCacheKey = "game_detail_ranks_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $byRank = cache()->get($rankCacheKey);
 
         if (empty($byRank)) {
@@ -279,15 +253,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        // 버전 검증
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         // 파라미터 파싱
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
@@ -297,12 +268,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_tiers_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_tiers_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $byAll = cache()->get($cacheKey);
@@ -327,14 +299,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
@@ -343,12 +313,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_ranks_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_ranks_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $byRank = cache()->get($cacheKey);
@@ -373,14 +344,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
@@ -389,12 +358,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_tactical_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_tactical_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);
@@ -426,14 +396,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
@@ -442,12 +410,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_equipment_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_equipment_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);
@@ -478,14 +447,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
@@ -494,12 +461,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_traits_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_traits_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);
@@ -541,14 +509,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
@@ -557,12 +523,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_synergy_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_synergy_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);
@@ -585,14 +552,12 @@ class CharacterController extends Controller
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
-        if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-            $version = $defaultVersion;
-        }
-
-        $version = explode('.', $version);
-        $versionSeason = $version[0];
-        $versionMajor = $version[1];
-        $versionMinor = $version[2];
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+        $versionSeason = $versionParts['version_season'];
+        $versionMajor = $versionParts['version_major'];
+        $versionMinor = $versionParts['version_minor'];
+        $versionHotfix = $versionParts['version_hotfix'];
 
         [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
@@ -601,12 +566,13 @@ class CharacterController extends Controller
             'version_season' => $versionSeason,
             'version_major' => $versionMajor,
             'version_minor' => $versionMinor,
+            'version_hotfix' => $versionHotfix,
             'character_name' => $characterName,
             'weapon_type' => $weaponType,
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_trait_combinations_{$types}_{$minTier}_" . implode('_', $version);
+        $cacheKey = "game_detail_trait_combinations_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);
@@ -635,6 +601,7 @@ class CharacterController extends Controller
                 'version_season' => $versionSeason,
                 'version_major' => $versionMajor,
                 'version_minor' => $versionMinor,
+                'version_hotfix' => $versionHotfix,
             ]);
             foreach ($traits as $trait) {
                 $trait->trait_group = $groupMap[$trait->id] ?? ($trait->is_main ? 'main' : null);

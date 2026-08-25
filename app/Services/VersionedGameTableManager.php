@@ -11,6 +11,9 @@ class VersionedGameTableManager
         $versionSeason = $filters['version_season'] ?? '';
         $versionMajor = $filters['version_major'] ?? '';
         $versionMinor = $filters['version_minor'] ?? '';
+        // 핫픽스는 공식 API에 없어 수기 관리하며, 붙으면 별도 테이블로 통계가 분리된다.
+        // 예) 12.2.0 -> game_results_v12_2_0 / 12.2.0b -> game_results_v12_2_0b
+        $versionHotfix = (string) ($filters['version_hotfix'] ?? '');
 
         // 버전 정보 검증 - 숫자와 언더스코어만 허용
         if (!preg_match('/^[0-9_]+$/', $versionSeason) ||
@@ -19,12 +22,17 @@ class VersionedGameTableManager
             throw new \InvalidArgumentException('Invalid version format. Only numbers and underscores are allowed.');
         }
 
+        // 핫픽스 검증 - 알파벳 1~2자만 허용
+        if ($versionHotfix !== '' && !preg_match('/^[a-z]{1,2}$/', $versionHotfix)) {
+            throw new \InvalidArgumentException('Invalid version hotfix format. Only 1-2 lowercase letters are allowed.');
+        }
+
         // 테이블명 검증 - 영문자, 숫자, 언더스코어만 허용
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName)) {
             throw new \InvalidArgumentException('Invalid table name format.');
         }
 
-        return $tableName . '_v' . $versionSeason . '_' . $versionMajor . '_' . $versionMinor;
+        return $tableName . '_v' . $versionSeason . '_' . $versionMajor . '_' . $versionMinor . $versionHotfix;
     }
     public function ensureGameResultTableExists(string $tableName): void
     {
@@ -81,8 +89,10 @@ class VersionedGameTableManager
                 $table->integer('trait_id')->comment('스킬 id');
                 $table->string('category', 10)->nullable()->comment('특성분류');
                 $table->boolean('is_main')->comment('메인특성여부');
-                $table->string('trait_slot', 10)->nullable()->comment('특성 슬롯(main/sub1/sub2)');
                 $table->timestamp('created_at')->nullable();
+                // 기존 테이블에는 ALTER 로 맨 뒤에 추가했으므로 컬럼 순서를 맞춘다.
+                // (버전 간 데이터 이동 시 INSERT ... SELECT 컬럼 순서가 어긋나지 않도록)
+                $table->string('trait_slot', 10)->nullable()->comment('특성 슬롯(main/sub1/sub2)');
 
                 $table->index(['game_result_id', 'trait_id', 'is_main'], 'idx_grt_game_result_id_trait_main');
                 $table->index(['game_result_id', 'trait_id'], 'idx_grt_game_result_trait');

@@ -13,7 +13,7 @@ class UpdateGameResultEquipmentSummary extends Command
      *
      * @var string
      */
-    protected $signature = 'update:game-results-equipment-summary {version_season?} {version_major?} {version_minor?}';
+    protected $signature = 'update:game-results-equipment-summary {version_season?} {version_major?} {version_minor?} {version_hotfix?}';
 
     /**
      * The console command description.
@@ -30,6 +30,7 @@ class UpdateGameResultEquipmentSummary extends Command
         $versionSeason = $this->argument('version_season') ?? null;
         $versionMajor = $this->argument('version_major') ?? null;
         $versionMinor = $this->argument('version_minor') ?? null;
-        $gameResultSummaryService->updateGameResultEquipmentSummary($versionSeason, $versionMajor, $versionMinor);
+        $versionHotfix = $this->argument('version_hotfix') ?? null;
+        $gameResultSummaryService->updateGameResultEquipmentSummary($versionSeason, $versionMajor, $versionMinor, $versionHotfix);
     }
 }

@@ -112,6 +112,48 @@ class GameResultService
      * @throws GuzzleException
      * @throws \JsonException
      */
+    /** 버전별 핫픽스 조회 캐시 (수집 루프에서 게임마다 쿼리하지 않도록) */
+    private array $versionHotfixCache = [];
+
+    /**
+     * 게임 시작 시각 기준으로 해당 버전의 핫픽스를 판정한다.
+     *
+     * 공식 API 에는 핫픽스 정보가 없어서, 수기로 등록한 version_histories 의
+     * start_date 와 게임 시작 시각을 대조하는 방법밖에 없다.
+     * 같은 season.major.minor 안에서 start_date 가 게임 시작 시각보다 앞선 것 중
+     * 가장 최근 항목의 핫픽스를 사용한다.
+     *
+     * @return string|null 핫픽스 알파벳, 없으면 null
+     */
+    private function resolveVersionHotfix($season, $major, $minor, $startDtm): ?string
+    {
+        if ($season === null || $major === null || $minor === null || !$startDtm) {
+            return null;
+        }
+
+        $cacheKey = "{$season}.{$major}.{$minor}";
+
+        if (!array_key_exists($cacheKey, $this->versionHotfixCache)) {
+            $this->versionHotfixCache[$cacheKey] = VersionHistory::query()
+                ->where('version_season', $season)
+                ->where('version_major', $major)
+                ->where('version_minor', $minor)
+                ->orderBy('start_date')
+                ->get(['start_date', 'version_hotfix']);
+        }
+
+        $startAt = Carbon::parse($startDtm);
+        $hotfix = null;
+
+        foreach ($this->versionHotfixCache[$cacheKey] as $version) {
+            if (Carbon::parse($version->start_date)->lte($startAt)) {
+                $hotfix = $version->version_hotfix;
+            }
+        }
+
+        return $hotfix ?: null;
+    }
+
     public function storeGameResult($gameId)
     {
         $resultGameId = $gameId;
@@ -285,10 +327,18 @@ class GameResultService
                     }
 
                     $versionedGameTableManager = new VersionedGameTableManager();
+                    // ER API 는 핫픽스를 내려주지 않으므로, 게임 시작 시각을 version_histories 의
+                    // 기간과 대조해서 판정한다. 핫픽스가 붙으면 별도 테이블로 통계가 분리된다.
                     $filters = [
                         'version_season' => $firstPlayer['versionSeason'] ?? null,
                         'version_major' => $firstPlayer['versionMajor'] ?? null,
                         'version_minor' => $firstPlayer['versionMinor'] ?? null,
+                        'version_hotfix' => $this->resolveVersionHotfix(
+                            $firstPlayer['versionSeason'] ?? null,
+                            $firstPlayer['versionMajor'] ?? null,
+                            $firstPlayer['versionMinor'] ?? null,
+                            $firstPlayer['startDtm'] ?? null
+                        ),
                     ];
                     $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
                     $gameResultSkillOrderTableName = VersionedGameTableManager::getTableName('game_result_skill_orders', $filters);
