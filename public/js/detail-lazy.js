@@ -131,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const data = await response.json();
-            console.log(`${sectionType} data:`, data); // 디버깅용
             renderSection(sectionType, data, sectionElement);
         } catch (error) {
             console.error(`Error loading ${sectionType}:`, error);
