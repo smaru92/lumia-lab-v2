@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - main
+  # Actions 탭에서 수동 실행 (푸시 트리거가 막혔거나 재배포가 필요할 때)
+  workflow_dispatch:
+
+# 배포가 겹치면 서버에서 git pull / composer 가 서로 밟으므로 직렬화한다
+concurrency:
+  group: deploy-gcp
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -24,6 +31,9 @@ jobs:
       - name: Deploy to server
         run: |
           ssh ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_SERVER_IP }} << 'EOF'
+            # 중간 단계가 실패해도 계속 진행하면 반쯤 배포된 상태가 되므로 즉시 중단한다
+            set -euo pipefail
+
             cd /var/www/lumia-lab-v2
 
             # Add safe directory to avoid ownership issues (for root user)
@@ -38,8 +48,9 @@ jobs:
             # Fix ownership before composer
             sudo chown -R $USER:$USER .
 
-            # Composer - update to sync with composer.json (removes filament)
-            composer update --no-dev --optimize-autoloader --no-scripts
+            # Composer - lock 파일 기준으로 설치 (composer.json 과 동기화되어 있음)
+            # update 를 쓰면 배포마다 의존성 버전이 흔들린다
+            composer install --no-dev --optimize-autoloader --no-scripts
             composer dump-autoload --optimize
 
             # NPM - source nvm and build
@@ -54,6 +65,11 @@ jobs:
 
             # Laravel commands
             sudo -u www-data php artisan migrate --force
+
+            # 핫픽스 등록 전에 기본 버전 테이블에 쌓인 전적을 핫픽스 테이블로 이동
+            # (핫픽스가 없으면 아무 것도 하지 않는다)
+            sudo -u www-data php artisan versions:split-hotfix
+
             sudo -u www-data php artisan optimize:clear
             sudo -u www-data php artisan optimize
           EOF
