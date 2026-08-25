@@ -37,3 +37,17 @@ if (!function_exists('version_label')) {
         return \App\Models\VersionHistory::displayVersion((string) $version);
     }
 }
+
+
+if (!function_exists('trait_group_label')) {
+    /**
+     * 특성 그룹(main/sub1/sub2)을 한글 라벨로 변환
+     *
+     * @param string|null $group
+     * @return string
+     */
+    function trait_group_label($group)
+    {
+        return \App\Services\TraitGroupService::groupLabel($group);
+    }
+}

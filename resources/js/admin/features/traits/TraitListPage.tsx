@@ -46,15 +46,20 @@ export default function TraitListPage() {
         { accessorKey: 'id', header: 'ID', size: 60 },
         { accessorKey: 'name', header: '이름' },
         {
-            accessorKey: 'is_main',
-            header: '구분',
+            accessorKey: 'trait_group',
+            header: '그룹',
             size: 90,
             cell: ({ row }) => {
-                const v = row.original.is_main;
-                if (v === null || v === undefined) return '-';
-                return v === 1
-                    ? <Badge className="bg-yellow-500 text-black whitespace-nowrap">메인</Badge>
-                    : <Badge variant="outline" className="whitespace-nowrap">서브</Badge>;
+                const g = row.original.trait_group;
+                if (!g) return '-';
+                if (g === 'main') {
+                    return <Badge className="bg-yellow-500 text-black whitespace-nowrap">메인</Badge>;
+                }
+                return (
+                    <Badge variant="outline" className="whitespace-nowrap">
+                        {g === 'sub1' ? '서브1' : '서브2'}
+                    </Badge>
+                );
             },
         },
         { accessorKey: 'category', header: '카테고리', cell: ({ row }) => row.original.category || '-' },

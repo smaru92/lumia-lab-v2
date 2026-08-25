@@ -81,6 +81,7 @@ class VersionedGameTableManager
                 $table->integer('trait_id')->comment('스킬 id');
                 $table->string('category', 10)->nullable()->comment('특성분류');
                 $table->boolean('is_main')->comment('메인특성여부');
+                $table->string('trait_slot', 10)->nullable()->comment('특성 슬롯(main/sub1/sub2)');
                 $table->timestamp('created_at')->nullable();
 
                 $table->index(['game_result_id', 'trait_id', 'is_main'], 'idx_grt_game_result_id_trait_main');

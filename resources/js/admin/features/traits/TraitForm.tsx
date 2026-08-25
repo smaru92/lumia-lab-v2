@@ -18,7 +18,8 @@ import { GameTrait } from '@/types';
 const traitSchema = z.object({
     name: z.string().min(1, '이름을 입력해주세요'),
     tooltip: z.string().nullable(),
-    is_main: z.number().nullable(),
+    // 메인 여부(is_main)는 그룹에서 서버가 파생시키므로 폼에서는 그룹만 다룬다.
+    trait_group: z.string().nullable(),
     category: z.string().nullable(),
 });
 
@@ -43,10 +44,10 @@ export function TraitForm({ trait, onSubmit, onCancel, isSubmitting }: TraitForm
             ? {
                   name: trait.name,
                   tooltip: trait.tooltip,
-                  is_main: trait.is_main,
+                  trait_group: trait.trait_group,
                   category: trait.category,
               }
-            : { name: '', tooltip: null, is_main: null, category: null },
+            : { name: '', tooltip: null, trait_group: null, category: null },
     });
 
     return (
@@ -68,27 +69,29 @@ export function TraitForm({ trait, onSubmit, onCancel, isSubmitting }: TraitForm
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label>메인 여부</Label>
+                            <Label>특성 그룹</Label>
                             <Controller
-                                name="is_main"
+                                name="trait_group"
                                 control={control}
                                 render={({ field }) => (
                                     <Select
-                                        value={field.value != null ? String(field.value) : ''}
-                                        onValueChange={(v) =>
-                                            field.onChange(v === '' ? null : Number(v))
-                                        }
+                                        value={field.value ?? ''}
+                                        onValueChange={(v) => field.onChange(v === '' ? null : v)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="선택..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="1">메인 특성</SelectItem>
-                                            <SelectItem value="0">서브 특성</SelectItem>
+                                            <SelectItem value="main">메인</SelectItem>
+                                            <SelectItem value="sub1">서브1</SelectItem>
+                                            <SelectItem value="sub2">서브2</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
                             />
+                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                그룹을 바꾸면 현재 진행중인 버전 기준으로 변경 이력이 기록됩니다.
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="category">카테고리</Label>

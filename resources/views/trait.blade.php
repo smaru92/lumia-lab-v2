@@ -18,7 +18,9 @@
                 <select id="sel-trait-type">
                     <option value="All" selected>전체</option>
                     <option value="main">메인 특성</option>
-                    <option value="sub">서브 특성</option>
+                    <option value="sub">서브 특성(전체)</option>
+                    <option value="sub1">서브1</option>
+                    <option value="sub2">서브2</option>
                 </select>
             </div>
             <div class="custom-dropdown-container">
@@ -74,7 +76,7 @@
                 $defaultTraitIconPath = asset('storage/Trait/default.png');
             @endphp
             <tr style="cursor: pointer;"
-                data-trait-type="{{ $item->is_main ? 'main' : 'sub' }}"
+                data-trait-type="{{ $item->trait_group ?? ($item->is_main ? 'main' : 'sub1') }}"
                 data-trait-category="{{ $item->trait_category }}">
                 <td>{{ $loop->iteration }}</td>
                 <td class="trait-cell">
@@ -90,7 +92,7 @@
                     </div>
                     <div class="trait-name-info">
                         {{ $item->trait_name }}<br>
-                        <small>{{ $item->is_main ? '메인' : '서브' }} / {{ $item->trait_category_ko }}</small>
+                        <small>{{ trait_group_label($item->trait_group ?? ($item->is_main ? 'main' : 'sub1')) }} / {{ $item->trait_category_ko }}</small>
                     </div>
                 </td>
                 <td data-score="{{ $item->meta_score }}">
@@ -168,7 +170,7 @@
                                 @foreach($groupedByTier[$tier] as $item)
                                     <div class="tier-character-icon-container"
                                          data-game-count="{{ $item->game_count }}"
-                                         data-trait-type="{{ $item->is_main ? 'main' : 'sub' }}"
+                                         data-trait-type="{{ $item->trait_group ?? ($item->is_main ? 'main' : 'sub1') }}"
                                          data-trait-category="{{ $item->trait_category }}"
                                          data-trait-name="{{ $item->trait_name }}"
                                          data-tier="{{ $item->meta_tier }}"

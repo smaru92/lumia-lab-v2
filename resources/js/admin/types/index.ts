@@ -128,6 +128,7 @@ export interface GameTrait {
     tooltip: string | null;
     is_main: number | null;
     category: string | null;
+    trait_group: string | null;
     created_at: string;
     updated_at: string;
 }

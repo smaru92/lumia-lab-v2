@@ -693,6 +693,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 
     /* Filter checkboxes mobile optimization */
     .trait-is-main-filter-container,
+    .trait-group-filter-container,
     .trait-category-filter-container,
     .grade-filter-container {
         margin-bottom: 10px;
@@ -700,6 +701,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
     }
 
     .trait-is-main-filter-container label,
+    .trait-group-filter-container label,
     .trait-category-filter-container label,
     .grade-filter-container label {
         margin-right: 8px;

@@ -14,12 +14,14 @@ class GameResultTraitMainSummaryService
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
     protected VersionedGameTableManager $versionedTableManager;
+    protected TraitGroupService $traitGroupService;
 
     public function __construct()
     {
         $this->rankRangeService = new RankRangeService();
         $this->gameResultService = new GameResultService();
         $this->versionedTableManager = new VersionedGameTableManager();
+        $this->traitGroupService = new TraitGroupService();
     }
 
     protected function getVersionedTableName(array $filters): string
@@ -175,6 +177,13 @@ class GameResultTraitMainSummaryService
     public function getList(array $filters)
     {
         $tableName = $this->getVersionedTableName($filters);
+
+        // 특성 그룹은 패치마다 바뀌므로 해당 버전 기준으로 조회한다.
+        $versionFilters = [
+            'version_season' => $filters['version_season'] ?? null,
+            'version_major' => $filters['version_major'] ?? null,
+            'version_minor' => $filters['version_minor'] ?? null,
+        ];
         unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
         $results = DB::table($tableName . ' as gtms')
@@ -187,6 +196,11 @@ class GameResultTraitMainSummaryService
             ->where($filters)
             ->orderBy('meta_score', 'desc')
             ->get();
+
+        $groupMap = $this->traitGroupService->getGroupMap($versionFilters);
+        foreach ($results as $item) {
+            $item->trait_group = $groupMap[$item->trait_id] ?? ($item->is_main ? 'main' : null);
+        }
 
         return $results;
     }

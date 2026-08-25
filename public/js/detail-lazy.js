@@ -3,6 +3,23 @@
  * 각 섹션을 스크롤 시 동적으로 로드
  */
 
+// 특성 그룹(메인/서브1/서브2) 표시 유틸
+// 그룹은 패치마다 바뀔 수 있어 서버에서 해당 버전 기준 값을 내려준다.
+const TRAIT_GROUP_LABELS = { main: '메인', sub1: '서브1', sub2: '서브2' };
+const TRAIT_GROUP_ORDER = { main: 0, sub1: 1, sub2: 2 };
+
+function traitGroupOf(trait) {
+    if (!trait) return null;
+    if (trait.trait_group) return trait.trait_group;
+    // 그룹 미지정 데이터 폴백
+    return trait.is_main == 1 ? 'main' : 'sub1';
+}
+
+function traitGroupOrder(trait) {
+    const order = TRAIT_GROUP_ORDER[traitGroupOf(trait)];
+    return order === undefined ? 99 : order;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // 현재 URL 파라미터 가져오기
     const urlParams = new URLSearchParams(window.location.search);
@@ -1016,32 +1033,25 @@ document.addEventListener('DOMContentLoaded', function() {
         displayData.forEach((item, index) => {
             const traitIds = item.trait_ids ? item.trait_ids.split(',') : [];
 
-            // 특성 정렬: is_main=1 -> 같은 category의 is_main=0 -> 나머지
+            // 특성 정렬: 메인 그룹(메인 특성과 같은 카테고리) 먼저, 그 안에서 메인 -> 서브1 -> 서브2
+            // 결과: 메인 / (메인그룹)서브1 / (메인그룹)서브2 / (서브그룹)서브1 / (서브그룹)서브2
+            const mainTrait = traitIds.map(id => traits[id]).find(t => traitGroupOf(t) === 'main');
+            const mainCategory = mainTrait ? mainTrait.category : null;
+
+            // 메인 특성과 같은 카테고리면 0, 아니면 1
+            const categoryRank = (trait) => {
+                if (!mainCategory || !trait) return 1;
+                return trait.category === mainCategory ? 0 : 1;
+            };
+
             const sortedTraitIds = [...traitIds].sort((a, b) => {
                 const traitA = traits[a];
                 const traitB = traits[b];
 
-                const isMainA = traitA && traitA.is_main == 1;
-                const isMainB = traitB && traitB.is_main == 1;
+                const categoryDiff = categoryRank(traitA) - categoryRank(traitB);
+                if (categoryDiff !== 0) return categoryDiff;
 
-                if (isMainA && !isMainB) return -1;
-                if (!isMainA && isMainB) return 1;
-
-                if (!isMainA && !isMainB) {
-                    const mainTrait = traitIds.map(id => traits[id]).find(t => t && t.is_main == 1);
-                    const mainCategory = mainTrait ? mainTrait.category : null;
-
-                    const categoryA = traitA ? traitA.category : null;
-                    const categoryB = traitB ? traitB.category : null;
-
-                    const matchA = categoryA === mainCategory;
-                    const matchB = categoryB === mainCategory;
-
-                    if (matchA && !matchB) return -1;
-                    if (!matchA && matchB) return 1;
-                }
-
-                return 0;
+                return traitGroupOrder(traitA) - traitGroupOrder(traitB);
             });
 
             // 특성 아이콘들 생성
@@ -1050,12 +1060,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const trait = traits[traitId];
                 const traitName = trait ? trait.name : `특성 ${traitId}`;
                 const traitTooltip = trait && trait.tooltip ? trait.tooltip.replace(/\n/g, '<br>') : '';
-                const isMain = trait && trait.is_main == 1;
+                const group = traitGroupOf(trait);
+                const groupLabel = TRAIT_GROUP_LABELS[group] || '';
+                const isMain = group === 'main';
                 const iconSize = isMain ? '31px' : '23px';
                 const borderStyle = isMain ? 'border: 2px solid #ffd700;' : '';
                 const tooltipContent = traitTooltip
-                    ? `<strong>${traitName}</strong>${isMain ? ' (메인)' : ' (서브)'}<br><br>${traitTooltip}`
-                    : `${traitName}${isMain ? ' (메인)' : ' (서브)'}`;
+                    ? `<strong>${traitName}</strong> (${groupLabel})<br><br>${traitTooltip}`
+                    : `${traitName} (${groupLabel})`;
                 traitIconsHtml += `
                     <div class="tooltip-wrap">
                         <img src="/storage/Trait/${traitId}.png"
@@ -1118,17 +1130,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = '';
 
-        // 특성 구분 필터
-        html += '<div class="trait-is-main-filter-container" style="margin-bottom: 10px;">';
-        html += '<strong>특성 구분 필터:</strong>';
-        html += `
+        // 특성 그룹 필터 (메인 / 서브1 / 서브2)
+        html += '<div class="trait-group-filter-container" style="margin-bottom: 10px;">';
+        html += '<strong>특성 그룹 필터:</strong>';
+        ['main', 'sub1', 'sub2'].forEach(group => {
+            html += `
             <label style="margin-right: 10px;">
-                <input type="checkbox" class="trait-is-main-filter-checkbox" value="1" checked> 메인
+                <input type="checkbox" class="trait-group-filter-checkbox" value="${group}" checked> ${TRAIT_GROUP_LABELS[group]}
             </label>
-            <label style="margin-right: 10px;">
-                <input type="checkbox" class="trait-is-main-filter-checkbox" value="0" checked> 서브
-            </label>
-        `;
+            `;
+        });
         html += '</div>';
 
         // 특성 분류 필터
@@ -1165,18 +1176,29 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         // 전체 데이터 표시 (숨김 없음)
-        aggregatedData.forEach((item, index) => {
+        // 메인 -> 서브1 -> 서브2 순으로 정렬하고, 같은 그룹 안에서는 서버가 준 순서(사용수)를 유지한다.
+        const sortedAggregatedData = aggregatedData
+            .map((item, index) => ({ item, index }))
+            .sort((a, b) => {
+                const diff = traitGroupOrder(a.item) - traitGroupOrder(b.item);
+                return diff !== 0 ? diff : a.index - b.index;
+            })
+            .map(entry => entry.item);
+
+        sortedAggregatedData.forEach((item, index) => {
             const traitId = item.trait_id;
-            const isMain = item.is_main ? 1 : 0;
-            const iconSize = item.is_main ? '31px' : '23px';
-            const borderStyle = item.is_main ? 'border: 2px solid #ffd700;' : '';
+            const group = traitGroupOf(item);
+            const groupLabel = TRAIT_GROUP_LABELS[group] || '';
+            const isMain = group === 'main';
+            const iconSize = isMain ? '31px' : '23px';
+            const borderStyle = isMain ? 'border: 2px solid #ffd700;' : '';
             const traitTooltip = (item.trait_tooltip || '').replace(/\n/g, '<br>');
             const tooltipContent = traitTooltip
-                ? `<strong>${item.trait_name}</strong>${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}<br><br>${traitTooltip}`
-                : `${item.trait_name}${item.is_main ? ' (메인)' : ' (서브)'}<br>분류: ${item.trait_category}`;
+                ? `<strong>${item.trait_name}</strong> (${groupLabel})<br>분류: ${item.trait_category}<br><br>${traitTooltip}`
+                : `${item.trait_name} (${groupLabel})<br>분류: ${item.trait_category}`;
 
             html += `
-                <tr class="trait-row" data-category="${item.trait_category}" data-is-main="${isMain}">
+                <tr class="trait-row" data-category="${item.trait_category}" data-trait-group="${group}">
                     <td>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <div class="tooltip-wrap">
@@ -1227,11 +1249,11 @@ document.addEventListener('DOMContentLoaded', function() {
      * 특성 필터 설정
      */
     function setupTraitFilters(container) {
-        const isMainCheckboxes = container.querySelectorAll('.trait-is-main-filter-checkbox');
+        const groupCheckboxes = container.querySelectorAll('.trait-group-filter-checkbox');
         const categoryCheckboxes = container.querySelectorAll('.trait-category-filter-checkbox');
 
         function applyFilters() {
-            const selectedIsMain = Array.from(container.querySelectorAll('.trait-is-main-filter-checkbox:checked'))
+            const selectedGroups = Array.from(container.querySelectorAll('.trait-group-filter-checkbox:checked'))
                 .map(cb => cb.value);
             const selectedCategories = Array.from(container.querySelectorAll('.trait-category-filter-checkbox:checked'))
                 .map(cb => cb.value);
@@ -1239,12 +1261,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const rows = container.querySelectorAll('#trait-tbody .trait-row');
             rows.forEach(row => {
                 const category = row.dataset.category;
-                const isMain = row.dataset.isMain;
+                const group = row.dataset.traitGroup;
 
                 const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(category);
-                const isMainMatch = selectedIsMain.length === 0 || selectedIsMain.includes(isMain);
+                const groupMatch = selectedGroups.length === 0 || selectedGroups.includes(group);
 
-                if (categoryMatch && isMainMatch) {
+                if (categoryMatch && groupMatch) {
                     row.classList.remove('filtered-hidden');
                 } else {
                     row.classList.add('filtered-hidden');
@@ -1252,7 +1274,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        isMainCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+        groupCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
         categoryCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
     }
 

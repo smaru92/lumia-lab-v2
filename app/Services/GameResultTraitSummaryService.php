@@ -15,12 +15,14 @@ class GameResultTraitSummaryService
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
     protected VersionedGameTableManager $versionedTableManager;
+    protected TraitGroupService $traitGroupService;
 
     public function __construct()
     {
         $this->rankRangeService = new RankRangeService();
         $this->gameResultService = new GameResultService();
         $this->versionedTableManager = new VersionedGameTableManager();
+        $this->traitGroupService = new TraitGroupService();
     }
 
     protected function getVersionedTableName(array $filters): string
@@ -165,6 +167,13 @@ class GameResultTraitSummaryService
             ];
         }
 
+        // 특성 그룹은 패치마다 바뀌므로 해당 버전 기준으로 조회한다.
+        $groupMap = $this->traitGroupService->getGroupMap([
+            'version_season' => $filters['version_season'] ?? null,
+            'version_major' => $filters['version_major'] ?? null,
+            'version_minor' => $filters['version_minor'] ?? null,
+        ]);
+
         unset($filters['version_season'], $filters['version_major'], $filters['version_minor']);
 
         $filters['weapon_type'] = $this->replaceWeaponType($filters['weapon_type'], 'en');
@@ -217,6 +226,7 @@ class GameResultTraitSummaryService
                         "trait_name" => $item->trait_name,
                         "trait_tooltip" => $item->trait_tooltip,
                         "is_main" => $item->is_main,
+                        "trait_group" => $groupMap[$item->trait_id] ?? ($item->is_main ? 'main' : null),
                         "character_id" => $item->character_id,
                         "weapon_type" => $item->weapon_type,
                         "game_rank" => $rank,
@@ -291,6 +301,7 @@ class GameResultTraitSummaryService
                 'trait_category' => $firstRank->trait_category,
                 'trait_tooltip' => $firstRank->trait_tooltip ?? '',
                 'is_main' => $firstRank->is_main,
+                'trait_group' => $firstRank->trait_group ?? ($firstRank->is_main ? 'main' : null),
                 'game_count' => $gameCount,
                 'top1_count' => $top1Count,
                 'top2_count' => $top2Count,

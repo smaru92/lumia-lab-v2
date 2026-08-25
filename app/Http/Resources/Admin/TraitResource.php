@@ -15,6 +15,7 @@ class TraitResource extends JsonResource
             'tooltip' => $this->tooltip,
             'is_main' => $this->is_main,
             'category' => $this->category,
+            'trait_group' => $this->trait_group,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

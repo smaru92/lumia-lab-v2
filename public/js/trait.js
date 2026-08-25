@@ -8,6 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const selTraitType = document.getElementById('sel-trait-type');
     const selTraitCategory = document.getElementById('sel-trait-category');
 
+    // 특성 그룹 필터 매칭
+    // 그룹 값은 main / sub1 / sub2 이며, 'sub' 는 서브 전체를 의미한다.
+    function matchesTraitType(traitGroup, selectedType) {
+        if (selectedType === 'All') return true;
+        if (selectedType === 'sub') return traitGroup === 'sub1' || traitGroup === 'sub2';
+        return traitGroup === selectedType;
+    }
+
     // Modal elements
     const tierModal = document.getElementById('tierModal');
     const openTierModalBtn = document.getElementById('openTierModal');
@@ -124,10 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Trait type filter
-                if (selTraitType && selectedType !== 'All') {
-                    if (row.dataset.traitType !== selectedType) {
-                        showRow = false;
-                    }
+                if (selTraitType && !matchesTraitType(row.dataset.traitType, selectedType)) {
+                    showRow = false;
                 }
 
                 // Trait category filter (대소문자 무시)
@@ -157,10 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Trait type filter
-                if (selTraitType && selectedType !== 'All') {
-                    if (iconContainer.dataset.traitType !== selectedType) {
-                        showIcon = false;
-                    }
+                if (selTraitType && !matchesTraitType(iconContainer.dataset.traitType, selectedType)) {
+                    showIcon = false;
                 }
 
                 // Trait category filter (대소문자 무시)

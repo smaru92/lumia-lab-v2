@@ -412,10 +412,12 @@ class GameResultService
                             }
 
                             // 선택한 특성
+                            // 특성의 그룹은 패치마다 바뀌므로 수집 시점의 슬롯을 그대로 남긴다.
                             $traitOrders[] = [
                                 'game_result_id' => $gameResultId,
                                 'trait_id' => $item['traitFirstCore'] ?? null,
                                 'is_main' => true,
+                                'trait_slot' => 'main',
                                 'created_at' => now(),
                             ];
                             foreach ($item['traitFirstSub'] as $traitId) {
@@ -423,6 +425,7 @@ class GameResultService
                                     'game_result_id' => $gameResultId,
                                     'trait_id' => $traitId ?? null,
                                     'is_main' => false,
+                                    'trait_slot' => 'sub1',
                                     'created_at' => now(),
                                 ];
                             }
@@ -431,6 +434,7 @@ class GameResultService
                                     'game_result_id' => $gameResultId,
                                     'trait_id' => $traitId ?? null,
                                     'is_main' => false,
+                                    'trait_slot' => 'sub2',
                                     'created_at' => now(),
                                 ];
                             }

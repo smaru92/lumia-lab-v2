@@ -7,6 +7,7 @@ use App\Services\GameResultTraitCombinationSummaryService;
 use App\Services\MainService;
 use App\Services\PerformanceMonitor;
 use App\Services\RankRangeService;
+use App\Services\TraitGroupService;
 use App\Traits\ErDevTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -628,6 +629,16 @@ class CharacterController extends Controller
 
             // 특성 정보 가져오기
             $traits = \App\Models\GameTrait::whereIn('id', $traitIds)->get()->keyBy('id');
+
+            // 특성 그룹은 패치마다 바뀌므로 해당 버전 기준 값으로 덮어쓴다.
+            $groupMap = (new TraitGroupService())->getGroupMap([
+                'version_season' => $versionSeason,
+                'version_major' => $versionMajor,
+                'version_minor' => $versionMinor,
+            ]);
+            foreach ($traits as $trait) {
+                $trait->trait_group = $groupMap[$trait->id] ?? ($trait->is_main ? 'main' : null);
+            }
 
             $data = [
                 'data' => $result['data'],

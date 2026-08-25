@@ -194,7 +194,8 @@ ER_STAT_MAIN_PAGE_TIER=Meteorite  # 메인 페이지 기본 티어
 - 특성 조합 통계 + 특성 개별 통계를 탭 메뉴로 통합
 - 기본 탭: 특성 조합 통계 (상위 12개만 표시)
 - 두 번째 탭: 특성 개별 통계 (전체 표시, 스크롤 영역 max-height: 500px)
-- 아이콘 정렬: 메인 특성 → 같은 카테고리 서브 특성 → 나머지 서브 특성
+- 아이콘 정렬: 메인 그룹(메인 특성과 같은 카테고리) 먼저, 그 안에서 메인 → 서브1 → 서브2
+  - 결과: 메인 / (메인그룹)서브1 / (메인그룹)서브2 / (서브그룹)서브1 / (서브그룹)서브2
 - 메인 특성: 큰 아이콘 (44px) + 금색 테두리
 - 서브 특성: 작은 아이콘 (32px)
 - 모바일에서도 평균획득점수 표시
@@ -214,3 +215,30 @@ ER_STAT_MAIN_PAGE_TIER=Meteorite  # 메인 페이지 기본 티어
 - 특성 조합 통계 `positive_avg_mmr_gain`, `negative_avg_mmr_gain` 0으로 저장되는 버그
   - 원인: SQL alias와 PHP 변수명 불일치 (`avg_positive_mmr_gain` vs `positive_avg_mmr_gain`)
   - 수정: `GameResultService::getGameResultByTraitCombination()` 내 변수명 수정
+
+## 최근 변경사항 (2026-08-21)
+
+### 1. 버전 핫픽스 알파벳 수기 관리
+- 공식 API에 없는 핫픽스 알파벳(12.1.1a)을 관리자에서 직접 입력
+- **컬럼**: `version_histories.version_hotfix` (nullable, 2자)
+- **중요**: 알파벳은 **표기에만** 붙는다. URL `?version=`, 캐시 키, 버전별 테이블명은 계속 `season.major.minor` 사용
+  - 이 문자열을 `explode('.')`로 파싱하는 곳이 많아 값에 알파벳을 넣으면 전부 깨짐
+- **모델**: `VersionHistory::$version_key`(집계용) / `$display_version`(표기용) / `hotfixMap()`
+- **헬퍼**: `version_label('12.1.1')` → `'12.1.1a'` (블레이드용)
+  - 페이지 데이터 캐시에 옛 모델이 들어있어도 표기는 항상 DB 최신값을 쓰도록 별도 맵으로 조회
+  - 버전 저장/삭제 시 `Cache::forget`으로 자동 무효화
+
+### 2. 특성 그룹(메인/서브1/서브2) 관리
+- 그룹 역시 공식 API에 없어 수기 관리하며, **패치마다 바뀔 수 있음**
+- **마스터**: `traits.trait_group` (main/sub1/sub2) — 현재 그룹. 관리자 특성 폼에서 지정
+  - `is_main`은 `trait_group`에서 서버가 파생시킨다 (두 값이 어긋나지 않도록)
+- **이력**: `trait_version_groups` — 바뀐 특성만 기록. 조회 시 "대상 버전 이하 최근 기록", 없으면 마스터 값
+- **서비스**: `TraitGroupService::getGroupMap($versionFilters)` → `[trait_id => group]`
+- **전적**: `game_result_trait_orders.trait_slot` — 수집 시점의 슬롯을 기록
+  - `traitFirstCore` → `main`, `traitFirstSub` → `sub1`, `traitSecondSub` → `sub2`
+  - 버전별 테이블에도 동일 컬럼 (`VersionedGameTableManager`)
+- **화면**: 특성 통계 페이지 타입 필터(전체/메인/서브 전체/서브1/서브2), 캐릭터 상세 그룹 필터
+- **조합 아이콘 정렬**: 카테고리(메인 그룹 우선) → 그룹(메인/서브1/서브2) 2단 정렬
+
+### 알려진 이슈
+- `InfoController::getTraits()` (`/api/trait`)가 `getCharacters()` 복사본 상태라 `v2/data/Character`를 호출해 `characters` 테이블에 upsert한다. `traits` 테이블은 갱신되지 않음
