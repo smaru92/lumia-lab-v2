@@ -131,7 +131,7 @@ class GameResultSummaryService extends BaseSummaryService
         $subQueryFilter = $filters;
         unset($subQueryFilter['character_name']);
         unset($subQueryFilter['weapon_type']);
-        unset($subQueryFilter['version_season'], $subQueryFilter['version_major'], $subQueryFilter['version_minor']);
+        unset($subQueryFilter['version_season'], $subQueryFilter['version_major'], $subQueryFilter['version_minor'], $subQueryFilter['version_hotfix']);
 
         $subQuery = DB::table($tableName)
             ->select(
@@ -172,7 +172,7 @@ class GameResultSummaryService extends BaseSummaryService
         unset($baseFilters['character_name']);
         unset($baseFilters['weapon_type']);
         unset($baseFilters['min_tier']);
-        unset($baseFilters['version_season'], $baseFilters['version_major'], $baseFilters['version_minor']);
+        unset($baseFilters['version_season'], $baseFilters['version_major'], $baseFilters['version_minor'], $baseFilters['version_hotfix']);
 
         // PARTITION BY min_tier로 각 티어별 랭킹을 한 번에 계산
         $subQuery = DB::table($tableName)
