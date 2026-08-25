@@ -258,6 +258,9 @@ class GameResultTraitSummaryService
                     ];
                 }
             }
+            // 위에서 만든 초기 객체를 원본 행으로 덮어쓰므로, 원본 행에도 그룹을 붙여준다.
+            // (붙이지 않으면 뒤의 집계에서 trait_group 이 사라져 서브가 전부 폴백값으로 표시된다)
+            $item->trait_group = $groupMap[$item->trait_id] ?? ($item->is_main ? 'main' : null);
             $result[$item->trait_id][$item->game_rank] = $item;
         }
 
