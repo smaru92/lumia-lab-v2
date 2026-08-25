@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\VersionHistoryController;
 use App\Http\Controllers\Admin\PatchNoteController;
 use App\Http\Controllers\Admin\TraitController as AdminTraitController;
 use App\Http\Controllers\Admin\TacticalSkillController as AdminTacticalSkillController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\InfoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +58,10 @@ Route::prefix('admin')->group(function () {
 
         // Equipment Skills (full CRUD)
         Route::apiResource('equipment-skills', EquipmentSkillController::class);
+
+        // Site Settings (기본 버전 / 기본 티어)
+        Route::get('/settings', [SettingController::class, 'index']);
+        Route::put('/settings', [SettingController::class, 'update']);
 
         // Version Histories (full CRUD)
         Route::apiResource('version-histories', VersionHistoryController::class);

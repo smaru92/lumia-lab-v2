@@ -172,13 +172,24 @@
 
 **중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
 
-## 환경 변수 (.env)
+## 사이트 운영 설정 (관리자 화면)
 
-### 메인페이지/캐릭터페이지 기준 티어
-```
-ER_STAT_DEFALT_TIER=Diamond       # 캐릭터 페이지 기본 티어
-ER_STAT_MAIN_PAGE_TIER=Meteorite  # 메인 페이지 기본 티어
-```
+기본 버전/기본 티어는 **.env 가 아니라 관리자 → 사이트 설정**에서 조절한다.
+`settings` 테이블(key-value)에 저장되며, 값이 없으면 `config('erDev.*')`(=.env)로 폴백한다.
+
+| 설정 | 키 | 설명 |
+|------|-----|------|
+| 버전 선택 방식 | `default_version_mode` | `auto`(기본) / `manual` |
+| 수동 지정 버전 | `default_version` | 수동 모드에서만 사용 |
+| 승격 대기 시간 | `default_version_delay_hours` | 기본 24시간 |
+| 캐릭터 페이지 기본 티어 | `default_tier` | |
+| 메인 페이지 기준 티어 | `main_page_tier` | |
+
+- **자동 모드**: "등장한 지 N시간(기본 24시간) 지난 버전 중 가장 최신"이 기본 버전이 된다.
+  새 버전이 나오자마자 기본값이 되면 표본이 거의 없어 화면이 비어 보이기 때문.
+- **조회는 헬퍼로**: `default_version()` / `default_tier()` / `main_page_tier()`
+  (`config('erDev.defaultVersion')` 등 직접 호출은 전부 이 헬퍼로 대체됨)
+- `SettingService` / `Setting` 모델. 저장 시 캐시 자동 무효화, 자동 계산값은 5분 캐시
 
 ## 최근 변경사항 (2025-11-28)
 
@@ -238,7 +249,7 @@ ER_STAT_MAIN_PAGE_TIER=Meteorite  # 메인 페이지 기본 티어
 - **기존 데이터 분리**: `php artisan versions:split-hotfix [--dry-run]`
   - 핫픽스 등록 전에 기본 테이블에 쌓인 데이터를 시작 시각 기준으로 옮긴다. 반복 실행 안전
   - `INSERT ... SELECT` 는 컬럼명을 명시한다 (ALTER로 추가된 컬럼 때문에 순서가 다를 수 있음)
-- **주의**: `.env` 의 `ER_STAT_DEFALT_VERSION` 은 기본 표시 버전이라 패치마다 갱신 필요
+- **기본 표시 버전**: 관리자 → 사이트 설정에서 관리 (자동 모드면 24시간 뒤 자동 승격)
 
 ### 2. 특성 그룹(메인/서브1/서브2) 관리
 - 그룹 역시 공식 API에 없어 수기 관리하며, **패치마다 바뀔 수 있음**

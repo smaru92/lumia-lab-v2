@@ -20,7 +20,7 @@ if (!function_exists('parse_version_key')) {
      * 버전 키 문자열을 파싱한다. (예: "12.2.0", "12.2.0b")
      *
      * 핫픽스가 붙은 버전은 별도 통계로 분리되므로 키 자체에 알파벳이 포함된다.
-     * 형식이 잘못됐거나 범위를 벗어나면 $fallback(기본: erDev.defaultVersion)을 사용한다.
+     * 형식이 잘못됐거나 범위를 벗어나면 $fallback(기본: 사이트 기본 버전)을 사용한다.
      *
      * @param string|null $version
      * @param string|null $fallback
@@ -31,7 +31,7 @@ if (!function_exists('parse_version_key')) {
         $parsed = _parse_version_key_raw($version);
 
         if ($parsed === null) {
-            $parsed = _parse_version_key_raw($fallback ?? config('erDev.defaultVersion'));
+            $parsed = _parse_version_key_raw($fallback ?? default_version());
         }
 
         // 폴백까지 잘못된 경우를 대비한 최후 방어
@@ -101,5 +101,54 @@ if (!function_exists('trait_group_label')) {
     function trait_group_label($group)
     {
         return \App\Services\TraitGroupService::groupLabel($group);
+    }
+}
+
+
+if (!function_exists('site_setting')) {
+    /**
+     * 사이트 운영 설정 서비스 인스턴스
+     *
+     * @return \App\Services\SettingService
+     */
+    function site_setting()
+    {
+        return app(\App\Services\SettingService::class);
+    }
+}
+
+if (!function_exists('default_version')) {
+    /**
+     * 사이트 기본 버전 (관리자 설정, 자동 모드면 등장 후 N시간 지난 최신 버전)
+     *
+     * @return string
+     */
+    function default_version()
+    {
+        return site_setting()->defaultVersion();
+    }
+}
+
+if (!function_exists('default_tier')) {
+    /**
+     * 캐릭터/상세 페이지 기본 티어
+     *
+     * @return string
+     */
+    function default_tier()
+    {
+        return site_setting()->defaultTier();
+    }
+}
+
+if (!function_exists('main_page_tier')) {
+    /**
+     * 메인 페이지 기준 티어
+     *
+     * @return string
+     */
+    function main_page_tier()
+    {
+        return site_setting()->mainPageTier();
     }
 }

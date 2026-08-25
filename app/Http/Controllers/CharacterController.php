@@ -34,8 +34,8 @@ class CharacterController extends Controller
     }
     public function index(Request $request)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -121,8 +121,8 @@ class CharacterController extends Controller
 
     public function show(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -248,8 +248,8 @@ class CharacterController extends Controller
     // Lazy Loading API Endpoints
     public function getDetailTiers(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -294,8 +294,8 @@ class CharacterController extends Controller
 
     public function getDetailRanks(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -339,8 +339,8 @@ class CharacterController extends Controller
 
     public function getDetailTacticalSkills(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -391,8 +391,8 @@ class CharacterController extends Controller
 
     public function getDetailEquipment(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -442,8 +442,8 @@ class CharacterController extends Controller
 
     public function getDetailTraits(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -504,8 +504,8 @@ class CharacterController extends Controller
 
     public function getDetailSynergy(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 
@@ -547,8 +547,8 @@ class CharacterController extends Controller
 
     public function getDetailTraitCombinations(Request $request, $types)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 

@@ -28,8 +28,8 @@ class EquipmentFirstController
 
     public function index(Request $request)
     {
-        $defaultTier = config('erDev.defaultTier');
-        $defaultVersion = config('erDev.defaultVersion');
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
         $minTier = $request->input('min_tier', $defaultTier);
         $version = $request->input('version', $defaultVersion);
 

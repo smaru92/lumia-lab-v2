@@ -15,7 +15,7 @@ class TacticalSkillComparisonController extends Controller
 
     public function index(Request $request)
     {
-        $defaultTier = config('erDev.mainPageTier', 'Meteorite');
+        $defaultTier = main_page_tier();
         $minTier = $request->input('min_tier', $defaultTier);
         $viewMode = $request->input('view_mode', 'combined'); // combined | by_level
 

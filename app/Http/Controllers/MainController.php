@@ -57,7 +57,7 @@ class MainController extends Controller
 
     public function index(Request $request)
     {
-        $defaultTier = config('erDev.mainPageTier'); // 환경변수에서 메인페이지 기준티어 가져오기 (Meteorite)
+        $defaultTier = main_page_tier(); // 환경변수에서 메인페이지 기준티어 가져오기 (Meteorite)
         $minTier = $request->input('min_tier', $defaultTier);
 
         // 최신 버전 조회 (최상위큐 점수 및 패치 비교에 재사용)
@@ -164,7 +164,7 @@ class MainController extends Controller
      */
     public function getPatchComparison(Request $request)
     {
-        $defaultTier = config('erDev.mainPageTier');
+        $defaultTier = main_page_tier();
         $minTier = $request->input('min_tier', $defaultTier);
 
         // 최신 버전 조회 (최상위큐 점수 및 패치 비교에 재사용)

@@ -8,6 +8,7 @@ import {
     X,
     Swords,
     Zap,
+    Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const navigation = [
     { name: '특성', href: '/traits', icon: Swords },
     { name: '전술스킬', href: '/tactical-skills', icon: Zap },
     { name: '버전 히스토리', href: '/version-histories', icon: History },
+    { name: '사이트 설정', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
