@@ -160,7 +160,8 @@
     <div class="modal-content">
         <span class="close-button">&times;</span>
         <div class="tier-capture-area">
-        <h3>티어표</h3>
+        {{-- 태그 필터가 걸려 있으면 "티어표 - {태그}" 로 표시 (캡처 영역 안이라 다운로드 이미지에도 반영됨) --}}
+        <h3 id="tier-modal-title">티어표{{ $currentTag && $currentTag !== 'all' ? ' - ' . $currentTag : '' }}</h3>
         <table class="tier-table">
             <tbody>
                 @php

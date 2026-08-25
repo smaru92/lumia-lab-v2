@@ -191,7 +191,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Tag Filter State ---
     let activeTagName = new URLSearchParams(window.location.search).get('tag') || 'all';
 
+    // 티어표 모달 제목: 태그 필터가 걸려 있으면 "티어표 - {태그}"
+    // 제목은 캡처 영역(.tier-capture-area) 안에 있어 다운로드 이미지에도 그대로 반영된다.
+    function updateTierModalTitle() {
+        const title = document.getElementById('tier-modal-title');
+        if (!title) return;
+
+        title.textContent = activeTagName && activeTagName !== 'all'
+            ? `티어표 - ${activeTagName}`
+            : '티어표';
+    }
+
     function applyAllFilters() {
+        updateTierModalTitle();
+
         if (!tableBody && !tierModal) return;
 
         const minCount = parseInt(inputMinCount?.value) || 0;
@@ -635,7 +648,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const link = document.createElement('a');
-            link.download = 'lumia-tier-list.png';
+            const tagSuffix = activeTagName && activeTagName !== 'all' ? `-${activeTagName}` : '';
+            link.download = `lumia-tier-list${tagSuffix}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         } catch (e) {
