@@ -16,9 +16,19 @@
 /public/build
 /public/hot
 /public/storage
+/public/vendor
 /storage/*.key
 /storage/pail
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# 서버에서 일회성으로 만든 인덱스 복구 도구/산출물
+# (저장소에 두지 않으며, 남아 있으면 git pull 이 경로 충돌로 abort 된다)
+/dbsake-*.tar.gz
+/drop_indexes.sh
+/extract_all_index.php
+/indexes_list.txt
+/recovery_backup.sh
+/sudo
