@@ -52,6 +52,11 @@ jobs:
             # Fix ownership before composer
             sudo chown -R $USER:$USER .
 
+            # 배포 중에도 사이트는 계속 떠 있어야 한다.
+            # 쓰기가 필요한 디렉토리는 www-data 소유로 유지해야 로그/캐시 기록이 막히지 않는다.
+            # (막히면 Monolog 가 fatal 로 죽어 배포 내내 사이트가 500 이 된다)
+            sudo chown -R www-data:www-data storage bootstrap/cache
+
             # Composer - lock 파일 기준으로 설치 (composer.json 과 동기화되어 있음)
             # update 를 쓰면 배포마다 의존성 버전이 흔들린다
             composer install --no-dev --optimize-autoloader --no-scripts
