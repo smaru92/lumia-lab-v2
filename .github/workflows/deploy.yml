@@ -32,9 +32,13 @@ jobs:
         run: |
           ssh ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_SERVER_IP }} << 'EOF'
             # 중간 단계가 실패해도 계속 진행하면 반쯤 배포된 상태가 되므로 즉시 중단한다
-            set -euo pipefail
+            set -eo pipefail
 
             cd /var/www/lumia-lab-v2
+
+            # 배포 중에는 소유권이 배포 계정으로 넘어가 있어 www-data 가 읽지 못한다.
+            # 어느 단계에서 실패하든 반드시 웹서버 계정으로 되돌려 사이트가 500 으로 남지 않게 한다.
+            trap 'sudo chown -R www-data:www-data /var/www/lumia-lab-v2; sudo chmod -R 775 /var/www/lumia-lab-v2/storage /var/www/lumia-lab-v2/bootstrap/cache' EXIT
 
             # Add safe directory to avoid ownership issues (for root user)
             sudo git config --global --add safe.directory /var/www/lumia-lab-v2
