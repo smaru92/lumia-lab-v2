@@ -98,16 +98,25 @@ class TopRankStatService
             default => "''",
         };
 
+        // 2차 분류 - 아이템은 등급, 특성은 카테고리(파괴/혼돈/지원/저항)
+        $subGroupSelect = match ($type) {
+            'equipment' => 'n.item_grade',
+            'trait' => 'n.category',
+            default => "''",
+        };
+
         $query = DB::table($tableName . ' as s')
             ->join('characters as c', 'c.id', '=', 's.character_id')
             ->leftJoin($config['name_table'] . ' as n', 'n.id', '=', 's.' . $idColumn)
             ->where('s.min_tier', $filters['min_tier'] ?? 'Diamond')
-            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type', 'n.name', 'c.name', DB::raw($groupSelect));
+            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type', 'n.name', 'c.name',
+                DB::raw($groupSelect), DB::raw($subGroupSelect));
 
         $query->select([
             DB::raw("s.`{$idColumn}` as item_id"),
             DB::raw('n.name as item_name'),
             DB::raw($groupSelect . ' as group_code'),
+            DB::raw($subGroupSelect . ' as sub_group_code'),
             DB::raw('s.character_id'),
             DB::raw('c.name as character_name'),
             DB::raw('s.weapon_type'),
@@ -147,6 +156,10 @@ class TopRankStatService
             $query->whereRaw("{$groupSelect} = ?", [$filters['group']]);
         }
 
+        if (!empty($filters['sub_group']) && $filters['sub_group'] !== 'All') {
+            $query->whereRaw("{$subGroupSelect} = ?", [$filters['sub_group']]);
+        }
+
         if (!empty($filters['search'])) {
             $query->where('n.name', 'like', '%' . $filters['search'] . '%');
         }
@@ -181,6 +194,8 @@ class TopRankStatService
             'image' => "/storage/{$config['image_dir']}/{$row->item_id}.png",
             'group_code' => $row->group_code ?? '',
             'group_label' => $this->groupLabel($type, $row->group_code ?? ''),
+            'sub_group_code' => $row->sub_group_code ?? '',
+            'sub_group_label' => $this->subGroupLabel($type, $row->sub_group_code ?? ''),
             'character_id' => $row->character_id,
             'character_name' => $row->character_name,
             'weapon_type' => $row->weapon_type,
@@ -231,6 +246,52 @@ class TopRankStatService
     }
 
     /**
+     * 2차 분류 코드를 한글 라벨로 (아이템 등급 / 특성 카테고리)
+     */
+    private function subGroupLabel(string $type, ?string $code): string
+    {
+        if (!$code) {
+            return '';
+        }
+
+        return match ($type) {
+            'equipment' => $this->replaceItemGrade($code, 'ko'),
+            // 특성 카테고리는 이미 한글이라 그대로 쓴다
+            default => $code,
+        };
+    }
+
+    /**
+     * 종류별 필터 라벨 (화면에 "그룹" 대신 실제 이름을 보여준다)
+     */
+    public function getFilterLabels(): array
+    {
+        return [
+            'trait' => ['group' => '메인/서브', 'sub_group' => '카테고리'],
+            'equipment' => ['group' => '부위', 'sub_group' => '등급'],
+            'tactical_skill' => ['group' => '', 'sub_group' => ''],
+        ];
+    }
+
+    /**
+     * 종류별 2차 분류 선택지
+     */
+    public function getSubGroupOptions(string $type): array
+    {
+        return match ($type) {
+            // 등급은 낮은 것부터 순서를 고정한다 (DISTINCT 정렬로는 뒤섞인다)
+            'equipment' => collect(['Common', 'Uncommon', 'Rare', 'Epic', 'Legend', 'Mythic'])
+                ->map(fn ($code) => ['value' => $code, 'label' => $this->replaceItemGrade($code, 'ko')])
+                ->all(),
+            'trait' => DB::table('traits')->whereNotNull('category')->distinct()
+                ->orderBy('category')->pluck('category')
+                ->map(fn ($code) => ['value' => $code, 'label' => $code])
+                ->values()->all(),
+            default => [],
+        };
+    }
+
+    /**
      * 종류별 그룹 선택지 (화면 필터용)
      */
     public function getGroupOptions(string $type): array
@@ -272,6 +333,9 @@ class TopRankStatService
             // 종류별 그룹 선택지 (특성: 메인/서브1/서브2, 아이템: 무기/부위)
             'groups' => collect(self::TYPES)->keys()
                 ->mapWithKeys(fn ($type) => [$type => $this->getGroupOptions($type)])->all(),
+            'sub_groups' => collect(self::TYPES)->keys()
+                ->mapWithKeys(fn ($type) => [$type => $this->getSubGroupOptions($type)])->all(),
+            'filter_labels' => $this->getFilterLabels(),
         ];
     }
 }

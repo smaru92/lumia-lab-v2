@@ -25,6 +25,7 @@ class TopRankStatController extends Controller
             'character_id' => ['nullable', 'integer'],
             'weapon_type' => ['nullable', 'string', 'max:30'],
             'group' => ['nullable', 'string', 'max:30'],
+            'sub_group' => ['nullable', 'string', 'max:30'],
             'search' => ['nullable', 'string', 'max:50'],
             'min_game_count' => ['nullable', 'integer', 'min:0'],
         ]);

@@ -29,6 +29,8 @@ interface StatRow {
     image: string;
     group_code: string;
     group_label: string;
+    sub_group_code: string;
+    sub_group_label: string;
     character_id: number;
     character_name: string;
     weapon_type: string;
@@ -43,6 +45,8 @@ interface Options {
     tiers: string[];
     characters: { value: string; label: string }[];
     groups: Record<string, { value: string; label: string }[]>;
+    sub_groups: Record<string, { value: string; label: string }[]>;
+    filter_labels: Record<string, { group: string; sub_group: string }>;
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -69,6 +73,7 @@ export default function TopRankStatsPage() {
     const [minTier, setMinTier] = useState('Diamond');
     const [characterId, setCharacterId] = useState('');
     const [group, setGroup] = useState('');
+    const [subGroup, setSubGroup] = useState('');
     const [search, setSearch] = useState('');
     const [minGameCount, setMinGameCount] = useState('10');
 
@@ -83,6 +88,7 @@ export default function TopRankStatsPage() {
         min_tier: minTier,
         character_id: characterId || undefined,
         group: group || undefined,
+        sub_group: subGroup || undefined,
         search: search || undefined,
         min_game_count: minGameCount || undefined,
     };
@@ -93,6 +99,8 @@ export default function TopRankStatsPage() {
     });
 
     const groupOptions = options?.groups?.[type] ?? [];
+    const subGroupOptions = options?.sub_groups?.[type] ?? [];
+    const labels = options?.filter_labels?.[type] ?? { group: '그룹', sub_group: '분류' };
 
     // 캐릭터 상세처럼 그룹 단위로 묶어서 보여준다 (그룹 없는 종류는 한 덩어리)
     const rows = data?.data ?? [];
@@ -117,7 +125,7 @@ export default function TopRankStatsPage() {
                 <CardContent className="grid gap-4 pt-6 md:grid-cols-3 lg:grid-cols-6">
                     <div className="space-y-2">
                         <Label>종류</Label>
-                        <Select value={type} onValueChange={(v) => { setType(v); setGroup(''); }}>
+                        <Select value={type} onValueChange={(v) => { setType(v); setGroup(''); setSubGroup(''); }}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {(options?.types ?? []).map((t) => (
@@ -165,22 +173,35 @@ export default function TopRankStatsPage() {
                         </Select>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>그룹</Label>
-                        <Select
-                            value={group || '__all__'}
-                            onValueChange={(v) => setGroup(v === '__all__' ? '' : v)}
-                            disabled={groupOptions.length === 0}
-                        >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="__all__">전체</SelectItem>
-                                {groupOptions.map((g) => (
-                                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {groupOptions.length > 0 && (
+                        <div className="space-y-2">
+                            <Label>{labels.group}</Label>
+                            <Select value={group || '__all__'} onValueChange={(v) => setGroup(v === '__all__' ? '' : v)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__all__">전체</SelectItem>
+                                    {groupOptions.map((g) => (
+                                        <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
+                    {subGroupOptions.length > 0 && (
+                        <div className="space-y-2">
+                            <Label>{labels.sub_group}</Label>
+                            <Select value={subGroup || '__all__'} onValueChange={(v) => setSubGroup(v === '__all__' ? '' : v)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__all__">전체</SelectItem>
+                                    {subGroupOptions.map((g) => (
+                                        <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         <Label htmlFor="search">이름 검색</Label>
@@ -263,7 +284,14 @@ export default function TopRankStatsPage() {
                                             loading="lazy"
                                             onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
                                         />
-                                        <span>{r.item_name}</span>
+                                        <span>
+                                            {r.item_name}
+                                            {r.sub_group_label && (
+                                                <span className="ml-2 rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 text-xs text-[hsl(var(--muted-foreground))]">
+                                                    {r.sub_group_label}
+                                                </span>
+                                            )}
+                                        </span>
                                     </div>
                                 </td>
                                 <td className="px-3 py-2">{r.character_name}</td>
