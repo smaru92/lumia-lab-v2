@@ -20,6 +20,7 @@ import VersionHistoryListPage from '@/features/version-histories/VersionHistoryL
 import VersionHistoryCreatePage from '@/features/version-histories/VersionHistoryCreatePage';
 import VersionHistoryEditPage from '@/features/version-histories/VersionHistoryEditPage';
 import SettingsPage from '@/features/settings/SettingsPage';
+import TopRankStatsPage from '@/features/top-rank-stats/TopRankStatsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useAuth();
@@ -66,6 +67,7 @@ export default function App() {
                                 <Route path="/version-histories" element={<VersionHistoryListPage />} />
                                 <Route path="/version-histories/create" element={<VersionHistoryCreatePage />} />
                                 <Route path="/version-histories/:id/edit" element={<VersionHistoryEditPage />} />
+                                <Route path="/top-rank-stats" element={<TopRankStatsPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
                             </Routes>
                         </AdminLayout>

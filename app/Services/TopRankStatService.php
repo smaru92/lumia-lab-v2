@@ -1,0 +1,200 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\VersionHistory;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * TOP4 상세 지표 조회 (관리자 전용)
+ *
+ * 기존 버전별 요약 테이블은 순위(game_rank 1~8)별로 행이 나뉘어 있다.
+ * 여기서는 그 행들을 항목 x 캐릭터 x 무기 단위로 합치되,
+ * TOP4(1~4위)와 전체(1~8위)를 한 번의 조회로 나란히 계산한다.
+ *
+ * 별도 집계 테이블을 만들지 않으므로 스케줄러에 영향이 없다.
+ */
+class TopRankStatService
+{
+    /** 지원하는 통계 종류 */
+    public const TYPES = [
+        'trait' => [
+            'label' => '특성',
+            'table' => 'game_results_trait_summary',
+            'id_column' => 'trait_id',
+            'name_table' => 'traits',
+        ],
+        'equipment' => [
+            'label' => '아이템',
+            'table' => 'game_results_equipment_summary',
+            'id_column' => 'equipment_id',
+            'name_table' => 'equipments',
+        ],
+        'tactical_skill' => [
+            'label' => '전술스킬',
+            'table' => 'game_results_tactical_skill_summary',
+            'id_column' => 'tactical_skill_id',
+            'name_table' => 'tactical_skills',
+        ],
+    ];
+
+    /** TOP4 기준 순위 */
+    private const TOP_RANK = 4;
+
+    /**
+     * 지표 조회
+     *
+     * @param array $filters type / version / min_tier / character_id / weapon_type / search / min_game_count
+     */
+    public function getStats(array $filters): array
+    {
+        // 관리자 전용이라 호출 빈도가 낮다. 콜드 상태에서 1초 가까이 걸리는 것만 캐시로 눌러준다.
+        // (요약 테이블 자체가 2시간 주기로 갱신되므로 짧게 잡아도 충분하다)
+        $cacheKey = 'top_rank_stat_' . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 600, fn () => $this->queryStats($filters));
+    }
+
+    private function queryStats(array $filters): array
+    {
+        $type = $filters['type'] ?? 'trait';
+        $config = self::TYPES[$type] ?? self::TYPES['trait'];
+
+        $versionParts = parse_version_key($filters['version'] ?? null);
+        $tableName = VersionedGameTableManager::getTableName($config['table'], $versionParts);
+
+        if (!Schema::hasTable($tableName)) {
+            return ['data' => [], 'table' => $tableName, 'exists' => false];
+        }
+
+        $idColumn = $config['id_column'];
+        $top = self::TOP_RANK;
+
+        $query = DB::table($tableName . ' as s')
+            ->join('characters as c', 'c.id', '=', 's.character_id')
+            ->leftJoin($config['name_table'] . ' as n', 'n.id', '=', 's.' . $idColumn)
+            ->where('s.min_tier', $filters['min_tier'] ?? 'Diamond')
+            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type', 'n.name', 'c.name');
+
+        $query->select([
+            DB::raw("s.`{$idColumn}` as item_id"),
+            DB::raw('n.name as item_name'),
+            DB::raw('s.character_id'),
+            DB::raw('c.name as character_name'),
+            DB::raw('s.weapon_type'),
+
+            // 전체(1~8위)
+            DB::raw('SUM(s.game_rank_count) as all_game_count'),
+            DB::raw('SUM(s.avg_mmr_gain * s.game_rank_count) / NULLIF(SUM(s.game_rank_count), 0) as all_avg_mmr_gain'),
+            DB::raw('SUM(s.avg_team_kill_score * s.game_rank_count) / NULLIF(SUM(s.game_rank_count), 0) as all_avg_team_kill'),
+            DB::raw('SUM(s.positive_count) as all_positive_count'),
+            DB::raw('SUM(s.positive_avg_mmr_gain * s.positive_count) / NULLIF(SUM(s.positive_count), 0) as all_positive_avg'),
+            DB::raw('SUM(s.negative_count) as all_negative_count'),
+            DB::raw('SUM(s.negative_avg_mmr_gain * s.negative_count) / NULLIF(SUM(s.negative_count), 0) as all_negative_avg'),
+
+            // TOP4(1~4위)
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) as top_game_count"),
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.avg_mmr_gain * s.game_rank_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END), 0) as top_avg_mmr_gain"),
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.avg_team_kill_score * s.game_rank_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END), 0) as top_avg_team_kill"),
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.positive_count ELSE 0 END) as top_positive_count"),
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.positive_avg_mmr_gain * s.positive_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.positive_count ELSE 0 END), 0) as top_positive_avg"),
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.negative_count ELSE 0 END) as top_negative_count"),
+            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.negative_avg_mmr_gain * s.negative_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.negative_count ELSE 0 END), 0) as top_negative_avg"),
+        ]);
+
+        if (!empty($filters['character_id'])) {
+            $query->where('s.character_id', $filters['character_id']);
+        }
+
+        if (!empty($filters['weapon_type']) && $filters['weapon_type'] !== 'All') {
+            $query->where('s.weapon_type', $filters['weapon_type']);
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where('n.name', 'like', '%' . $filters['search'] . '%');
+        }
+
+        $minGameCount = (int) ($filters['min_game_count'] ?? 0);
+        if ($minGameCount > 0) {
+            $query->havingRaw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) >= ?", [$minGameCount]);
+        }
+
+        $rows = $query->orderByRaw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) DESC")
+            ->limit(500)
+            ->get();
+
+        return [
+            'data' => $rows->map(fn ($row) => $this->formatRow($row))->all(),
+            'table' => $tableName,
+            'exists' => true,
+        ];
+    }
+
+    /**
+     * 비율 계산 등 화면에서 바로 쓸 수 있는 형태로 정리
+     */
+    private function formatRow(object $row): array
+    {
+        $allCount = (int) $row->all_game_count;
+        $topCount = (int) $row->top_game_count;
+
+        return [
+            'item_id' => $row->item_id,
+            'item_name' => $row->item_name ?? ('#' . $row->item_id),
+            'character_id' => $row->character_id,
+            'character_name' => $row->character_name,
+            'weapon_type' => $row->weapon_type,
+
+            'top' => [
+                'game_count' => $topCount,
+                'avg_mmr_gain' => $this->round($row->top_avg_mmr_gain),
+                'avg_team_kill' => $this->round($row->top_avg_team_kill, 2),
+                'positive_percent' => $topCount ? round((int) $row->top_positive_count / $topCount * 100, 2) : 0,
+                'positive_avg' => $this->round($row->top_positive_avg),
+                'negative_percent' => $topCount ? round((int) $row->top_negative_count / $topCount * 100, 2) : 0,
+                'negative_avg' => $this->round($row->top_negative_avg),
+            ],
+            'all' => [
+                'game_count' => $allCount,
+                'avg_mmr_gain' => $this->round($row->all_avg_mmr_gain),
+                'avg_team_kill' => $this->round($row->all_avg_team_kill, 2),
+                'positive_percent' => $allCount ? round((int) $row->all_positive_count / $allCount * 100, 2) : 0,
+                'positive_avg' => $this->round($row->all_positive_avg),
+                'negative_percent' => $allCount ? round((int) $row->all_negative_count / $allCount * 100, 2) : 0,
+                'negative_avg' => $this->round($row->all_negative_avg),
+            ],
+            // TOP4 진입 비율 (참고용)
+            'top_rate' => $allCount ? round($topCount / $allCount * 100, 2) : 0,
+        ];
+    }
+
+    private function round($value, int $precision = 1): float
+    {
+        return round((float) ($value ?? 0), $precision);
+    }
+
+    /**
+     * 화면 필터용 선택지
+     */
+    public function getFilterOptions(): array
+    {
+        return [
+            'types' => collect(self::TYPES)->map(fn ($c, $key) => ['value' => $key, 'label' => $c['label']])->values()->all(),
+            'versions' => VersionHistory::query()
+                ->orderByDesc('start_date')
+                ->limit(10)
+                ->get()
+                ->map(fn ($v) => ['value' => $v->version_key, 'label' => $v->version_key])
+                ->all(),
+            'tiers' => ['All', 'Platinum', 'Diamond', 'Diamond2', 'Meteorite', 'Mithrillow', 'Mithrilhigh', 'Top'],
+            'characters' => DB::table('characters')->orderBy('name')->get(['id', 'name'])
+                ->map(fn ($c) => ['value' => (string) $c->id, 'label' => $c->name])->all(),
+        ];
+    }
+}

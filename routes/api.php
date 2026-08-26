@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PatchNoteController;
 use App\Http\Controllers\Admin\TraitController as AdminTraitController;
 use App\Http\Controllers\Admin\TacticalSkillController as AdminTacticalSkillController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\TopRankStatController;
 use App\Http\Controllers\InfoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +59,10 @@ Route::prefix('admin')->group(function () {
 
         // Equipment Skills (full CRUD)
         Route::apiResource('equipment-skills', EquipmentSkillController::class);
+
+        // TOP4 상세 지표 (관리자 전용)
+        Route::get('/top-rank-stats', [TopRankStatController::class, 'index']);
+        Route::get('/top-rank-stats/options', [TopRankStatController::class, 'options']);
 
         // Site Settings (기본 버전 / 기본 티어)
         Route::get('/settings', [SettingController::class, 'index']);

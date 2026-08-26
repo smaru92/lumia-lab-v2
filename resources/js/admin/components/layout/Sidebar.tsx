@@ -9,6 +9,7 @@ import {
     Swords,
     Zap,
     Settings,
+    BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ const navigation = [
     { name: '특성', href: '/traits', icon: Swords },
     { name: '전술스킬', href: '/tactical-skills', icon: Zap },
     { name: '버전 히스토리', href: '/version-histories', icon: History },
+    { name: 'TOP4 지표', href: '/top-rank-stats', icon: BarChart3 },
     { name: '사이트 설정', href: '/settings', icon: Settings },
 ];
 
