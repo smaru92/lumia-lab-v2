@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\VersionHistory;
+use App\Traits\ErDevTrait;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -18,26 +19,41 @@ use Illuminate\Support\Facades\Schema;
  */
 class TopRankStatService
 {
-    /** 지원하는 통계 종류 */
+    use ErDevTrait;
+
+    /**
+     * 지원하는 통계 종류
+     * image_dir 은 public/storage 아래 아이콘 디렉토리명이다.
+     */
     public const TYPES = [
         'trait' => [
             'label' => '특성',
             'table' => 'game_results_trait_summary',
             'id_column' => 'trait_id',
             'name_table' => 'traits',
+            'image_dir' => 'Trait',
         ],
         'equipment' => [
             'label' => '아이템',
             'table' => 'game_results_equipment_summary',
             'id_column' => 'equipment_id',
             'name_table' => 'equipments',
+            'image_dir' => 'Equipment',
         ],
         'tactical_skill' => [
             'label' => '전술스킬',
             'table' => 'game_results_tactical_skill_summary',
             'id_column' => 'tactical_skill_id',
             'name_table' => 'tactical_skills',
+            'image_dir' => 'TacticalSkill',
         ],
+    ];
+
+    /** 특성 그룹 표기 */
+    private const TRAIT_GROUP_LABELS = [
+        'main' => '메인',
+        'sub1' => '서브1',
+        'sub2' => '서브2',
     ];
 
     /** TOP4 기준 순위 */
@@ -72,15 +88,26 @@ class TopRankStatService
         $idColumn = $config['id_column'];
         $top = self::TOP_RANK;
 
+        // 종류별 그룹 기준
+        //  - 아이템: 캐릭터 상세와 동일하게 무기는 'Weapon', 나머지는 부위(item_type2)
+        //  - 특성  : 그룹(main/sub1/sub2). 마스터 값을 쓰고 버전별 이력은 아래에서 덮어쓴다
+        //  - 전술스킬: 그룹 구분 없음
+        $groupSelect = match ($type) {
+            'equipment' => "CASE WHEN n.item_type1 = 'Weapon' THEN 'Weapon' ELSE n.item_type2 END",
+            'trait' => 'n.trait_group',
+            default => "''",
+        };
+
         $query = DB::table($tableName . ' as s')
             ->join('characters as c', 'c.id', '=', 's.character_id')
             ->leftJoin($config['name_table'] . ' as n', 'n.id', '=', 's.' . $idColumn)
             ->where('s.min_tier', $filters['min_tier'] ?? 'Diamond')
-            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type', 'n.name', 'c.name');
+            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type', 'n.name', 'c.name', DB::raw($groupSelect));
 
         $query->select([
             DB::raw("s.`{$idColumn}` as item_id"),
             DB::raw('n.name as item_name'),
+            DB::raw($groupSelect . ' as group_code'),
             DB::raw('s.character_id'),
             DB::raw('c.name as character_name'),
             DB::raw('s.weapon_type'),
@@ -116,6 +143,10 @@ class TopRankStatService
             $query->where('s.weapon_type', $filters['weapon_type']);
         }
 
+        if (!empty($filters['group']) && $filters['group'] !== 'All') {
+            $query->whereRaw("{$groupSelect} = ?", [$filters['group']]);
+        }
+
         if (!empty($filters['search'])) {
             $query->where('n.name', 'like', '%' . $filters['search'] . '%');
         }
@@ -130,7 +161,7 @@ class TopRankStatService
             ->get();
 
         return [
-            'data' => $rows->map(fn ($row) => $this->formatRow($row))->all(),
+            'data' => $rows->map(fn ($row) => $this->formatRow($row, $type, $config))->all(),
             'table' => $tableName,
             'exists' => true,
         ];
@@ -139,7 +170,7 @@ class TopRankStatService
     /**
      * 비율 계산 등 화면에서 바로 쓸 수 있는 형태로 정리
      */
-    private function formatRow(object $row): array
+    private function formatRow(object $row, string $type, array $config): array
     {
         $allCount = (int) $row->all_game_count;
         $topCount = (int) $row->top_game_count;
@@ -147,6 +178,9 @@ class TopRankStatService
         return [
             'item_id' => $row->item_id,
             'item_name' => $row->item_name ?? ('#' . $row->item_id),
+            'image' => "/storage/{$config['image_dir']}/{$row->item_id}.png",
+            'group_code' => $row->group_code ?? '',
+            'group_label' => $this->groupLabel($type, $row->group_code ?? ''),
             'character_id' => $row->character_id,
             'character_name' => $row->character_name,
             'weapon_type' => $row->weapon_type,
@@ -180,6 +214,46 @@ class TopRankStatService
     }
 
     /**
+     * 그룹 코드를 한글 라벨로
+     */
+    private function groupLabel(string $type, ?string $code): string
+    {
+        if (!$code) {
+            return '';
+        }
+
+        return match ($type) {
+            'trait' => self::TRAIT_GROUP_LABELS[$code] ?? $code,
+            // 아이템은 캐릭터 상세와 동일한 표기를 쓴다 (무기 / 머리 / 옷 ...)
+            'equipment' => $this->replaceItemType2($code, 'ko'),
+            default => $code,
+        };
+    }
+
+    /**
+     * 종류별 그룹 선택지 (화면 필터용)
+     */
+    public function getGroupOptions(string $type): array
+    {
+        $options = match ($type) {
+            'trait' => collect(self::TRAIT_GROUP_LABELS)
+                ->map(fn ($label, $code) => ['value' => $code, 'label' => $label])
+                ->values()->all(),
+            'equipment' => DB::table('equipments')
+                ->selectRaw("DISTINCT CASE WHEN item_type1 = 'Weapon' THEN 'Weapon' ELSE item_type2 END as code")
+                ->whereNotNull('item_type2')
+                ->orderBy('code')
+                ->pluck('code')
+                ->filter()
+                ->map(fn ($code) => ['value' => $code, 'label' => $this->replaceItemType2($code, 'ko')])
+                ->values()->all(),
+            default => [],
+        };
+
+        return $options;
+    }
+
+    /**
      * 화면 필터용 선택지
      */
     public function getFilterOptions(): array
@@ -195,6 +269,9 @@ class TopRankStatService
             'tiers' => ['All', 'Platinum', 'Diamond', 'Diamond2', 'Meteorite', 'Mithrillow', 'Mithrilhigh', 'Top'],
             'characters' => DB::table('characters')->orderBy('name')->get(['id', 'name'])
                 ->map(fn ($c) => ['value' => (string) $c->id, 'label' => $c->name])->all(),
+            // 종류별 그룹 선택지 (특성: 메인/서브1/서브2, 아이템: 무기/부위)
+            'groups' => collect(self::TYPES)->keys()
+                ->mapWithKeys(fn ($type) => [$type => $this->getGroupOptions($type)])->all(),
         ];
     }
 }

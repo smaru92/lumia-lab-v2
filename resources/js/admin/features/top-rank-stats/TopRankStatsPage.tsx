@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -26,6 +26,9 @@ interface Metrics {
 interface StatRow {
     item_id: number;
     item_name: string;
+    image: string;
+    group_code: string;
+    group_label: string;
     character_id: number;
     character_name: string;
     weapon_type: string;
@@ -39,6 +42,7 @@ interface Options {
     versions: { value: string; label: string }[];
     tiers: string[];
     characters: { value: string; label: string }[];
+    groups: Record<string, { value: string; label: string }[]>;
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -64,6 +68,7 @@ export default function TopRankStatsPage() {
     const [version, setVersion] = useState('');
     const [minTier, setMinTier] = useState('Diamond');
     const [characterId, setCharacterId] = useState('');
+    const [group, setGroup] = useState('');
     const [search, setSearch] = useState('');
     const [minGameCount, setMinGameCount] = useState('10');
 
@@ -77,6 +82,7 @@ export default function TopRankStatsPage() {
         version: version || undefined,
         min_tier: minTier,
         character_id: characterId || undefined,
+        group: group || undefined,
         search: search || undefined,
         min_game_count: minGameCount || undefined,
     };
@@ -86,7 +92,19 @@ export default function TopRankStatsPage() {
         queryFn: async () => (await api.get('/top-rank-stats', { params })).data,
     });
 
+    const groupOptions = options?.groups?.[type] ?? [];
+
+    // 캐릭터 상세처럼 그룹 단위로 묶어서 보여준다 (그룹 없는 종류는 한 덩어리)
     const rows = data?.data ?? [];
+    const groupOrder = groupOptions.map((g) => g.value);
+    const grouped = rows.reduce<Record<string, StatRow[]>>((acc, row) => {
+        const key = row.group_code || '';
+        (acc[key] ||= []).push(row);
+        return acc;
+    }, {});
+    const groupKeys = Object.keys(grouped).sort(
+        (a, b) => (groupOrder.indexOf(a) + 1 || 99) - (groupOrder.indexOf(b) + 1 || 99)
+    );
 
     return (
         <div className="space-y-6">
@@ -99,7 +117,7 @@ export default function TopRankStatsPage() {
                 <CardContent className="grid gap-4 pt-6 md:grid-cols-3 lg:grid-cols-6">
                     <div className="space-y-2">
                         <Label>종류</Label>
-                        <Select value={type} onValueChange={setType}>
+                        <Select value={type} onValueChange={(v) => { setType(v); setGroup(''); }}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {(options?.types ?? []).map((t) => (
@@ -142,6 +160,23 @@ export default function TopRankStatsPage() {
                                 <SelectItem value="__all__">전체</SelectItem>
                                 {(options?.characters ?? []).map((c) => (
                                     <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>그룹</Label>
+                        <Select
+                            value={group || '__all__'}
+                            onValueChange={(v) => setGroup(v === '__all__' ? '' : v)}
+                            disabled={groupOptions.length === 0}
+                        >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__all__">전체</SelectItem>
+                                {groupOptions.map((g) => (
+                                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -202,12 +237,35 @@ export default function TopRankStatsPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {rows.map((r) => (
+                        {groupKeys.map((key) => (
+                            <Fragment key={key || 'ungrouped'}>
+                                {key && (
+                                    <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]">
+                                        <td colSpan={14} className="px-3 py-1.5 text-xs font-bold">
+                                            {grouped[key][0].group_label || key}
+                                            <span className="ml-2 font-normal text-[hsl(var(--muted-foreground))]">
+                                                {grouped[key].length}건
+                                            </span>
+                                        </td>
+                                    </tr>
+                                )}
+                                {grouped[key].map((r) => (
                             <tr
                                 key={`${r.item_id}-${r.character_id}-${r.weapon_type}`}
                                 className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
                             >
-                                <td className="px-3 py-2">{r.item_name}</td>
+                                <td className="px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                        <img
+                                            src={r.image}
+                                            alt=""
+                                            className="h-7 w-7 shrink-0 rounded"
+                                            loading="lazy"
+                                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+                                        />
+                                        <span>{r.item_name}</span>
+                                    </div>
+                                </td>
                                 <td className="px-3 py-2">{r.character_name}</td>
                                 <td className="px-3 py-2 text-[hsl(var(--muted-foreground))]">{r.weapon_type}</td>
 
@@ -247,6 +305,8 @@ export default function TopRankStatsPage() {
                                     {num(r.top_rate, 1)}%
                                 </td>
                             </tr>
+                                ))}
+                            </Fragment>
                         ))}
                         {rows.length === 0 && !isFetching && (
                             <tr>
