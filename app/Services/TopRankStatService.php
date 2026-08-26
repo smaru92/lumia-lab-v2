@@ -177,6 +177,9 @@ class TopRankStatService
             'data' => $rows->map(fn ($row) => $this->formatRow($row, $type, $config))->all(),
             'table' => $tableName,
             'exists' => true,
+            // 무기군은 캐릭터마다 다르고(알렉스는 합계 'All', 에키온은 전용 3종)
+            // 버전에 따라서도 달라지므로, 지금 조건에서 실제로 존재하는 값만 내려준다.
+            'weapon_types' => $this->availableWeaponTypes($tableName, $filters),
         ];
     }
 
@@ -226,6 +229,24 @@ class TopRankStatService
     private function round($value, int $precision = 1): float
     {
         return round((float) ($value ?? 0), $precision);
+    }
+
+    /**
+     * 현재 조건(버전/티어/캐릭터)에서 선택 가능한 무기군 목록
+     */
+    private function availableWeaponTypes(string $tableName, array $filters): array
+    {
+        $query = DB::table($tableName)
+            ->where('min_tier', $filters['min_tier'] ?? 'Diamond');
+
+        if (!empty($filters['character_id'])) {
+            $query->where('character_id', $filters['character_id']);
+        }
+
+        return $query->distinct()->orderBy('weapon_type')->pluck('weapon_type')
+            ->filter()
+            ->map(fn ($code) => ['value' => $code, 'label' => $this->replaceWeaponType($code, 'ko')])
+            ->values()->all();
     }
 
     /**

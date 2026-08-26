@@ -74,6 +74,7 @@ export default function TopRankStatsPage() {
     const [characterId, setCharacterId] = useState('');
     const [group, setGroup] = useState('');
     const [subGroup, setSubGroup] = useState('');
+    const [weaponType, setWeaponType] = useState('');
     const [search, setSearch] = useState('');
     const [minGameCount, setMinGameCount] = useState('10');
 
@@ -89,11 +90,15 @@ export default function TopRankStatsPage() {
         character_id: characterId || undefined,
         group: group || undefined,
         sub_group: subGroup || undefined,
+        weapon_type: weaponType || undefined,
         search: search || undefined,
         min_game_count: minGameCount || undefined,
     };
 
-    const { data, isFetching } = useQuery<{ data: StatRow[]; meta: { count: number; exists: boolean; table: string } }>({
+    const { data, isFetching } = useQuery<{
+        data: StatRow[];
+        meta: { count: number; exists: boolean; table: string; weapon_types: { value: string; label: string }[] };
+    }>({
         queryKey: ['top-rank-stats', params],
         queryFn: async () => (await api.get('/top-rank-stats', { params })).data,
     });
@@ -101,6 +106,11 @@ export default function TopRankStatsPage() {
     const groupOptions = options?.groups?.[type] ?? [];
     const subGroupOptions = options?.sub_groups?.[type] ?? [];
     const labels = options?.filter_labels?.[type] ?? { group: '그룹', sub_group: '분류' };
+    // 무기군은 캐릭터마다 구성이 달라(알렉스는 합계 'All', 에키온은 전용 3종)
+    // 서버가 현재 조건에서 실제 존재하는 값만 내려준다.
+    const weaponOptions = data?.meta?.weapon_types ?? [];
+    const weaponLabel = (code: string) =>
+        weaponOptions.find((w) => w.value === code)?.label ?? code;
 
     // 캐릭터 상세처럼 그룹 단위로 묶어서 보여준다 (그룹 없는 종류는 한 덩어리)
     const rows = data?.data ?? [];
@@ -162,12 +172,29 @@ export default function TopRankStatsPage() {
 
                     <div className="space-y-2">
                         <Label>캐릭터</Label>
-                        <Select value={characterId || '__all__'} onValueChange={(v) => setCharacterId(v === '__all__' ? '' : v)}>
+                        <Select value={characterId || '__all__'} onValueChange={(v) => { setCharacterId(v === '__all__' ? '' : v); setWeaponType(''); }}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="__all__">전체</SelectItem>
                                 {(options?.characters ?? []).map((c) => (
                                     <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>무기군</Label>
+                        <Select
+                            value={weaponType || '__all__'}
+                            onValueChange={(v) => setWeaponType(v === '__all__' ? '' : v)}
+                            disabled={weaponOptions.length === 0}
+                        >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__all__">전체</SelectItem>
+                                {weaponOptions.map((w) => (
+                                    <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -295,7 +322,9 @@ export default function TopRankStatsPage() {
                                     </div>
                                 </td>
                                 <td className="px-3 py-2">{r.character_name}</td>
-                                <td className="px-3 py-2 text-[hsl(var(--muted-foreground))]">{r.weapon_type}</td>
+                                <td className="px-3 py-2 text-[hsl(var(--muted-foreground))]">
+                                    {weaponLabel(r.weapon_type)}
+                                </td>
 
                                 <td className="border-l border-[hsl(var(--border))] px-3 py-2 text-right font-medium">
                                     {r.top.game_count.toLocaleString()}

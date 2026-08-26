@@ -38,6 +38,7 @@ class TopRankStatController extends Controller
                 'table' => $result['table'],
                 'exists' => $result['exists'],
                 'count' => count($result['data']),
+                'weapon_types' => $result['weapon_types'] ?? [],
             ],
         ]);
     }
