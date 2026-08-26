@@ -172,6 +172,23 @@
 
 **중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
 
+집계 명령어는 인자 없이 실행하면 **최신 버전(핫픽스 포함)** 을 대상으로 한다.
+스케줄러가 인자 없이 돌므로 새 버전이 나오면 자동으로 따라간다.
+특정 버전만 다시 집계하려면 `php artisan update:game-results-summary 12 2 0 b` 처럼 인자를 준다.
+
+### 서버 운영 제약
+
+- **스케줄러는 반드시 `www-data` 로 실행해야 한다.** 운영 서버 크론탭:
+  ```
+  * * * * * cd /var/www/lumia-lab-v2 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
+  ```
+  `koprad1` 등 다른 계정으로 돌리면 매일 자정에 생기는 로그 파일이 그 계정 소유가 되고,
+  php-fpm(`www-data`)이 로그를 쓰지 못해 **예외가 fatal 로 번지면서 사이트 전체가 500** 이 된다.
+  (Monolog StreamHandler 가 로그 기록 실패 시 그대로 죽는다)
+- 크론탭은 저장소가 관리하지 않으므로 서버 재구축 시 위 형태로 직접 등록해야 한다.
+- 배포는 `composer install` 을 쓴다. `composer update` 를 쓰면 서버의 `composer.lock` 이 바뀌어
+  이후 모든 `git pull` 이 "local changes would be overwritten" 으로 abort 되고 배포가 조용히 멈춘다.
+
 ## 사이트 운영 설정 (관리자 화면)
 
 기본 버전/기본 티어는 **.env 가 아니라 관리자 → 사이트 설정**에서 조절한다.
