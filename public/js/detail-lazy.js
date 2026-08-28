@@ -182,7 +182,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const TREND_GRID = '#e5e5e2';
     const TREND_AXIS = '#8a8a85';
     const TREND_TEXT = '#52514e';
-    const TIER_STEPS = ['OP', '1', '2', '3', '4', '5', 'RIP'];
 
     function renderTrendSection(data, element) {
         const points = (data && data.points) || [];
@@ -195,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const charts = [
-            { key: 'meta_tier', title: '티어', type: 'tier' },
+            { key: 'meta_score', title: '티어', type: 'tier', digits: 1 },
             { key: 'pick_rate', title: '픽률', unit: '%', digits: 2 },
             { key: 'avg_mmr_gain', title: '평균획득점수', unit: '', digits: 1 },
             { key: 'win_rate', title: '승률', unit: '%', digits: 2 },
@@ -217,12 +216,6 @@ document.addEventListener('DOMContentLoaded', function() {
         attachTrendHover(element, points, charts);
     }
 
-    /** 티어 문자열을 위에서부터의 위치(0=OP)로 변환 */
-    function tierIndex(tier) {
-        const i = TIER_STEPS.indexOf(String(tier));
-        return i === -1 ? null : i;
-    }
-
     function buildTrendChart(config, points) {
         const W = 320, H = 150;
         const padL = 40, padR = 14, padT = 14, padB = 26;
@@ -230,9 +223,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const innerH = H - padT - padB;
 
         const isTier = config.type === 'tier';
-        const values = points.map(function (p) {
-            return isTier ? tierIndex(p.meta_tier) : p[config.key];
-        });
+        // 티어 차트도 등급 계단이 아니라 메타스코어 연속값을 그린다
+        const values = points.map(function (p) { return p[config.key]; });
 
         const valid = values.filter(function (v) { return v !== null && v !== undefined; });
         if (valid.length < 2) {
@@ -241,37 +233,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 티어는 0(OP)이 위로 가도록 축을 뒤집는다
-        let min, max;
-        if (isTier) {
-            min = 0;
-            max = TIER_STEPS.length - 1;
-        } else {
-            min = Math.min.apply(null, valid);
-            max = Math.max.apply(null, valid);
-            const span = max - min;
-            const pad = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
-            min -= pad;
-            max += pad;
-        }
+        let min = Math.min.apply(null, valid);
+        let max = Math.max.apply(null, valid);
+        const span = max - min;
+        const pad = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
+        min -= pad;
+        max += pad;
 
         const x = function (i) {
             return padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
         };
         const y = function (v) {
             const t = (v - min) / (max - min || 1);
-            return padT + (isTier ? t * innerH : (1 - t) * innerH);
+            return padT + (1 - t) * innerH;
         };
 
         // 눈금 - 티어는 단계값, 나머지는 3등분
-        let ticks = [];
-        if (isTier) {
-            ticks = [0, 3, 6].map(function (i) { return { v: i, label: TIER_STEPS[i] }; });
-        } else {
-            ticks = [0, 0.5, 1].map(function (t) {
-                const v = min + (max - min) * t;
-                return { v: v, label: formatTrendValue(v, config) };
-            });
-        }
+        const ticks = [0, 0.5, 1].map(function (t) {
+            const v = min + (max - min) * t;
+            return { v: v, label: formatTrendValue(v, config) };
+        });
 
         let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="trend-svg" preserveAspectRatio="none"'
             + ' role="img" aria-label="' + config.title + ' 추이">';
@@ -309,9 +290,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (lastVal !== null && lastVal !== undefined) {
             const lx = Math.min(x(lastIdx), W - padR - 4);
             const ly = Math.max(y(lastVal) - 9, padT + 4);
+            // 선 위에 겹쳐도 읽히도록 흰색 외곽선을 두른다
             svg += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="end"'
-                + ' font-size="10" font-weight="700" fill="' + TREND_TEXT + '">'
-                + (isTier ? points[lastIdx].meta_tier : formatTrendValue(lastVal, config)) + '</text>';
+                + ' font-size="10" font-weight="700" fill="' + TREND_TEXT + '"'
+                + ' stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">'
+                + trendValueLabel(points[lastIdx], lastVal, config, isTier) + '</text>';
         }
 
         // 크로스헤어 (호버 시 표시)
@@ -327,6 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return '<figure class="trend-chart" data-metric="' + config.key + '">'
             + '<figcaption>' + config.title + '</figcaption>' + svg
             + '<div class="trend-tooltip" style="display:none"></div></figure>';
+    }
+
+    /** 티어 차트는 "5티어(-3.6)" 처럼 등급과 점수를 함께 보여준다 */
+    function trendValueLabel(point, value, config, isTier) {
+        const num = formatTrendValue(value, config);
+        if (!isTier) return num;
+        return (point.meta_tier ? point.meta_tier + '티어' : '') + '(' + num + ')';
     }
 
     function formatTrendValue(v, config) {
@@ -381,9 +371,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 crosshair.setAttribute('x2', vx);
                 crosshair.style.display = '';
 
-                const value = config && config.type === 'tier'
-                    ? (p.meta_tier || '-') + ' 티어'
-                    : (p[metric] === null ? '-' : formatTrendValue(p[metric], config));
+                const isTierChart = config && config.type === 'tier';
+                const value = p[metric] === null || p[metric] === undefined
+                    ? '-'
+                    : trendValueLabel(p, p[metric], config, isTierChart);
 
                 tooltip.innerHTML = '<strong>' + value + '</strong><br>' + p.date + ' · ' + p.version
                     + '<br><span class="trend-tooltip-sub">게임 ' + Number(p.game_count).toLocaleString() + '</span>';

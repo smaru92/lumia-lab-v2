@@ -17,7 +17,7 @@ interface Props {
     title: string;
     points: TrendPoint[];
     metric: keyof TrendPoint;
-    /** 티어는 순위형이라 축을 뒤집고 눈금 라벨이 다르다 */
+    /** 티어 차트는 메타스코어를 그리되 값 표기에 등급을 함께 보여준다 */
     kind?: 'number' | 'tier';
     unit?: string;
     digits?: number;
@@ -29,8 +29,6 @@ const GRID = '#e5e5e2';
 const AXIS = '#8a8a85';
 const INK = '#52514e';
 
-const TIER_STEPS = ['OP', '1', '2', '3', '4', '5', 'RIP'];
-
 const W = 640;
 const H = 190;
 const PAD = { l: 46, r: 16, t: 16, b: 30 };
@@ -41,9 +39,8 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
     const innerW = W - PAD.l - PAD.r;
     const innerH = H - PAD.t - PAD.b;
 
-    const values = points.map((p) =>
-        kind === 'tier' ? tierIndex(p.meta_tier) : (p[metric] as number | null)
-    );
+    // 티어 차트도 등급 계단이 아니라 메타스코어 연속값을 그린다
+    const values = points.map((p) => p[metric] as number | null);
     const valid = values.filter((v): v is number => v !== null && v !== undefined);
 
     if (valid.length < 2) {
@@ -57,34 +54,23 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
         );
     }
 
-    let min: number;
-    let max: number;
-    if (kind === 'tier') {
-        min = 0;
-        max = TIER_STEPS.length - 1;
-    } else {
-        min = Math.min(...valid);
-        max = Math.max(...valid);
-        const span = max - min;
-        const pad = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
-        min -= pad;
-        max += pad;
-    }
+    let min = Math.min(...valid);
+    let max = Math.max(...valid);
+    const span = max - min;
+    const pad = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
+    min -= pad;
+    max += pad;
 
     const x = (i: number) => PAD.l + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
     const y = (v: number) => {
         const t = (v - min) / (max - min || 1);
-        // 티어는 OP(0)가 위로 오도록 뒤집지 않는다
-        return PAD.t + (kind === 'tier' ? t * innerH : (1 - t) * innerH);
+        return PAD.t + (1 - t) * innerH;
     };
 
-    const ticks =
-        kind === 'tier'
-            ? [0, 3, 6].map((i) => ({ v: i, label: TIER_STEPS[i] }))
-            : [0, 0.5, 1].map((t) => {
-                  const v = min + (max - min) * t;
-                  return { v, label: fmt(v, digits, unit) };
-              });
+    const ticks = [0, 0.5, 1].map((t) => {
+        const v = min + (max - min) * t;
+        return { v, label: fmt(v, digits, unit) };
+    });
 
     const path = points
         .map((_, i) => {
@@ -158,8 +144,12 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
                             fontSize={10}
                             fontWeight={700}
                             fill={INK}
+                            stroke="#fff"
+                            strokeWidth={3}
+                            paintOrder="stroke"
+                            strokeLinejoin="round"
                         >
-                            {kind === 'tier' ? points[lastIdx].meta_tier : fmt(lastVal, digits, unit)}
+                            {valueLabel(points[lastIdx], lastVal, kind, digits, unit)}
                         </text>
                     )}
 
@@ -175,9 +165,7 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
                         style={{ left: `min(${(hover! / Math.max(points.length - 1, 1)) * 100}%, calc(100% - 130px))` }}
                     >
                         <strong>
-                            {kind === 'tier'
-                                ? `${hovered.meta_tier ?? '-'} 티어`
-                                : fmt((hovered[metric] as number | null) ?? 0, digits, unit)}
+                            {valueLabel(hovered, (hovered[metric] as number | null) ?? 0, kind, digits, unit)}
                         </strong>
                         <br />
                         {hovered.date} · {hovered.version}
@@ -192,12 +180,13 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
     );
 }
 
-function tierIndex(tier: string | null): number | null {
-    if (!tier) return null;
-    const i = TIER_STEPS.indexOf(String(tier));
-    return i === -1 ? null : i;
-}
-
 function fmt(v: number, digits: number, unit: string) {
     return v.toFixed(digits) + unit;
+}
+
+/** 티어 차트는 "5티어(-3.6)" 처럼 등급과 점수를 함께 보여준다 */
+function valueLabel(point: TrendPoint, value: number, kind: 'number' | 'tier', digits: number, unit: string) {
+    const num = fmt(value, digits, unit);
+    if (kind !== 'tier') return num;
+    return `${point.meta_tier ? point.meta_tier + '티어' : ''}(${num})`;
 }

@@ -829,6 +829,10 @@ class GameResultService
         if (isset($filters['min_tier'])) {
             $results = $results->where('gr.mmr_before', '>=', $filters['min_score']);
         }
+        // 과거 시점 재현용 - 그 시각까지 치러진 게임만으로 집계한다
+        if (!empty($filters['max_start_at'])) {
+            $results = $results->where('gr.start_at', '<=', $filters['max_start_at']);
+        }
         $gameResults = $results->get();
         $total = array();
         $totalAll = 0;

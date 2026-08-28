@@ -154,7 +154,7 @@ export default function SummaryTrendPage() {
             {points.length > 0 ? (
                 <>
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <TrendChart title="티어" points={points} metric="meta_tier" kind="tier" />
+                        <TrendChart title="티어" points={points} metric="meta_score" kind="tier" digits={1} />
                         <TrendChart title="픽률" points={points} metric="pick_rate" unit="%" digits={2} />
                         <TrendChart title="평균획득점수" points={points} metric="avg_mmr_gain" digits={1} />
                         <TrendChart title="승률" points={points} metric="win_rate" unit="%" digits={2} />
