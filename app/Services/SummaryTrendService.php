@@ -38,7 +38,7 @@ class SummaryTrendService
             $query->where('captured_date', '>=', now()->subDays($days)->toDateString());
         }
 
-        $rows = $query->orderBy('captured_date')->get();
+        $rows = $this->onePerDate($query->orderBy('captured_date')->get());
 
         return [
             'points' => $rows->map(fn ($row) => [
@@ -55,6 +55,38 @@ class SummaryTrendService
             ])->all(),
             'weapon_type_ko' => $this->replaceWeaponType($weaponType, 'ko'),
         ];
+    }
+
+    /**
+     * 하루에 한 점만 남긴다.
+     *
+     * 패치 당일에는 이전 버전과 새 버전 스냅샷이 함께 존재하고,
+     * 소급 생성분과도 날짜가 겹칠 수 있다. 이때 선이 두 버전 사이를 오가며
+     * 시간순이 뒤엉키므로, 그날 기준 가장 나중 버전만 남긴다.
+     */
+    private function onePerDate($rows)
+    {
+        return $rows
+            ->groupBy('captured_date')
+            ->map(fn ($group) => $group->sortBy(fn ($row) => $this->versionOrder($row->version_key))->last())
+            ->sortKeys()
+            ->values();
+    }
+
+    /**
+     * 버전 키를 정렬 가능한 값으로 (문자열 비교로는 9.0.0 > 12.0.0 이 되어버린다)
+     */
+    private function versionOrder(string $versionKey): string
+    {
+        $parts = parse_version_key($versionKey);
+
+        return sprintf(
+            '%04d%04d%04d%s',
+            $parts['version_season'],
+            $parts['version_major'],
+            $parts['version_minor'],
+            $parts['version_hotfix'] ?? ''
+        );
     }
 
     private function num($value, int $precision = 1): ?float

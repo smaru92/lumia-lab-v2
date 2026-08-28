@@ -44,7 +44,7 @@ const TIER_BOUNDS = [
 
 const W = 640;
 const H = 190;
-const PAD = { l: 46, r: 16, t: 16, b: 30 };
+const PAD = { l: 46, r: 16, t: 16, b: 42 };
 
 export function TrendChart({ title, points, metric, kind = 'number', unit = '', digits = 1 }: Props) {
     const [hover, setHover] = useState<number | null>(null);
@@ -113,6 +113,18 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
     const lastIdx = values.length - 1;
     const lastVal = values[lastIdx];
     const hovered = hover !== null ? points[hover] : null;
+
+    // 버전이 바뀌는 지점만 추린다 (라벨이 겹치면 표기는 생략하고 선만 남긴다)
+    let lastLabelX = -999;
+    const versionMarks = points
+        .map((p, index) => ({ index, version: p.version }))
+        .filter((m) => m.index === 0 || points[m.index].version !== points[m.index - 1].version)
+        .map((m) => {
+            const px = x(m.index);
+            const showLabel = px - lastLabelX >= 56;
+            if (showLabel) lastLabelX = px;
+            return { ...m, showLabel };
+        });
 
     return (
         <figure className="m-0 rounded-md border border-[hsl(var(--border))] p-3">
@@ -196,8 +208,38 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
                         </text>
                     )}
 
-                    <text x={PAD.l} y={H - 8} fontSize={9} fill={AXIS}>{points[0].date}</text>
-                    <text x={W - PAD.r} y={H - 8} textAnchor="end" fontSize={9} fill={AXIS}>
+                    {/* 버전이 바뀌는 지점에 경계선과 버전명 - 지표 변화가 패치 때문인지 읽히도록 */}
+                    {versionMarks.map((m) => (
+                        <g key={m.index}>
+                            {m.index > 0 && (
+                                <line
+                                    x1={x(m.index)}
+                                    y1={PAD.t}
+                                    x2={x(m.index)}
+                                    y2={H - PAD.b}
+                                    stroke={AXIS}
+                                    strokeWidth={1}
+                                    strokeDasharray="2 3"
+                                    strokeOpacity={0.5}
+                                />
+                            )}
+                            {m.showLabel && (
+                                <text
+                                    x={m.index === 0 ? PAD.l : x(m.index)}
+                                    y={H - 18}
+                                    textAnchor={m.index === 0 ? 'start' : x(m.index) > W - PAD.r - 40 ? 'end' : 'middle'}
+                                    fontSize={10}
+                                    fontWeight={700}
+                                    fill={INK}
+                                >
+                                    {m.version}
+                                </text>
+                            )}
+                        </g>
+                    ))}
+
+                    <text x={PAD.l} y={H - 5} fontSize={9} fill={AXIS}>{points[0].date}</text>
+                    <text x={W - PAD.r} y={H - 5} textAnchor="end" fontSize={9} fill={AXIS}>
                         {points[points.length - 1].date}
                     </text>
                 </svg>

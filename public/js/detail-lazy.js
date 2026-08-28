@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function buildTrendChart(config, points) {
         const W = 640, H = 200;
-        const padL = 52, padR = 18, padT = 18, padB = 30;
+        const padL = 52, padR = 18, padT = 18, padB = 42;
         const innerW = W - padL - padR;
         const innerH = H - padT - padB;
 
@@ -329,9 +329,34 @@ document.addEventListener('DOMContentLoaded', function() {
         svg += '<line class="trend-crosshair" x1="0" y1="' + padT + '" x2="0" y2="' + (H - padB)
             + '" stroke="' + TREND_AXIS + '" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
 
-        svg += '<text x="' + padL + '" y="' + (H - 9) + '" font-size="11" fill="' + TREND_AXIS + '">'
+        // 버전이 바뀌는 지점에 경계선과 버전명을 표시한다.
+        // 지표가 꺾인 이유가 패치 때문인지 바로 읽히도록 하기 위함이다.
+        let lastLabelX = -999;
+        points.forEach(function (p, i) {
+            if (i > 0 && p.version === points[i - 1].version) return;
+
+            const vx = x(i);
+
+            // 첫 지점은 시작일 뿐이라 경계선을 긋지 않는다
+            if (i > 0) {
+                svg += '<line x1="' + vx.toFixed(1) + '" y1="' + padT + '" x2="' + vx.toFixed(1)
+                    + '" y2="' + (H - padB) + '" stroke="' + TREND_AXIS
+                    + '" stroke-width="1" stroke-dasharray="2 3" stroke-opacity="0.5"/>';
+            }
+
+            // 라벨이 겹치면 건너뛴다
+            if (vx - lastLabelX < 56) return;
+            lastLabelX = vx;
+
+            const anchor = i === 0 ? 'start' : (vx > W - padR - 40 ? 'end' : 'middle');
+            const lx = i === 0 ? padL : vx;
+            svg += '<text x="' + lx.toFixed(1) + '" y="' + (H - 18) + '" text-anchor="' + anchor + '"'
+                + ' font-size="10" font-weight="700" fill="' + TREND_TEXT + '">' + p.version + '</text>';
+        });
+
+        svg += '<text x="' + padL + '" y="' + (H - 5) + '" font-size="10" fill="' + TREND_AXIS + '">'
             + shortDate(points[0].date) + '</text>';
-        svg += '<text x="' + (W - padR) + '" y="' + (H - 9) + '" text-anchor="end" font-size="11" fill="'
+        svg += '<text x="' + (W - padR) + '" y="' + (H - 5) + '" text-anchor="end" font-size="10" fill="'
             + TREND_AXIS + '">' + shortDate(points[points.length - 1].date) + '</text>';
         svg += '</svg>';
 
