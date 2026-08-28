@@ -182,6 +182,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const TREND_GRID = '#e5e5e2';
     const TREND_AXIS = '#8a8a85';
     const TREND_TEXT = '#52514e';
+    // 티어 경계 점수는 고정값이다 (GameResultService::getMetaDataNew)
+    // 각 경계선은 "이 선 위부터 해당 티어"를 뜻한다.
+    const TIER_BOUNDS = [
+        { score: 5, tier: 'OP', color: '#8A2BE2' },
+        { score: 3, tier: '1', color: '#E23B3B' },
+        { score: 1, tier: '2', color: '#FF8C00' },
+        { score: -1, tier: '3', color: '#F4C020' },
+        { score: -3, tier: '4', color: '#5CBF6A' },
+        { score: -5, tier: '5', color: '#4A9DF0' },
+    ];
 
     function renderTrendSection(data, element) {
         const points = (data && data.points) || [];
@@ -217,8 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function buildTrendChart(config, points) {
-        const W = 320, H = 150;
-        const padL = 40, padR = 14, padT = 14, padB = 26;
+        const W = 640, H = 200;
+        const padL = 52, padR = 18, padT = 18, padB = 30;
         const innerW = W - padL - padR;
         const innerH = H - padT - padB;
 
@@ -240,6 +250,18 @@ document.addEventListener('DOMContentLoaded', function() {
         min -= pad;
         max += pad;
 
+        // 티어 차트는 데이터가 걸쳐 있는 티어 구간이 온전히 보이도록 경계까지 넓힌다
+        if (isTier) {
+            const inRange = TIER_BOUNDS.filter(function (b) { return b.score >= min && b.score <= max; });
+            if (inRange.length === 0) {
+                // 한 티어 안에서만 움직이면 위/아래 경계를 하나씩 끌어온다
+                const above = TIER_BOUNDS.filter(function (b) { return b.score > max; }).pop();
+                const below = TIER_BOUNDS.filter(function (b) { return b.score < min; })[0];
+                if (above) max = above.score;
+                if (below) min = below.score;
+            }
+        }
+
         const x = function (i) {
             return padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
         };
@@ -249,21 +271,27 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         // 눈금 - 티어는 단계값, 나머지는 3등분
-        const ticks = [0, 0.5, 1].map(function (t) {
-            const v = min + (max - min) * t;
-            return { v: v, label: formatTrendValue(v, config) };
-        });
+        const ticks = isTier
+            ? TIER_BOUNDS
+                .filter(function (b) { return b.score >= min && b.score <= max; })
+                .map(function (b) { return { v: b.score, label: b.tier, color: b.color }; })
+            : [0, 0.5, 1].map(function (t) {
+                const v = min + (max - min) * t;
+                return { v: v, label: formatTrendValue(v, config) };
+            });
 
-        let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="trend-svg" preserveAspectRatio="none"'
+        let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="trend-svg"'
             + ' role="img" aria-label="' + config.title + ' 추이">';
 
         // 격자/축은 뒤로 물러나게
         ticks.forEach(function (t) {
             const yy = y(t.v).toFixed(1);
+            const gridColor = t.color || TREND_GRID;
             svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy
-                + '" stroke="' + TREND_GRID + '" stroke-width="1"/>';
+                + '" stroke="' + gridColor + '" stroke-width="1"' + (t.color ? ' stroke-opacity="0.55"' : '') + '/>';
             svg += '<text x="' + (padL - 6) + '" y="' + yy + '" text-anchor="end" dominant-baseline="middle"'
-                + ' font-size="9" fill="' + TREND_AXIS + '">' + t.label + '</text>';
+                + ' font-size="10" font-weight="' + (t.color ? '700' : '400') + '"'
+                + ' fill="' + (t.color || TREND_AXIS) + '">' + t.label + '</text>';
         });
 
         // 선
@@ -292,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const ly = Math.max(y(lastVal) - 9, padT + 4);
             // 선 위에 겹쳐도 읽히도록 흰색 외곽선을 두른다
             svg += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="end"'
-                + ' font-size="10" font-weight="700" fill="' + TREND_TEXT + '"'
+                + ' font-size="12" font-weight="700" fill="' + TREND_TEXT + '"'
                 + ' stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">'
                 + trendValueLabel(points[lastIdx], lastVal, config, isTier) + '</text>';
         }
@@ -301,9 +329,9 @@ document.addEventListener('DOMContentLoaded', function() {
         svg += '<line class="trend-crosshair" x1="0" y1="' + padT + '" x2="0" y2="' + (H - padB)
             + '" stroke="' + TREND_AXIS + '" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
 
-        svg += '<text x="' + padL + '" y="' + (H - 8) + '" font-size="9" fill="' + TREND_AXIS + '">'
+        svg += '<text x="' + padL + '" y="' + (H - 9) + '" font-size="11" fill="' + TREND_AXIS + '">'
             + shortDate(points[0].date) + '</text>';
-        svg += '<text x="' + (W - padR) + '" y="' + (H - 8) + '" text-anchor="end" font-size="9" fill="'
+        svg += '<text x="' + (W - padR) + '" y="' + (H - 9) + '" text-anchor="end" font-size="11" fill="'
             + TREND_AXIS + '">' + shortDate(points[points.length - 1].date) + '</text>';
         svg += '</svg>';
 
@@ -365,8 +393,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const idx = Math.max(0, Math.min(points.length - 1, Math.round(ratio * (points.length - 1))));
                 const p = points[idx];
 
-                // viewBox 좌표로 환산 (padL 40 ~ W-padR 306)
-                const vx = 40 + (points.length === 1 ? 133 : (idx / (points.length - 1)) * 266);
+                // viewBox 좌표로 환산 (padL 52 ~ W-padR 622)
+                const vx = 52 + (points.length === 1 ? 285 : (idx / (points.length - 1)) * 570);
                 crosshair.setAttribute('x1', vx);
                 crosshair.setAttribute('x2', vx);
                 crosshair.style.display = '';

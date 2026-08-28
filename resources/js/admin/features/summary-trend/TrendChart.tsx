@@ -29,6 +29,19 @@ const GRID = '#e5e5e2';
 const AXIS = '#8a8a85';
 const INK = '#52514e';
 
+/**
+ * 티어 경계 점수는 고정값이다 (GameResultService::getMetaDataNew)
+ * 각 경계선은 "이 선 위부터 해당 티어"를 뜻한다.
+ */
+const TIER_BOUNDS = [
+    { score: 5, tier: 'OP', color: '#8A2BE2' },
+    { score: 3, tier: '1', color: '#E23B3B' },
+    { score: 1, tier: '2', color: '#FF8C00' },
+    { score: -1, tier: '3', color: '#F4C020' },
+    { score: -3, tier: '4', color: '#5CBF6A' },
+    { score: -5, tier: '5', color: '#4A9DF0' },
+];
+
 const W = 640;
 const H = 190;
 const PAD = { l: 46, r: 16, t: 16, b: 30 };
@@ -61,16 +74,31 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
     min -= pad;
     max += pad;
 
+    // 티어 차트는 데이터가 걸쳐 있는 티어 구간이 온전히 보이도록 경계까지 넓힌다
+    if (kind === 'tier' && !TIER_BOUNDS.some((b) => b.score >= min && b.score <= max)) {
+        const above = TIER_BOUNDS.filter((b) => b.score > max).pop();
+        const below = TIER_BOUNDS.filter((b) => b.score < min)[0];
+        if (above) max = above.score;
+        if (below) min = below.score;
+    }
+
     const x = (i: number) => PAD.l + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
     const y = (v: number) => {
         const t = (v - min) / (max - min || 1);
         return PAD.t + (1 - t) * innerH;
     };
 
-    const ticks = [0, 0.5, 1].map((t) => {
-        const v = min + (max - min) * t;
-        return { v, label: fmt(v, digits, unit) };
-    });
+    const ticks: { v: number; label: string; color?: string }[] =
+        kind === 'tier'
+            ? TIER_BOUNDS.filter((b) => b.score >= min && b.score <= max).map((b) => ({
+                  v: b.score,
+                  label: b.tier,
+                  color: b.color,
+              }))
+            : [0, 0.5, 1].map((t) => {
+                  const v = min + (max - min) * t;
+                  return { v, label: fmt(v, digits, unit) };
+              });
 
     const path = points
         .map((_, i) => {
@@ -93,8 +121,7 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
             <div className="relative">
                 <svg
                     viewBox={`0 0 ${W} ${H}`}
-                    className="block h-[180px] w-full"
-                    preserveAspectRatio="none"
+                    className="block h-auto w-full"
                     role="img"
                     aria-label={`${title} 추이`}
                     onMouseMove={(e) => {
@@ -106,8 +133,24 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
                 >
                     {ticks.map((t) => (
                         <g key={t.label}>
-                            <line x1={PAD.l} y1={y(t.v)} x2={W - PAD.r} y2={y(t.v)} stroke={GRID} strokeWidth={1} />
-                            <text x={PAD.l - 6} y={y(t.v)} textAnchor="end" dominantBaseline="middle" fontSize={9} fill={AXIS}>
+                            <line
+                                x1={PAD.l}
+                                y1={y(t.v)}
+                                x2={W - PAD.r}
+                                y2={y(t.v)}
+                                stroke={t.color ?? GRID}
+                                strokeOpacity={t.color ? 0.55 : 1}
+                                strokeWidth={1}
+                            />
+                            <text
+                                x={PAD.l - 6}
+                                y={y(t.v)}
+                                textAnchor="end"
+                                dominantBaseline="middle"
+                                fontSize={10}
+                                fontWeight={t.color ? 700 : 400}
+                                fill={t.color ?? AXIS}
+                            >
                                 {t.label}
                             </text>
                         </g>

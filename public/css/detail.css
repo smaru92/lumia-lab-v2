@@ -1252,7 +1252,7 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .trend-svg {
     display: block;
     width: 100%;
-    height: 130px;
+    height: auto;
     overflow: visible;
 }
 
@@ -1302,9 +1302,6 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 }
 
 @media screen and (max-width: 599px) {
-    .trend-svg {
-        height: 120px;
-    }
 
     .trend-chart {
         padding: 6px 8px 4px;
