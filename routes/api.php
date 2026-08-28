@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PatchNoteController;
 use App\Http\Controllers\Admin\TraitController as AdminTraitController;
 use App\Http\Controllers\Admin\TacticalSkillController as AdminTacticalSkillController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SummaryTrendController;
 use App\Http\Controllers\Admin\TopRankStatController;
 use App\Http\Controllers\InfoController;
 use Illuminate\Http\Request;
@@ -59,6 +60,10 @@ Route::prefix('admin')->group(function () {
 
         // Equipment Skills (full CRUD)
         Route::apiResource('equipment-skills', EquipmentSkillController::class);
+
+        // 지표 추이 (관리자 전용, 전체 기간)
+        Route::get('/summary-trend', [SummaryTrendController::class, 'index']);
+        Route::get('/summary-trend/options', [SummaryTrendController::class, 'options']);
 
         // TOP4 상세 지표 (관리자 전용)
         Route::get('/top-rank-stats', [TopRankStatController::class, 'index']);
