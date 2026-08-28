@@ -622,6 +622,29 @@ class CharacterController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * 캐릭터 지표 추이 (최근 15일)
+     *
+     * 스냅샷 테이블만 읽으므로 집계 테이블을 훑지 않는다.
+     */
+    public function getDetailTrend(Request $request, $types)
+    {
+        $defaultTier = default_tier();
+        $minTier = $request->input('min_tier', $defaultTier);
+
+        [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
+        $weaponType = empty($weaponType) ? 'All' : $weaponType;
+
+        if (empty($characterName)) {
+            return response()->json(['points' => []]);
+        }
+
+        $trend = app(\App\Services\SummaryTrendService::class)
+            ->getTrend($characterName, $weaponType, $minTier);
+
+        return response()->json($trend);
+    }
+
     public function getDetailPatchHistory(Request $request, $types)
     {
         [$characterName] = array_pad(explode('-', $types), 2, null);

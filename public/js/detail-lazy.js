@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tacticalSkills: false,
         equipment: false,
         traitStats: false,
-        synergy: false
+        synergy: false,
+        trend: false
     };
 
     /**
@@ -118,6 +119,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'synergy':
                     endpoint = `/api/detail/${types}/synergy?version=${version}&min_tier=${minTier}`;
                     break;
+                case 'trend':
+                    endpoint = `/api/detail/${types}/trend?min_tier=${minTier}`;
+                    break;
                 case 'traitStats':
                     // 특성 통계는 두 API를 병렬로 호출
                     await loadTraitStats(sectionElement);
@@ -168,8 +172,234 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * 섹션별 데이터 렌더링
      */
+    /**
+     * 캐릭터 지표 추이 렌더링
+     *
+     * 지표마다 단위가 달라(티어는 순위, 픽률/승률은 %, 획득점수는 점) 한 축에 못 올린다.
+     * 이중 축 대신 지표별로 작은 차트를 따로 그린다.
+     */
+    const TREND_COLOR = '#2a78d6';
+    const TREND_GRID = '#e5e5e2';
+    const TREND_AXIS = '#8a8a85';
+    const TREND_TEXT = '#52514e';
+    const TIER_STEPS = ['OP', '1', '2', '3', '4', '5', 'RIP'];
+
+    function renderTrendSection(data, element) {
+        const points = (data && data.points) || [];
+
+        if (points.length < 2) {
+            element.innerHTML = '<h3>지표 추이</h3>'
+                + '<p style="text-align:center;color:#999;padding:20px;">'
+                + '추이를 그리려면 최소 2개 시점이 필요합니다. 데이터가 쌓이면 표시됩니다.</p>';
+            return;
+        }
+
+        const charts = [
+            { key: 'meta_tier', title: '티어', type: 'tier' },
+            { key: 'pick_rate', title: '픽률', unit: '%', digits: 2 },
+            { key: 'avg_mmr_gain', title: '평균획득점수', unit: '', digits: 1 },
+            { key: 'win_rate', title: '승률', unit: '%', digits: 2 },
+        ];
+
+        let html = '<h3>지표 추이 <span style="font-size:0.8em;font-weight:normal;color:#888;">'
+            + '최근 ' + points.length + '개 시점</span></h3>';
+        html += '<div class="trend-grid">';
+        charts.forEach(function (c) {
+            html += buildTrendChart(c, points);
+        });
+        html += '</div>';
+
+        // 색만으로 정보를 전달하지 않도록 표 보기를 함께 제공한다
+        html += '<details class="trend-table-toggle"><summary>표로 보기</summary>'
+            + buildTrendTable(points) + '</details>';
+
+        element.innerHTML = html;
+        attachTrendHover(element, points, charts);
+    }
+
+    /** 티어 문자열을 위에서부터의 위치(0=OP)로 변환 */
+    function tierIndex(tier) {
+        const i = TIER_STEPS.indexOf(String(tier));
+        return i === -1 ? null : i;
+    }
+
+    function buildTrendChart(config, points) {
+        const W = 320, H = 150;
+        const padL = 40, padR = 14, padT = 14, padB = 26;
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+
+        const isTier = config.type === 'tier';
+        const values = points.map(function (p) {
+            return isTier ? tierIndex(p.meta_tier) : p[config.key];
+        });
+
+        const valid = values.filter(function (v) { return v !== null && v !== undefined; });
+        if (valid.length < 2) {
+            return '<figure class="trend-chart"><figcaption>' + config.title
+                + '</figcaption><p class="trend-empty">데이터 없음</p></figure>';
+        }
+
+        // 티어는 0(OP)이 위로 가도록 축을 뒤집는다
+        let min, max;
+        if (isTier) {
+            min = 0;
+            max = TIER_STEPS.length - 1;
+        } else {
+            min = Math.min.apply(null, valid);
+            max = Math.max.apply(null, valid);
+            const span = max - min;
+            const pad = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
+            min -= pad;
+            max += pad;
+        }
+
+        const x = function (i) {
+            return padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+        };
+        const y = function (v) {
+            const t = (v - min) / (max - min || 1);
+            return padT + (isTier ? t * innerH : (1 - t) * innerH);
+        };
+
+        // 눈금 - 티어는 단계값, 나머지는 3등분
+        let ticks = [];
+        if (isTier) {
+            ticks = [0, 3, 6].map(function (i) { return { v: i, label: TIER_STEPS[i] }; });
+        } else {
+            ticks = [0, 0.5, 1].map(function (t) {
+                const v = min + (max - min) * t;
+                return { v: v, label: formatTrendValue(v, config) };
+            });
+        }
+
+        let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="trend-svg" preserveAspectRatio="none"'
+            + ' role="img" aria-label="' + config.title + ' 추이">';
+
+        // 격자/축은 뒤로 물러나게
+        ticks.forEach(function (t) {
+            const yy = y(t.v).toFixed(1);
+            svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy
+                + '" stroke="' + TREND_GRID + '" stroke-width="1"/>';
+            svg += '<text x="' + (padL - 6) + '" y="' + yy + '" text-anchor="end" dominant-baseline="middle"'
+                + ' font-size="9" fill="' + TREND_AXIS + '">' + t.label + '</text>';
+        });
+
+        // 선
+        let d = '';
+        points.forEach(function (p, i) {
+            const v = values[i];
+            if (v === null || v === undefined) return;
+            d += (d === '' ? 'M' : 'L') + x(i).toFixed(1) + ' ' + y(v).toFixed(1) + ' ';
+        });
+        svg += '<path d="' + d.trim() + '" fill="none" stroke="' + TREND_COLOR
+            + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+
+        // 점 - 마지막 점만 강조하고 값을 직접 표기
+        points.forEach(function (p, i) {
+            const v = values[i];
+            if (v === null || v === undefined) return;
+            const last = i === points.length - 1;
+            svg += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="' + (last ? 4 : 2.5)
+                + '" fill="' + TREND_COLOR + '" stroke="#fff" stroke-width="' + (last ? 2 : 1) + '"/>';
+        });
+
+        const lastIdx = values.length - 1;
+        const lastVal = values[lastIdx];
+        if (lastVal !== null && lastVal !== undefined) {
+            const lx = Math.min(x(lastIdx), W - padR - 4);
+            const ly = Math.max(y(lastVal) - 9, padT + 4);
+            svg += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="end"'
+                + ' font-size="10" font-weight="700" fill="' + TREND_TEXT + '">'
+                + (isTier ? points[lastIdx].meta_tier : formatTrendValue(lastVal, config)) + '</text>';
+        }
+
+        // 크로스헤어 (호버 시 표시)
+        svg += '<line class="trend-crosshair" x1="0" y1="' + padT + '" x2="0" y2="' + (H - padB)
+            + '" stroke="' + TREND_AXIS + '" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+
+        svg += '<text x="' + padL + '" y="' + (H - 8) + '" font-size="9" fill="' + TREND_AXIS + '">'
+            + shortDate(points[0].date) + '</text>';
+        svg += '<text x="' + (W - padR) + '" y="' + (H - 8) + '" text-anchor="end" font-size="9" fill="'
+            + TREND_AXIS + '">' + shortDate(points[points.length - 1].date) + '</text>';
+        svg += '</svg>';
+
+        return '<figure class="trend-chart" data-metric="' + config.key + '">'
+            + '<figcaption>' + config.title + '</figcaption>' + svg
+            + '<div class="trend-tooltip" style="display:none"></div></figure>';
+    }
+
+    function formatTrendValue(v, config) {
+        const digits = config.digits === undefined ? 1 : config.digits;
+        return v.toFixed(digits) + (config.unit || '');
+    }
+
+    function shortDate(d) {
+        return String(d).slice(5).replace('-', '/');
+    }
+
+    function buildTrendTable(points) {
+        let html = '<div class="table-wrapper" style="margin:8px 0 0;"><table class="sortable-table">'
+            + '<thead><tr><th>일자</th><th>버전</th><th>티어</th><th>픽률</th>'
+            + '<th>평균획득점수</th><th>승률</th><th>게임수</th></tr></thead><tbody>';
+        points.slice().reverse().forEach(function (p) {
+            html += '<tr><td>' + p.date + '</td><td>' + p.version + '</td>'
+                + '<td>' + (p.meta_tier || '-') + '</td>'
+                + '<td class="number">' + (p.pick_rate === null ? '-' : p.pick_rate.toFixed(2) + '%') + '</td>'
+                + '<td class="number">' + (p.avg_mmr_gain === null ? '-' : p.avg_mmr_gain.toFixed(1)) + '</td>'
+                + '<td class="number">' + (p.win_rate === null ? '-' : p.win_rate.toFixed(2) + '%') + '</td>'
+                + '<td class="number">' + Number(p.game_count).toLocaleString() + '</td></tr>';
+        });
+        return html + '</tbody></table></div>';
+    }
+
+    /** 크로스헤어 + 툴팁 (선 차트는 호버 레이어를 기본 제공) */
+    function attachTrendHover(element, points, charts) {
+        element.querySelectorAll('.trend-chart').forEach(function (figure) {
+            const svg = figure.querySelector('svg');
+            const crosshair = figure.querySelector('.trend-crosshair');
+            const tooltip = figure.querySelector('.trend-tooltip');
+            if (!svg || !tooltip) return;
+
+            const metric = figure.dataset.metric;
+            const config = charts.find(function (c) { return c.key === metric; });
+
+            function hide() {
+                crosshair.style.display = 'none';
+                tooltip.style.display = 'none';
+            }
+
+            svg.addEventListener('mousemove', function (e) {
+                const rect = svg.getBoundingClientRect();
+                const ratio = (e.clientX - rect.left) / rect.width;
+                const idx = Math.max(0, Math.min(points.length - 1, Math.round(ratio * (points.length - 1))));
+                const p = points[idx];
+
+                // viewBox 좌표로 환산 (padL 40 ~ W-padR 306)
+                const vx = 40 + (points.length === 1 ? 133 : (idx / (points.length - 1)) * 266);
+                crosshair.setAttribute('x1', vx);
+                crosshair.setAttribute('x2', vx);
+                crosshair.style.display = '';
+
+                const value = config && config.type === 'tier'
+                    ? (p.meta_tier || '-') + ' 티어'
+                    : (p[metric] === null ? '-' : formatTrendValue(p[metric], config));
+
+                tooltip.innerHTML = '<strong>' + value + '</strong><br>' + p.date + ' · ' + p.version
+                    + '<br><span class="trend-tooltip-sub">게임 ' + Number(p.game_count).toLocaleString() + '</span>';
+                tooltip.style.display = '';
+                tooltip.style.left = Math.min(Math.max(e.clientX - rect.left, 4), rect.width - 110) + 'px';
+            });
+
+            svg.addEventListener('mouseleave', hide);
+        });
+    }
+
     function renderSection(sectionType, data, element) {
         switch(sectionType) {
+            case 'trend':
+                renderTrendSection(data, element);
+                break;
             case 'tiers':
                 renderTiersSection(data, element);
                 break;

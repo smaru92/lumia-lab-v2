@@ -1223,3 +1223,90 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
 .tactical-skill-scroll-container thead tr {
     border-bottom: 2px solid #333;
 }
+
+/* ── 지표 추이 차트 ───────────────────────────────────────── */
+/* 지표마다 단위가 달라 한 축에 못 올리므로 작은 차트를 나란히 둔다 */
+.trend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.trend-chart {
+    position: relative;
+    margin: 0;
+    padding: 8px 10px 6px;
+    background: #fff;
+    border: 1px solid #e5e5e2;
+    border-radius: 6px;
+}
+
+.trend-chart figcaption {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #52514e;
+    margin-bottom: 2px;
+}
+
+.trend-svg {
+    display: block;
+    width: 100%;
+    height: 130px;
+    overflow: visible;
+}
+
+.trend-empty {
+    margin: 0;
+    padding: 30px 0;
+    text-align: center;
+    color: #999;
+    font-size: 0.85em;
+}
+
+.trend-tooltip {
+    position: absolute;
+    top: 26px;
+    z-index: 5;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #d5d5d0;
+    border-radius: 4px;
+    font-size: 0.75em;
+    line-height: 1.45;
+    color: #333;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.trend-tooltip-sub {
+    color: #8a8a85;
+}
+
+.trend-table-toggle {
+    margin-top: 6px;
+    font-size: 0.85em;
+}
+
+.trend-table-toggle summary {
+    cursor: pointer;
+    color: #007bff;
+}
+
+/* 태블릿 이하에서는 한 줄에 하나씩 */
+@media screen and (max-width: 1024px) {
+    .trend-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 599px) {
+    .trend-svg {
+        height: 120px;
+    }
+
+    .trend-chart {
+        padding: 6px 8px 4px;
+    }
+}
