@@ -161,6 +161,21 @@ class BackfillDailySnapshots extends Command
         $this->newLine(2);
         $this->info('생성 완료: ' . number_format($totalRows) . '건');
 
+        // 이 버전이 실제로 플레이된 기간 밖의 스냅샷은 지운다.
+        // 버전 단위 소급분은 "마지막 집계 시각"에 찍혀서 다음 버전 기간에 걸쳐 있고,
+        // 그 상태로 두면 같은 날짜에 두 버전이 겹쳐 추이 선이 뒤엉킨다.
+        $stale = DB::table('game_results_summary_snapshots')
+            ->where('version_key', $versionKey)
+            ->where(function ($q) use ($start, $end) {
+                $q->where('captured_date', '<', $start->toDateString())
+                    ->orWhere('captured_date', '>', $end->toDateString());
+            })
+            ->delete();
+
+        if ($stale) {
+            $this->line('  기간 밖 스냅샷 ' . number_format($stale) . '건 정리');
+        }
+
         return self::SUCCESS;
     }
 }
