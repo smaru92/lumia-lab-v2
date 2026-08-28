@@ -21,6 +21,9 @@ class Kernel extends ConsoleKernel
         // 메인페이지 데이터 - 1시간마다 (매시 정각)
         $schedule->command('update:game-results-summary')->cron('0 * * * *')->withoutOverlapping()->runInBackground();
 
+        // 캐릭터 지표 추이용 일자별 스냅샷 (하루 1건, 집계가 한 바퀴 돈 뒤인 새벽에)
+        $schedule->command('snapshot:game-results-summary')->dailyAt('04:05')->withoutOverlapping()->runInBackground();
+
         // 나머지 명령어들 - 2시간마다, 서로 최소 10분 이상 간격으로 분산
         // 전술스킬 데이터 - 짝수 시간 10분
         $schedule->command('update:game-results-tactical-skill-summary')->cron('10 */2 * * *')->withoutOverlapping()->runInBackground();
