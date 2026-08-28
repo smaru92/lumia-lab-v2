@@ -25,6 +25,10 @@ class SummaryTrendService
      */
     public function getTrend(string $characterName, string $weaponType, string $minTier, ?int $days = self::PUBLIC_DAYS): array
     {
+        // 상세페이지 URL 의 무기는 한글(방망이)이고 스냅샷은 영문(Bat)으로 저장된다.
+        // 다른 상세 조회들과 동일하게 영문으로 맞춰서 조회한다.
+        $weaponType = $this->replaceWeaponType($weaponType, 'en');
+
         $query = DB::table('game_results_summary_snapshots')
             ->where('character_name', $characterName)
             ->where('weapon_type', $weaponType)
