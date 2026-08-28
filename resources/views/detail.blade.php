@@ -130,6 +130,13 @@
         </div>
     </div>
 
+    {{-- 지표 추이 (최근 15일) --}}
+    <div data-lazy-section="trend">
+        <div class="loading-placeholder" style="padding: 20px; text-align: center;">
+            <p>로딩 중...</p>
+        </div>
+    </div>
+
     <div id="rank-patch-section">
         <div class="tabs">
             <button class="tab-link active" onclick="openRankSectionTab(event, 'rank-stats-content')">순위 통계</button>
@@ -240,12 +247,6 @@
         </div>
     </div>
 
-    {{-- 지표 추이 (최근 15일) --}}
-    <div data-lazy-section="trend">
-        <div class="loading-placeholder" style="padding: 20px; text-align: center;">
-            <p>로딩 중...</p>
-        </div>
-    </div>
 </div>
 
 @push('scripts')
