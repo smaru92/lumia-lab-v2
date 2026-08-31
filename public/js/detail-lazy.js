@@ -429,8 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? '-'
                     : trendValueLabel(p, p[metric], config, isTierChart);
 
-                tooltip.innerHTML = '<strong>' + value + '</strong><br>' + p.date + ' · ' + p.version
-                    + '<br><span class="trend-tooltip-sub">게임 ' + Number(p.game_count).toLocaleString() + '</span>';
+                tooltip.innerHTML = '<strong>' + value + '</strong><br>' + p.date + ' · ' + p.version;
                 tooltip.style.display = '';
                 tooltip.style.left = Math.min(Math.max(e.clientX - rect.left, 4), rect.width - 110) + 'px';
             });
