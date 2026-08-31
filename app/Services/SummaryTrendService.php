@@ -44,6 +44,7 @@ class SummaryTrendService
             'points' => $rows->map(fn ($row) => [
                 'date' => $row->captured_date,
                 'version' => $row->version_key,
+                // 누적 - 버전 시작부터 그날까지. 사이트 표시값과 일치한다.
                 'meta_tier' => $row->meta_tier,
                 'meta_score' => $this->num($row->meta_score),
                 'game_count' => (int) $row->game_count,
@@ -52,6 +53,15 @@ class SummaryTrendService
                 'top4_rate' => $this->num($row->top4_count_percent, 2),
                 'avg_mmr_gain' => $this->num($row->avg_mmr_gain),
                 'avg_team_kill' => $this->num($row->avg_team_kill_score, 2),
+                // 일일 - 그날 게임만. 변화에 민감하지만 표본이 작다.
+                'daily_meta_tier' => $row->daily_meta_tier ?? null,
+                'daily_meta_score' => $this->num($row->daily_meta_score ?? null),
+                'daily_game_count' => (int) ($row->daily_game_count ?? 0),
+                'daily_pick_rate' => $this->num($row->daily_game_count_percent ?? null, 2),
+                'daily_win_rate' => $this->num($row->daily_top1_count_percent ?? null, 2),
+                'daily_top4_rate' => $this->num($row->daily_top4_count_percent ?? null, 2),
+                'daily_avg_mmr_gain' => $this->num($row->daily_avg_mmr_gain ?? null),
+                'daily_avg_team_kill' => $this->num($row->daily_avg_team_kill_score ?? null, 2),
             ])->all(),
             'weapon_type_ko' => $this->replaceWeaponType($weaponType, 'ko'),
         ];

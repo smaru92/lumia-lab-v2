@@ -43,6 +43,8 @@ export default function SummaryTrendPage() {
     const [weaponType, setWeaponType] = useState('');
     const [minTier, setMinTier] = useState('Diamond');
     const [days, setDays] = useState('');
+    // 누적 = 사이트 표시값과 동일 / 일일 = 그날 게임만 (변화에 민감, 표본 작음)
+    const [mode, setMode] = useState<'cumulative' | 'daily'>('cumulative');
 
     const { data: options } = useQuery<Options>({
         queryKey: ['summary-trend', 'options', characterName],
@@ -82,6 +84,8 @@ export default function SummaryTrendPage() {
     });
 
     const points = data?.points ?? [];
+    // 모드에 따라 daily_ 접두어를 붙인 필드를 쓴다
+    const m = (key: string) => (mode === 'daily' ? `daily_${key}` : key) as keyof TrendPoint;
 
     return (
         <div className="space-y-6">
@@ -91,7 +95,7 @@ export default function SummaryTrendPage() {
             />
 
             <Card>
-                <CardContent className="grid gap-4 pt-6 md:grid-cols-2 lg:grid-cols-4">
+                <CardContent className="grid gap-4 pt-6 md:grid-cols-2 lg:grid-cols-5">
                     <div className="space-y-2">
                         <Label>캐릭터</Label>
                         <Select value={characterName} onValueChange={(v) => { setCharacterName(v); setWeaponType(''); }}>
@@ -129,6 +133,17 @@ export default function SummaryTrendPage() {
                     </div>
 
                     <div className="space-y-2">
+                        <Label>집계 기준</Label>
+                        <Select value={mode} onValueChange={(v) => setMode(v as 'cumulative' | 'daily')}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="cumulative">누적 (사이트 표시값)</SelectItem>
+                                <SelectItem value="daily">일일 (그날 게임만)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
                         <Label>기간</Label>
                         <Select value={days || '__all__'} onValueChange={(v) => setDays(v === '__all__' ? '' : v)}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -154,12 +169,12 @@ export default function SummaryTrendPage() {
             {points.length > 0 ? (
                 <>
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <TrendChart title="티어" points={points} metric="meta_score" kind="tier" digits={1} />
-                        <TrendChart title="픽률" points={points} metric="pick_rate" unit="%" digits={2} />
-                        <TrendChart title="평균획득점수" points={points} metric="avg_mmr_gain" digits={1} />
-                        <TrendChart title="승률" points={points} metric="win_rate" unit="%" digits={2} />
-                        <TrendChart title="TOP4율" points={points} metric="top4_rate" unit="%" digits={2} />
-                        <TrendChart title="평균TK" points={points} metric="avg_team_kill" digits={2} />
+                        <TrendChart title="티어" points={points} metric={m('meta_score')} kind="tier" digits={1} mode={mode} />
+                        <TrendChart title="픽률" points={points} metric={m('pick_rate')} unit="%" digits={2} mode={mode} />
+                        <TrendChart title="평균획득점수" points={points} metric={m('avg_mmr_gain')} digits={1} mode={mode} />
+                        <TrendChart title="승률" points={points} metric={m('win_rate')} unit="%" digits={2} mode={mode} />
+                        <TrendChart title="TOP4율" points={points} metric={m('top4_rate')} unit="%" digits={2} mode={mode} />
+                        <TrendChart title="평균TK" points={points} metric={m('avg_team_kill')} digits={2} mode={mode} />
                     </div>
 
                     <div className="overflow-x-auto rounded-md border border-[hsl(var(--border))]">
@@ -183,14 +198,14 @@ export default function SummaryTrendPage() {
                                     <tr key={p.date + p.version} className="border-b border-[hsl(var(--border))]">
                                         <td className="px-3 py-2">{p.date}</td>
                                         <td className="px-3 py-2">{p.version}</td>
-                                        <td className="px-3 py-2">{p.meta_tier ?? '-'}</td>
-                                        <td className="px-3 py-2 text-right">{p.meta_score?.toFixed(1) ?? '-'}</td>
-                                        <td className="px-3 py-2 text-right">{p.pick_rate?.toFixed(2) ?? '-'}%</td>
-                                        <td className="px-3 py-2 text-right">{p.avg_mmr_gain?.toFixed(1) ?? '-'}</td>
-                                        <td className="px-3 py-2 text-right">{p.win_rate?.toFixed(2) ?? '-'}%</td>
-                                        <td className="px-3 py-2 text-right">{p.top4_rate?.toFixed(2) ?? '-'}%</td>
-                                        <td className="px-3 py-2 text-right">{p.avg_team_kill?.toFixed(2) ?? '-'}</td>
-                                        <td className="px-3 py-2 text-right">{p.game_count.toLocaleString()}</td>
+                                        <td className="px-3 py-2">{(mode === 'daily' ? p.daily_meta_tier : p.meta_tier) ?? '-'}</td>
+                                        <td className="px-3 py-2 text-right">{(p[m('meta_score')] as number | null)?.toFixed(1) ?? '-'}</td>
+                                        <td className="px-3 py-2 text-right">{(p[m('pick_rate')] as number | null)?.toFixed(2) ?? '-'}%</td>
+                                        <td className="px-3 py-2 text-right">{(p[m('avg_mmr_gain')] as number | null)?.toFixed(1) ?? '-'}</td>
+                                        <td className="px-3 py-2 text-right">{(p[m('win_rate')] as number | null)?.toFixed(2) ?? '-'}%</td>
+                                        <td className="px-3 py-2 text-right">{(p[m('top4_rate')] as number | null)?.toFixed(2) ?? '-'}%</td>
+                                        <td className="px-3 py-2 text-right">{(p[m('avg_team_kill')] as number | null)?.toFixed(2) ?? '-'}</td>
+                                        <td className="px-3 py-2 text-right">{(mode === 'daily' ? p.daily_game_count : p.game_count).toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>

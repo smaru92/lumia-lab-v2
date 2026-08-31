@@ -3,6 +3,7 @@ import { useState } from 'react';
 export interface TrendPoint {
     date: string;
     version: string;
+    // 누적 (버전 시작 ~ 그날) - 사이트 표시값과 일치
     meta_tier: string | null;
     meta_score: number | null;
     game_count: number;
@@ -11,6 +12,15 @@ export interface TrendPoint {
     top4_rate: number | null;
     avg_mmr_gain: number | null;
     avg_team_kill: number | null;
+    // 일일 (그날 게임만) - 변화에 민감하지만 표본이 작다
+    daily_meta_tier: string | null;
+    daily_meta_score: number | null;
+    daily_game_count: number;
+    daily_pick_rate: number | null;
+    daily_win_rate: number | null;
+    daily_top4_rate: number | null;
+    daily_avg_mmr_gain: number | null;
+    daily_avg_team_kill: number | null;
 }
 
 interface Props {
@@ -19,6 +29,8 @@ interface Props {
     metric: keyof TrendPoint;
     /** 티어 차트는 메타스코어를 그리되 값 표기에 등급을 함께 보여준다 */
     kind?: 'number' | 'tier';
+    /** 일일 기준이면 등급/게임수도 일일 값을 쓴다 */
+    mode?: 'cumulative' | 'daily';
     unit?: string;
     digits?: number;
 }
@@ -46,7 +58,7 @@ const W = 640;
 const H = 190;
 const PAD = { l: 46, r: 16, t: 16, b: 42 };
 
-export function TrendChart({ title, points, metric, kind = 'number', unit = '', digits = 1 }: Props) {
+export function TrendChart({ title, points, metric, kind = 'number', unit = '', digits = 1, mode = 'cumulative' }: Props) {
     const [hover, setHover] = useState<number | null>(null);
 
     const innerW = W - PAD.l - PAD.r;
@@ -204,7 +216,7 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
                             paintOrder="stroke"
                             strokeLinejoin="round"
                         >
-                            {valueLabel(points[lastIdx], lastVal, kind, digits, unit)}
+                            {valueLabel(points[lastIdx], lastVal, kind, digits, unit, mode)}
                         </text>
                     )}
 
@@ -250,13 +262,13 @@ export function TrendChart({ title, points, metric, kind = 'number', unit = '', 
                         style={{ left: `min(${(hover! / Math.max(points.length - 1, 1)) * 100}%, calc(100% - 130px))` }}
                     >
                         <strong>
-                            {valueLabel(hovered, (hovered[metric] as number | null) ?? 0, kind, digits, unit)}
+                            {valueLabel(hovered, (hovered[metric] as number | null) ?? 0, kind, digits, unit, mode)}
                         </strong>
                         <br />
                         {hovered.date} · {hovered.version}
                         <br />
                         <span className="text-[hsl(var(--muted-foreground))]">
-                            게임 {hovered.game_count.toLocaleString()}
+                            게임 {(mode === 'daily' ? hovered.daily_game_count : hovered.game_count).toLocaleString()}
                         </span>
                     </div>
                 )}
@@ -270,8 +282,16 @@ function fmt(v: number, digits: number, unit: string) {
 }
 
 /** 티어 차트는 "5티어(-3.6)" 처럼 등급과 점수를 함께 보여준다 */
-function valueLabel(point: TrendPoint, value: number, kind: 'number' | 'tier', digits: number, unit: string) {
+function valueLabel(
+    point: TrendPoint,
+    value: number,
+    kind: 'number' | 'tier',
+    digits: number,
+    unit: string,
+    mode: 'cumulative' | 'daily' = 'cumulative'
+) {
     const num = fmt(value, digits, unit);
     if (kind !== 'tier') return num;
-    return `${point.meta_tier ? point.meta_tier + '티어' : ''}(${num})`;
+    const tier = mode === 'daily' ? point.daily_meta_tier : point.meta_tier;
+    return `${tier ? tier + '티어' : ''}(${num})`;
 }

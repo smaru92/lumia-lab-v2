@@ -22,7 +22,16 @@ class Kernel extends ConsoleKernel
         $schedule->command('update:game-results-summary')->cron('0 * * * *')->withoutOverlapping()->runInBackground();
 
         // 캐릭터 지표 추이용 일자별 스냅샷 (하루 1건, 집계가 한 바퀴 돈 뒤인 새벽에)
-        $schedule->command('snapshot:game-results-summary')->dailyAt('04:05')->withoutOverlapping()->runInBackground();
+        // 누적·일일 지표를 함께 남긴다 (요약 테이블에는 일일 지표가 없어 원본에서 다시 집계)
+        $schedule->call(function () {
+            $version = \App\Models\VersionHistory::active()->latest('created_at')->first();
+            if ($version) {
+                \Illuminate\Support\Facades\Artisan::call('snapshot:backfill-daily', [
+                    'version' => $version->version_key,
+                    '--date' => now()->subDay()->toDateString(),
+                ]);
+            }
+        })->dailyAt('04:05')->name('snapshot-summary-daily')->withoutOverlapping();
 
         // 나머지 명령어들 - 2시간마다, 서로 최소 10분 이상 간격으로 분산
         // 전술스킬 데이터 - 짝수 시간 10분

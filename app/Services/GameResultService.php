@@ -833,6 +833,10 @@ class GameResultService
         if (!empty($filters['max_start_at'])) {
             $results = $results->where('gr.start_at', '<=', $filters['max_start_at']);
         }
+        // 하루치만 집계할 때 사용 (누적이 아닌 일일 지표)
+        if (!empty($filters['min_start_at'])) {
+            $results = $results->where('gr.start_at', '>=', $filters['min_start_at']);
+        }
         $gameResults = $results->get();
         $total = array();
         $totalAll = 0;

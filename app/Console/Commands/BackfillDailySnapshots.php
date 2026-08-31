@@ -29,6 +29,7 @@ class BackfillDailySnapshots extends Command
     protected $signature = 'snapshot:backfill-daily
         {version : 대상 버전 키 (예: 12.2.0b)}
         {--tier= : 특정 티어만 (생략하면 전체 티어)}
+        {--date= : 특정 하루만 생성 (생략하면 버전 전체 기간)}
         {--dry-run : 대상 날짜만 출력}';
 
     protected $description = '지난 날짜의 일별 스냅샷을 원본 전적에서 소급 생성';
@@ -77,8 +78,18 @@ class BackfillDailySnapshots extends Command
         }
 
         $dates = [];
-        for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
-            $dates[] = $d->copy();
+        if ($this->option('date')) {
+            // 스케줄러가 매일 당일치만 만들 때 쓰는 경로
+            $one = Carbon::parse($this->option('date'))->startOfDay();
+            if ($one->lt($start) || $one->gt($end)) {
+                $this->warn('  대상 날짜가 이 버전의 전적 구간 밖입니다: ' . $one->toDateString());
+                return self::SUCCESS;
+            }
+            $dates[] = $one;
+        } else {
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dates[] = $d->copy();
+            }
         }
 
         $this->info("[{$versionKey}] {$tableName}");
@@ -107,18 +118,32 @@ class BackfillDailySnapshots extends Command
                 $minTier = $tier['tier'] . $tier['tierNumber'];
                 $minScore = $rankRangeService->getMinScore($tier['tier'], $tier['tierNumber'], $parts) ?: 0;
 
-                $result = $gameResultService->getGameResultMain([
+                $baseFilters = [
                     'version_season' => $parts['version_season'],
                     'version_major' => $parts['version_major'],
                     'version_minor' => $parts['version_minor'],
                     'version_hotfix' => $parts['version_hotfix'],
                     'min_tier' => $minTier,
                     'min_score' => $minScore,
-                    'max_start_at' => $cutoff,
-                ]);
+                ];
+
+                // 누적: 버전 시작 ~ 그날
+                $result = $gameResultService->getGameResultMain(
+                    $baseFilters + ['max_start_at' => $cutoff]
+                );
+
+                // 일일: 그날 하루치만
+                $dailyResult = $gameResultService->getGameResultMain(
+                    $baseFilters + [
+                        'max_start_at' => $cutoff,
+                        'min_start_at' => $date->copy()->startOfDay()->format('Y-m-d H:i:s'),
+                    ]
+                );
+                $daily = $dailyResult['data'] ?? [];
 
                 $rows = [];
-                foreach ($result['data'] ?? [] as $item) {
+                foreach ($result['data'] ?? [] as $key => $item) {
+                    $d = $daily[$key] ?? null;
                     $rows[] = [
                         'captured_date' => $date->toDateString(),
                         'version_key' => $versionKey,
@@ -136,6 +161,16 @@ class BackfillDailySnapshots extends Command
                         'avg_mmr_gain' => $item['avgMmrGain'],
                         'avg_team_kill_score' => $item['avgTeamKillScore'] ?? null,
                         'endgame_win_percent' => $item['endgameWinPercent'],
+                        'daily_meta_tier' => $d['metaTier'] ?? null,
+                        'daily_meta_score' => $d['metaScore'] ?? null,
+                        'daily_game_count' => $d['gameCount'] ?? 0,
+                        'daily_game_count_percent' => $d['gameCountPercent'] ?? null,
+                        'daily_top1_count_percent' => $d['top1CountPercent'] ?? null,
+                        'daily_top2_count_percent' => $d['top2CountPercent'] ?? null,
+                        'daily_top4_count_percent' => $d['top4CountPercent'] ?? null,
+                        'daily_avg_mmr_gain' => $d['avgMmrGain'] ?? null,
+                        'daily_avg_team_kill_score' => $d['avgTeamKillScore'] ?? null,
+                        'daily_endgame_win_percent' => $d['endgameWinPercent'] ?? null,
                         'created_at' => now(),
                     ];
                 }
@@ -147,7 +182,11 @@ class BackfillDailySnapshots extends Command
                         [
                             'character_name', 'meta_tier', 'meta_score', 'game_count', 'game_count_percent',
                             'top1_count_percent', 'top2_count_percent', 'top4_count_percent',
-                            'avg_mmr_gain', 'avg_team_kill_score', 'endgame_win_percent', 'created_at',
+                            'avg_mmr_gain', 'avg_team_kill_score', 'endgame_win_percent',
+                            'daily_meta_tier', 'daily_meta_score', 'daily_game_count', 'daily_game_count_percent',
+                            'daily_top1_count_percent', 'daily_top2_count_percent', 'daily_top4_count_percent',
+                            'daily_avg_mmr_gain', 'daily_avg_team_kill_score', 'daily_endgame_win_percent',
+                            'created_at',
                         ]
                     );
                 }
@@ -164,6 +203,10 @@ class BackfillDailySnapshots extends Command
         // 이 버전이 실제로 플레이된 기간 밖의 스냅샷은 지운다.
         // 버전 단위 소급분은 "마지막 집계 시각"에 찍혀서 다음 버전 기간에 걸쳐 있고,
         // 그 상태로 두면 같은 날짜에 두 버전이 겹쳐 추이 선이 뒤엉킨다.
+        if ($this->option('date')) {
+            return self::SUCCESS;
+        }
+
         $stale = DB::table('game_results_summary_snapshots')
             ->where('version_key', $versionKey)
             ->where(function ($q) use ($start, $end) {
