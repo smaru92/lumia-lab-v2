@@ -123,6 +123,10 @@ class VersionComparisonService
                 'weapon_type_ko' => $cur['weapon_type'] ? $this->replaceWeaponType($cur['weapon_type'], 'ko') : '',
                 // 아이콘 경로는 프론트(character.blade.php)와 동일한 규칙을 쓴다
                 'character_image' => '/storage/Character/icon/' . str_pad((string) $cur['character_id'], 3, '0', STR_PAD_LEFT) . '.png',
+                // 'All' 은 무기 구분이 없는 캐릭터라 메인 페이지에서도 무기 아이콘을 띄우지 않는다
+                'weapon_image' => $cur['weapon_type'] && $cur['weapon_type'] !== 'All'
+                    ? "/storage/Weapon/{$cur['weapon_type']}.png"
+                    : null,
                 'current' => $this->presentMetrics($cur),
                 'previous' => $prev ? $this->presentMetrics($prev) : null,
                 'diff' => $prev ? $this->diffMetrics($cur, $prev) : null,
@@ -262,9 +266,33 @@ class VersionComparisonService
                 $out[$key][$metric] = $weight > 0 ? $group['_w_' . $metric] / $weight : 0.0;
                 unset($out[$key]['_w_' . $metric]);
             }
+
+            // 합산 모드는 저장된 meta_tier 를 쓸 수 없어(무기별로 다르다) 합산 점수에서 다시 구한다
+            if ($groupBy === 'character') {
+                $out[$key]['meta_tier'] = $this->metaTierFromScore($out[$key]['meta_score']);
+            }
         }
 
         return $out;
+    }
+
+    /**
+     * 메타 점수 -> 메타 티어
+     *
+     * 기준은 `GameResultService::getMetaData()` 와 동일하게 유지해야 한다.
+     * (meta_tier 는 meta_score 만으로 결정되는 값이라 합산 점수에도 그대로 적용된다)
+     */
+    private function metaTierFromScore(float $score): string
+    {
+        return match (true) {
+            $score >= 5 => 'OP',
+            $score >= 3 => '1',
+            $score >= 1 => '2',
+            $score >= -1 => '3',
+            $score >= -3 => '4',
+            $score >= -5 => '5',
+            default => 'RIP',
+        };
     }
 
     /**

@@ -35,6 +35,7 @@ interface ComparisonRow {
     weapon_type: string | null;
     weapon_type_ko: string;
     character_image: string;
+    weapon_image: string | null;
     tags: string[];
     current: Metrics;
     previous: Metrics | null;
@@ -106,6 +107,88 @@ const diffClass = (v: number) =>
     v > 0 ? 'text-emerald-600' : v < 0 ? 'text-rose-600' : 'text-[hsl(var(--muted-foreground))]';
 
 const signed = (v: number, digits: number) => (v > 0 ? '+' : '') + num(v, digits);
+
+/** 메타 티어 배경색 — 메인 페이지(public/css/main.css .tier-*)와 동일하게 맞춘다 */
+const TIER_COLORS: Record<string, string> = {
+    OP: '#8A2BE2',
+    '1': '#B22222',
+    '2': '#FF8C00',
+    '3': '#FFD700',
+    '4': '#a8e16f',
+    '5': '#7fbfff',
+    RIP: '#696969',
+};
+const TIER_UNKNOWN = '#cccccc';
+
+/** 티어 높은 순 (배열 앞이 상위). 상승/하락 방향 판단에 쓴다 */
+const TIER_ORDER = ['OP', '1', '2', '3', '4', '5', 'RIP'];
+
+const tierMoved = (r: ComparisonRow) =>
+    !!r.previous?.meta_tier && !!r.current.meta_tier && r.previous.meta_tier !== r.current.meta_tier;
+
+/** 인덱스가 작을수록 상위 티어라서 이전 - 현재 가 양수면 상승 */
+const tierMoveDelta = (r: ComparisonRow) =>
+    TIER_ORDER.indexOf(r.previous?.meta_tier ?? '') - TIER_ORDER.indexOf(r.current.meta_tier ?? '');
+
+const tierMoveArrow = (r: ComparisonRow) => (tierMoveDelta(r) > 0 ? '▲' : '▼');
+
+const tierMoveClass = (r: ComparisonRow) =>
+    tierMoveDelta(r) > 0 ? 'text-xs text-emerald-600' : 'text-xs text-rose-600';
+
+/** 메인 페이지의 .tier-badge 와 같은 모양 */
+function TierBadge({ tier, faded = false }: { tier: string | null; faded?: boolean }) {
+    if (!tier) {
+        return <span className="text-[hsl(var(--muted-foreground))]">-</span>;
+    }
+
+    const background = TIER_COLORS[tier] ?? TIER_UNKNOWN;
+
+    return (
+        <span
+            className="inline-block min-w-[30px] rounded px-2 py-0.5 text-center text-xs font-bold leading-tight"
+            style={{
+                backgroundColor: background,
+                color: TIER_COLORS[tier] ? '#ffffff' : '#333333',
+                opacity: faded ? 0.55 : 1,
+            }}
+        >
+            {tier}
+        </span>
+    );
+}
+
+/**
+ * 캐릭터 아이콘 + 무기 아이콘 오버레이
+ * 메인 페이지 .icon-container / .character-icon / .weapon-icon 과 동일한 구성
+ * (아이콘 원본이 정사각형이 아니라 object-fit: cover 로 잘라서 채운다)
+ */
+function CharacterIcon({ row }: { row: ComparisonRow }) {
+    return (
+        <div className="relative h-[45px] w-[45px] shrink-0 overflow-hidden rounded">
+            <img
+                src={row.character_image}
+                alt={row.character_name}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    img.onerror = null;
+                    img.src = '/storage/Character/icon/default.png';
+                }}
+            />
+            {row.weapon_image && (
+                <img
+                    src={row.weapon_image}
+                    alt={row.weapon_type_ko}
+                    className="absolute bottom-px right-px h-4 w-4 rounded-[3px] bg-[#333] p-px"
+                    loading="lazy"
+                    // 무기 기본 아이콘은 실제로 없어서(메인 페이지도 마찬가지) 실패하면 그냥 숨긴다
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+            )}
+        </div>
+    );
+}
 
 /** 세그먼트 토글 (패치 여부 / 티어 점수 추세) */
 function ToggleGroup({
@@ -184,8 +267,8 @@ export default function VersionComparisonPage() {
     const meta = data?.meta;
     const weaponOptions = meta?.weapon_types ?? [];
     const byWeapon = groupBy === 'weapon';
-    // 캐릭터 / (무기) / (티어) / 패치 + 지표별 (현재, 변동)
-    const colCount = (byWeapon ? 4 : 2) + COLUMNS.length * 2;
+    // 캐릭터 / 티어 / 패치 + 지표별 (현재, 변동)
+    const colCount = 3 + COLUMNS.length * 2;
 
     const toggleSort = (key: MetricKey) => {
         if (sort === key) {
@@ -368,8 +451,7 @@ export default function VersionComparisonPage() {
                     <thead>
                         <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
                             <th rowSpan={2} className="px-3 py-2 text-left">캐릭터</th>
-                            {byWeapon && <th rowSpan={2} className="px-3 py-2 text-left">무기</th>}
-                            {byWeapon && <th rowSpan={2} className="px-3 py-2 text-left">티어</th>}
+                            <th rowSpan={2} className="px-3 py-2 text-left">티어</th>
                             <th rowSpan={2} className="px-3 py-2 text-left">패치</th>
                             {COLUMNS.map((c) => (
                                 <th
@@ -402,13 +484,7 @@ export default function VersionComparisonPage() {
                                 >
                                     <td className="px-3 py-2">
                                         <div className="flex items-center gap-2">
-                                            <img
-                                                src={r.character_image}
-                                                alt=""
-                                                className="h-7 w-7 shrink-0 rounded"
-                                                loading="lazy"
-                                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-                                            />
+                                            <CharacterIcon row={r} />
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-1.5">
                                                     <span>{r.character_name}</span>
@@ -416,6 +492,11 @@ export default function VersionComparisonPage() {
                                                         <span className="rounded bg-[hsl(var(--accent))] px-1.5 py-0.5 text-xs">신규</span>
                                                     )}
                                                 </div>
+                                                {byWeapon && (
+                                                    <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                                                        {r.weapon_type_ko}
+                                                    </div>
+                                                )}
                                                 {r.tags.length > 0 && (
                                                     <div className="text-xs text-[hsl(var(--muted-foreground))]">
                                                         {r.tags.join(' · ')}
@@ -424,24 +505,17 @@ export default function VersionComparisonPage() {
                                             </div>
                                         </div>
                                     </td>
-                                    {byWeapon && (
-                                        <td className="px-3 py-2 text-[hsl(var(--muted-foreground))]">{r.weapon_type_ko}</td>
-                                    )}
-                                    {byWeapon && (
-                                        <td className="px-3 py-2 text-xs">
-                                            {r.previous?.meta_tier && r.previous.meta_tier !== r.current.meta_tier ? (
-                                                <span>
-                                                    <span className="text-[hsl(var(--muted-foreground))] line-through">
-                                                        {r.previous.meta_tier}
-                                                    </span>
-                                                    <span className="mx-1">→</span>
-                                                    <span className="font-semibold">{r.current.meta_tier ?? '-'}</span>
-                                                </span>
-                                            ) : (
-                                                <span>{r.current.meta_tier ?? '-'}</span>
-                                            )}
-                                        </td>
-                                    )}
+                                    <td className="whitespace-nowrap px-3 py-2">
+                                        {tierMoved(r) ? (
+                                            <span className="inline-flex items-center gap-1">
+                                                <TierBadge tier={r.previous!.meta_tier} faded />
+                                                <span className={tierMoveClass(r)}>{tierMoveArrow(r)}</span>
+                                                <TierBadge tier={r.current.meta_tier} />
+                                            </span>
+                                        ) : (
+                                            <TierBadge tier={r.current.meta_tier} />
+                                        )}
+                                    </td>
                                     <td className="px-3 py-2">
                                         <div className="flex flex-wrap gap-1">
                                             {r.patch_types.length === 0 ? (
