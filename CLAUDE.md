@@ -294,5 +294,22 @@
   - 관리자 전용이라 호출이 드물어 10분 캐시만 붙였다
 - **서비스**: `TopRankStatService` (조건부 집계로 TOP4/전체를 한 쿼리에 계산)
 
+### 4. 전체 지표 변동 (관리자 전용)
+
+- **화면**: 관리자 → 전체 지표 변동 (`/admin/version-comparison`)
+- **API**: `GET /api/admin/version-comparison`, `/options`
+- 메인 페이지의 패치 비교(`PatchComparisonService`)는 **패치노트에 언급된 캐릭터만** 보여준다.
+  여기서는 두 버전의 `game_results_summary` 를 통째로 맞춰서 **모든 캐릭터**를 비교한다
+  (직접 패치가 없는데 움직인 캐릭터 = 간접 버프/너프 확인용)
+- 지표: 메타점수 / 픽률 / 승률 / TOP4율 / 평균획득 / 평균TK / 게임수 (현재값 + 변동값)
+- **집계 테이블을 새로 만들지 않는다.** 티어 하나 기준이면 행이 수백 개라 PHP 에서 맞춘다
+  - 필터: 버전 2개, 티어, 집계 단위(캐릭터+무기 / 캐릭터 합산), 캐릭터, 무기군,
+    태그(`character_weapon_character_tag`), 패치 여부 토글, 티어 점수 상승/하락 토글, 최소 게임수
+  - 캐릭터 합산은 **게임수 가중평균** (픽률·게임수만 합계, meta_score 는 근사치)
+  - 버전별 테이블은 만들어진 시점에 따라 컬럼이 다르므로(`avg_team_kill_score` 는 2025-10 추가)
+    `Schema::getColumnListing()` 으로 확인 후 없는 컬럼은 NULL 로 채운다
+  - 관리자 전용이라 10분 캐시
+- **서비스**: `VersionComparisonService`
+
 ### 알려진 이슈
 - `InfoController::getTraits()` (`/api/trait`)가 `getCharacters()` 복사본 상태라 `v2/data/Character`를 호출해 `characters` 테이블에 upsert한다. `traits` 테이블은 갱신되지 않음

@@ -11,6 +11,7 @@ import {
     Settings,
     BarChart3,
     TrendingUp,
+    ArrowLeftRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const navigation = [
     { name: '버전 히스토리', href: '/version-histories', icon: History },
     { name: 'TOP4 지표', href: '/top-rank-stats', icon: BarChart3 },
     { name: '지표 추이', href: '/summary-trend', icon: TrendingUp },
+    { name: '전체 지표 변동', href: '/version-comparison', icon: ArrowLeftRight },
     { name: '사이트 설정', href: '/settings', icon: Settings },
 ];
 

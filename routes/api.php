@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\TacticalSkillController as AdminTacticalSkillCont
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SummaryTrendController;
 use App\Http\Controllers\Admin\TopRankStatController;
+use App\Http\Controllers\Admin\VersionComparisonController;
 use App\Http\Controllers\InfoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +69,10 @@ Route::prefix('admin')->group(function () {
         // TOP4 상세 지표 (관리자 전용)
         Route::get('/top-rank-stats', [TopRankStatController::class, 'index']);
         Route::get('/top-rank-stats/options', [TopRankStatController::class, 'options']);
+
+        // 버전 간 전체 캐릭터 지표 변동 (관리자 전용)
+        Route::get('/version-comparison', [VersionComparisonController::class, 'index']);
+        Route::get('/version-comparison/options', [VersionComparisonController::class, 'options']);
 
         // Site Settings (기본 버전 / 기본 티어)
         Route::get('/settings', [SettingController::class, 'index']);
