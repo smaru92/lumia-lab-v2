@@ -1303,3 +1303,136 @@ table:has(#tactical-skill-tbody) th:nth-child(1),
         padding: 6px 8px 4px;
     }
 }
+
+/* ── 스킬 순서 통계 ───────────────────────────────────────── */
+.skill-level-switch {
+    display: inline-flex;
+    border: 1px solid #333;
+    margin-bottom: 8px;
+}
+
+.skill-level-button {
+    background: #fff;
+    color: #333;
+    border: none;
+    border-right: 1px solid #333;
+    padding: 6px 14px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.skill-level-button:last-child {
+    border-right: none;
+}
+
+.skill-level-button:hover {
+    background: #f0f0f0;
+}
+
+.skill-level-button.active {
+    background: #333;
+    color: #fff;
+    font-weight: bold;
+}
+
+.skill-order-panel {
+    display: none;
+}
+
+.skill-order-panel.active {
+    display: block;
+}
+
+.skill-order-note {
+    margin: 0 0 8px;
+    font-size: 0.8em;
+    color: #777;
+    line-height: 1.5;
+}
+
+.skill-order-table td:first-child {
+    text-align: left;
+}
+
+/* 5레벨 단위 묶음. PC 는 한 줄, 태블릿 이하는 10레벨씩 두 줄로 접는다 */
+.skill-seq {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 3px 6px;
+}
+
+.skill-seq-group {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.skill-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    cursor: default;
+}
+
+.skill-key-q { background: #2f6fc4; border-color: #2f6fc4; }
+.skill-key-w { background: #2e8b57; border-color: #2e8b57; }
+.skill-key-e { background: #b86e00; border-color: #b86e00; }
+.skill-key-r { background: #c93c3c; border-color: #c93c3c; }
+.skill-key-t { background: #6b6b6b; border-color: #6b6b6b; }
+.skill-key-unknown { background: #bbb; border-color: #bbb; }
+
+/* 변형 스킬: 같은 키 색을 테두리로만 */
+.skill-key-alt {
+    background: #fff;
+    border: 2px solid;
+    box-sizing: border-box;
+}
+.skill-key-alt.skill-key-q { color: #2f6fc4; }
+.skill-key-alt.skill-key-w { color: #2e8b57; }
+.skill-key-alt.skill-key-e { color: #b86e00; }
+.skill-key-alt.skill-key-r { color: #c93c3c; }
+
+@media screen and (max-width: 1024px) {
+    .skill-seq {
+        flex-wrap: wrap;
+        /* 5칸 묶음 2개 = 10레벨 (칸 18px x 10 + 칸 사이 2px x 8 + 묶음 사이 6px + 여유 2px)
+           max-width 로 두면 표가 칸을 최소폭까지 줄여 5칸씩 네 줄이 되므로 폭을 고정한다 */
+        width: 204px;
+    }
+
+    .skill-key {
+        width: 18px;
+        height: 18px;
+        font-size: 10px;
+    }
+}
+
+@media screen and (max-width: 599px) {
+    .skill-level-switch {
+        display: flex;
+    }
+
+    .skill-level-button {
+        flex: 1 1 0;
+        padding: 6px 4px;
+        font-size: 0.85em;
+    }
+
+    .skill-seq {
+        gap: 3px 4px;
+        /* 칸 16px x 10 + 칸 사이 2px x 8 + 묶음 사이 4px + 여유 2px */
+        width: 182px;
+    }
+
+    .skill-key {
+        width: 16px;
+        height: 16px;
+        font-size: 9px;
+    }
+}

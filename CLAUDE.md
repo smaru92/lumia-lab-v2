@@ -15,7 +15,7 @@
   - 킬/데스/어시스트 점수
   - 게임 시작 시간, 버전 정보
 
-- **game_result_skill_orders**: 스킬 찍은 순서
+- **game_result_skill_orders**: 스킬 찍은 순서 (→ `game_result_skill_builds` 로 게임별 1행 요약)
 - **game_result_trait_orders**: 특성 정보 (메인/서브)
 - **game_result_equipment_orders**: 장비 아이템 순서
 - **game_result_first_equipment_orders**: 첫 장비 아이템 정보
@@ -169,6 +169,7 @@
 | `update:game-results-trait-summary` | 2시간마다 | 짝수시 50분 | 캐릭터별/특성/순위별 데이터 |
 | `update:game-results-equipment-summary` | 2시간마다 | 홀수시 10분 | 캐릭터별/장비별 데이터 |
 | `update:game-result-trait-combination-summary` | 2시간마다 | 홀수시 30분 | 캐릭터별/특성조합별 데이터 |
+| `update:game-results-skill-order-summary` | 2시간마다 | 홀수시 40분 | 캐릭터별/스킬순서(9·13·20레벨)별 데이터 |
 
 **중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
 
@@ -310,6 +311,31 @@
     `Schema::getColumnListing()` 으로 확인 후 없는 컬럼은 NULL 로 채운다
   - 관리자 전용이라 10분 캐시
 - **서비스**: `VersionComparisonService`
+
+## 최근 변경사항 (2026-09-11)
+
+### 1. 스킬 순서 통계
+- **화면**: 캐릭터 상세 → 순위 통계 탭 옆 "스킬 순서" 탭 (탭 클릭 시 로드). 9레벨 / 13레벨 / 전체(20레벨) 전환
+- **API**: `GET /api/detail/{types}/skill-orders`
+- **명령어**: `update:game-results-skill-order-summary {season?} {major?} {minor?} {hotfix?} [--rebuild]`
+- **서비스**: `GameResultSkillOrderSummaryService`
+- **슬롯 표기**: `skill_id` 백의 자리가 슬롯이다 (`1033200` → 2)
+  - `1:T(패시브) 2:Q 3:W 4:E 5:R`, `6~9` 는 일부 캐릭터(27/48/84/38/16/86 등)의 변형 스킬로 보고 Q/W/E/R 테두리로 표시
+  - 같은 슬롯의 변형 id(`1055220` 등)는 같은 키로 묶는다. 순서 문자열은 이 슬롯 숫자를 이어 붙인 것 (`23421522...`)
+  - 숫자로 저장하는 이유: 대소문자 구분 없는 콜레이션에서 유니크 키 충돌을 피하기 위해
+- **2단계 구조**
+  1. `game_result_skill_builds_v*` : 게임 1건 = 1행 (순서 문자열). **증분 동기화**
+     - `game_result_skill_orders` 는 게임당 ~20행(12.3.0 기준 2,460만 행)인데 `game_result_id` 인덱스가 없다.
+       매번 훑지 않도록 PK 구간으로 새 행만 읽고, `last_skill_order_id` 최댓값을 커서로 쓴다
+     - 구간 경계에 걸친 게임은 나머지 행까지 끌어오고, 그래도 쪼개지면 `ON DUPLICATE KEY` 로 이어 붙인다
+     - 스킬 행이 옮겨지거나 지워져 순서가 꼬였다면 `--rebuild` 로 다시 만든다
+  2. `game_results_skill_order_summary_v*` : 캐릭터 x 무기 x `level_cut`(9/13/20) x 티어, **상위 30개만** 저장
+     - 티어마다 다시 조회하지 않고 점수 구간(band)별로 캐릭터당 1번 조회 후 PHP 에서 누적
+     - 캐릭터 단위로 삭제/삽입하므로 집계 중에도 화면이 비지 않는다
+- **집계 기준**: 해당 레벨까지 스킬을 찍은 게임만 포함 (`level_game_count` = 그 모수, 픽률의 분모)
+  - 전체(20레벨)는 만렙까지 간 게임(약 15%)만이라 생존 편향이 있다. 화면에 안내 문구 표시
+- **반응형**: PC 는 한 줄, 1024px 이하는 10레벨씩 두 줄. 순서 칸은 `width` 고정
+  (max-width 로 두면 표가 칸을 최소폭으로 줄여 5레벨씩 네 줄이 된다)
 
 ### 알려진 이슈
 - `InfoController::getTraits()` (`/api/trait`)가 `getCharacters()` 복사본 상태라 `v2/data/Character`를 호출해 `characters` 테이블에 upsert한다. `traits` 테이블은 갱신되지 않음

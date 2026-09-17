@@ -1631,16 +1631,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 순위 통계 / 패치 히스토리 탭 전환
+     * 순위 통계 / 스킬 순서 / 패치 히스토리 탭 전환
      */
     window.openRankSectionTab = function(evt, tabName) {
         const container = document.getElementById('rank-patch-section');
         if (!container) return;
 
-        container.querySelectorAll('.tab-content').forEach(content => {
+        // 탭 안쪽 요소는 건드리지 않도록 직계 자식만 전환한다
+        container.querySelectorAll(':scope > .tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        container.querySelectorAll('.tab-link').forEach(link => {
+        container.querySelectorAll(':scope > .tabs > .tab-link').forEach(link => {
             link.classList.remove('active');
         });
 
@@ -1654,7 +1655,177 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadPatchHistory(patchContainer);
             }
         }
+
+        if (tabName === 'skill-order-content') {
+            const skillContainer = container.querySelector('#skill-order-content');
+            if (skillContainer && skillContainer.dataset.skillOrderLoaded !== 'true') {
+                loadSkillOrders(skillContainer);
+            }
+        }
     };
+
+    /**
+     * 스킬 순서 통계
+     *
+     * 순서 문자열은 레벨별 스킬 슬롯 번호다. (1:T 2:Q 3:W 4:E 5:R)
+     * 6~9 는 일부 캐릭터의 변형 스킬로, 같은 키 색에 테두리만 두른다.
+     */
+    const SKILL_SLOT_KEYS = { 1: 'T', 2: 'Q', 3: 'W', 4: 'E', 5: 'R', 6: 'Q', 7: 'W', 8: 'E', 9: 'R' };
+    const SKILL_LEVEL_TABS = [
+        { cut: 9, label: '9레벨' },
+        { cut: 13, label: '13레벨' },
+        { cut: 20, label: '전체(20레벨)' },
+    ];
+    const SKILL_ORDER_VISIBLE_ROWS = 10;
+
+    async function loadSkillOrders(element) {
+        showLoading(element);
+        try {
+            const response = await fetch(`/api/detail/${types}/skill-orders?version=${version}&min_tier=${minTier}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            renderSkillOrderSection(data, element);
+        } catch (error) {
+            console.error('Error loading skill orders:', error);
+            showError(element, `스킬 순서를 불러오는데 실패했습니다: ${error.message}`);
+        }
+    }
+
+    function renderSkillOrderSequence(order) {
+        let html = '<div class="skill-seq">';
+        // 5레벨 단위로 끊어 R(6/11/16레벨) 위치가 눈에 들어오게 한다
+        for (let start = 0; start < order.length; start += 5) {
+            html += '<span class="skill-seq-group">';
+            order.slice(start, start + 5).split('').forEach((slot, offset) => {
+                const key = SKILL_SLOT_KEYS[slot] || '?';
+                const isAlt = Number(slot) >= 6;
+                const keyClass = key === '?' ? 'skill-key-unknown' : `skill-key-${key.toLowerCase()}`;
+                const title = `Lv.${start + offset + 1} ${key}${isAlt ? ' (변형)' : ''}`;
+                html += `<span class="skill-key ${keyClass}${isAlt ? ' skill-key-alt' : ''}" title="${title}">${key}</span>`;
+            });
+            html += '</span>';
+        }
+        return html + '</div>';
+    }
+
+    function renderSkillOrderTable(level, cut) {
+        const rows = level.data || [];
+
+        let html = `
+            <p class="skill-order-note">
+                ${cut === 20 ? '20레벨(만렙)' : cut + '레벨'}까지 스킬을 찍은 ${formatNumber(level.total)}게임 기준
+                ${cut === 20 ? '<br>끝까지 생존한 게임 위주라 다른 구간보다 성적이 높게 나옵니다.' : ''}
+            </p>
+        `;
+        html += '<div class="table-wrapper"><table class="sortable-table skill-order-table">';
+        html += `
+            <thead>
+                <tr>
+                    <th>스킬 순서</th>
+                    <th>픽률</th>
+                    <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
+                    <th>승률</th>
+                    <th class="hide-on-mobile">TOP2</th>
+                    <th class="hide-on-mobile">TOP4</th>
+                    <th class="hide-on-mobile hide-on-tablet">막금구승률</th>
+                    <th class="hide-on-mobile hide-on-tablet">평균TK</th>
+                    <th class="hide-on-mobile">이득확률</th>
+                    <th class="hide-on-mobile">손실확률</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        rows.forEach((item, index) => {
+            const extraClass = index >= SKILL_ORDER_VISIBLE_ROWS ? ' skill-order-extra filtered-hidden' : '';
+            html += `
+                <tr class="skill-order-row${extraClass}">
+                    <td>${renderSkillOrderSequence(String(item.skill_order))}</td>
+                    <td class="number">
+                        <div>${formatPercent(item.game_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.game_count)}</div>
+                    </td>
+                    <td class="number">${formatNumber(item.avg_mmr_gain, 1)}</td>
+                    <td class="number">
+                        <div>${formatPercent(item.top1_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top1_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top2_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top2_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.top4_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.top4_count)}</div>
+                    </td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatPercent(item.endgame_win_percent)}%</td>
+                    <td class="hide-on-mobile hide-on-tablet number">${formatNumber(item.avg_team_kill_score, 2)}</td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.positive_game_count_percent)}%</div>
+                        <div class="sub-stat">+${formatNumber(item.positive_avg_mmr_gain, 1)}</div>
+                    </td>
+                    <td class="hide-on-mobile number">
+                        <div>${formatPercent(item.negative_game_count_percent)}%</div>
+                        <div class="sub-stat">${formatNumber(item.negative_avg_mmr_gain, 1)}</div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div>';
+
+        if (rows.length > SKILL_ORDER_VISIBLE_ROWS) {
+            html += `<button type="button" class="show-more-button skill-order-more">더보기 (${rows.length - SKILL_ORDER_VISIBLE_ROWS}개)</button>`;
+        }
+
+        return html;
+    }
+
+    function renderSkillOrderSection(data, element) {
+        const levels = data.levels || {};
+        const tabs = SKILL_LEVEL_TABS.filter(tab => levels[tab.cut] && (levels[tab.cut].data || []).length > 0);
+
+        element.dataset.skillOrderLoaded = 'true';
+
+        if (tabs.length === 0) {
+            element.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">집계된 스킬 순서 데이터가 없습니다.</p>';
+            return;
+        }
+
+        let html = '<div class="skill-level-switch">';
+        tabs.forEach((tab, index) => {
+            html += `<button type="button" class="skill-level-button${index === 0 ? ' active' : ''}" data-cut="${tab.cut}">${tab.label}</button>`;
+        });
+        html += '</div>';
+
+        tabs.forEach((tab, index) => {
+            html += `<div class="skill-order-panel${index === 0 ? ' active' : ''}" data-cut="${tab.cut}">`;
+            html += renderSkillOrderTable(levels[tab.cut], tab.cut);
+            html += '</div>';
+        });
+
+        element.innerHTML = html;
+
+        element.querySelectorAll('.skill-level-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const cut = this.dataset.cut;
+                element.querySelectorAll('.skill-level-button').forEach(b => b.classList.toggle('active', b === this));
+                element.querySelectorAll('.skill-order-panel').forEach(panel => {
+                    panel.classList.toggle('active', panel.dataset.cut === cut);
+                });
+            });
+        });
+
+        element.querySelectorAll('.skill-order-more').forEach(button => {
+            button.addEventListener('click', function() {
+                const panel = this.closest('.skill-order-panel');
+                const extraRows = panel.querySelectorAll('.skill-order-extra');
+                const expand = extraRows.length > 0 && extraRows[0].classList.contains('filtered-hidden');
+                extraRows.forEach(row => row.classList.toggle('filtered-hidden', !expand));
+                this.textContent = expand ? '접기' : `더보기 (${extraRows.length}개)`;
+            });
+        });
+    }
 
     /**
      * 패치 히스토리 로드

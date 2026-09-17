@@ -117,6 +117,7 @@ Route::get('/detail/{types}/tactical-skills', [\App\Http\Controllers\CharacterCo
 Route::get('/detail/{types}/equipment', [\App\Http\Controllers\CharacterController::class, 'getDetailEquipment']);
 Route::get('/detail/{types}/traits', [\App\Http\Controllers\CharacterController::class, 'getDetailTraits']);
 Route::get('/detail/{types}/trait-combinations', [\App\Http\Controllers\CharacterController::class, 'getDetailTraitCombinations']);
+Route::get('/detail/{types}/skill-orders', [\App\Http\Controllers\CharacterController::class, 'getDetailSkillOrders']);
 Route::get('/detail/{types}/synergy', [\App\Http\Controllers\CharacterController::class, 'getDetailSynergy']);
 Route::get('/detail/{types}/trend', [\App\Http\Controllers\CharacterController::class, 'getDetailTrend']);
 Route::get('/detail/{types}/patch-history', [\App\Http\Controllers\CharacterController::class, 'getDetailPatchHistory']);

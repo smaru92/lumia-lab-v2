@@ -113,6 +113,25 @@ class VersionedGameTableManager
         }
     }
 
+    /**
+     * 게임별 스킬 순서 (스킬 순서 통계용 중간 테이블)
+     *
+     * skill_orders 는 게임당 20행 가까이 쌓이고 game_result_id 인덱스도 없어서
+     * 집계할 때마다 전부 훑을 수 없다. 게임 1건 = 1행으로 접어 두고 새 행만 이어 붙인다.
+     */
+    public function ensureGameResultSkillBuildTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->unsignedInteger('game_result_id')->primary()->comment('게임 결과 id');
+                $table->string('skill_order', 40)->comment('레벨순 스킬 슬롯 (1:T 2:Q 3:W 4:E 5:R, 6~9:변형)');
+                $table->unsignedBigInteger('last_skill_order_id')->comment('반영한 skill_orders 마지막 id (증분 동기화 기준)');
+
+                $table->index('last_skill_order_id', 'idx_grsb_last_skill_order_id');
+            });
+        }
+    }
+
     public function ensureGameResultEquipmentOrderTableExists(string $tableName): void
     {
         if (!Schema::hasTable($tableName)) {
@@ -382,6 +401,43 @@ class VersionedGameTableManager
                 $table->decimal('avg_team_kill_score', 10, 3)->nullable();
                 $table->unique(['character_id', 'weapon_type', 'trait_ids', 'min_tier'], 'trait_combination_summary_unique');
                 $table->index(['character_id', 'weapon_type'], 'trait_combination_char_weapon_idx');
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function ensureGameResultSkillOrderSummaryTableExists(string $tableName): void
+    {
+        if (!Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->integer('character_id');
+                $table->string('character_name');
+                $table->string('weapon_type', 50);
+                $table->unsignedTinyInteger('level_cut')->comment('몇 레벨까지의 순서인지 (9 / 13 / 20)');
+                $table->string('skill_order', 30)->comment('레벨순 스킬 슬롯 (1:T 2:Q 3:W 4:E 5:R, 6~9:변형)');
+                $table->string('min_tier', 50);
+                $table->integer('min_score');
+                $table->integer('level_game_count')->comment('해당 레벨까지 스킬을 찍은 전체 게임 수');
+                $table->integer('game_count');
+                $table->integer('positive_game_count');
+                $table->integer('negative_game_count');
+                $table->decimal('game_count_percent', 10, 3)->comment('level_game_count 대비 비율');
+                $table->decimal('positive_game_count_percent', 10, 3);
+                $table->decimal('negative_game_count_percent', 10, 3);
+                $table->integer('top1_count');
+                $table->integer('top2_count');
+                $table->integer('top4_count');
+                $table->decimal('top1_count_percent', 10, 3);
+                $table->decimal('top2_count_percent', 10, 3);
+                $table->decimal('top4_count_percent', 10, 3);
+                $table->decimal('endgame_win_percent', 10, 3)->nullable();
+                $table->decimal('avg_mmr_gain', 10, 3);
+                $table->decimal('positive_avg_mmr_gain', 10, 3);
+                $table->decimal('negative_avg_mmr_gain', 10, 3);
+                $table->decimal('avg_team_kill_score', 10, 3)->nullable();
+                $table->unique(['character_id', 'weapon_type', 'level_cut', 'skill_order', 'min_tier'], 'skill_order_summary_unique');
+                $table->index(['character_id', 'weapon_type', 'min_tier'], 'skill_order_char_weapon_tier_idx');
                 $table->timestamps();
             });
         }

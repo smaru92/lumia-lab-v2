@@ -270,6 +270,7 @@ npm run dev
 | `GET /api/detail/{types}/equipment` | 캐릭터 장비 통계 |
 | `GET /api/detail/{types}/traits` | 캐릭터 특성 통계 |
 | `GET /api/detail/{types}/trait-combinations` | 캐릭터 특성 조합 통계 |
+| `GET /api/detail/{types}/skill-orders` | 캐릭터 스킬 순서 통계 (9/13/20레벨) |
 | `GET /api/detail/{types}/tactical-skills` | 캐릭터 전술 스킬 통계 |
 
 ### 관리자 API (인증 필요)

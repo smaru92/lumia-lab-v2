@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\GameResultSkillOrderSummaryService;
 use App\Services\GameResultSummaryService;
 use App\Services\GameResultTraitCombinationSummaryService;
 use App\Services\MainService;
@@ -615,6 +616,54 @@ class CharacterController extends Controller
 
             // 데이터가 있을 때만 캐싱
             if (!empty($data['data']) && count($data['data']) > 0) {
+                cache()->put($cacheKey, $data, $cacheDuration);
+            }
+        }
+
+        return response()->json($data);
+    }
+
+    /**
+     * 스킬 순서 통계 (9레벨 / 13레벨 / 전체(20레벨))
+     */
+    public function getDetailSkillOrders(Request $request, $types)
+    {
+        $defaultTier = default_tier();
+        $defaultVersion = default_version();
+        $minTier = $request->input('min_tier', $defaultTier);
+        $version = $request->input('version', $defaultVersion);
+
+        // 버전 파싱/검증 (핫픽스 포함, 예: 12.2.0b)
+        $versionParts = parse_version_key($version, $defaultVersion);
+
+        [$characterName, $weaponType] = array_pad(explode('-', $types), 2, null);
+        $weaponType = empty($weaponType) ? 'All' : $weaponType;
+
+        if (empty($characterName)) {
+            return response()->json(['levels' => []]);
+        }
+
+        $filters = [
+            'version_season' => $versionParts['version_season'],
+            'version_major' => $versionParts['version_major'],
+            'version_minor' => $versionParts['version_minor'],
+            'version_hotfix' => $versionParts['version_hotfix'],
+            'character_name' => $characterName,
+            'weapon_type' => $weaponType,
+            'min_tier' => $minTier,
+        ];
+
+        $cacheKey = "game_detail_skill_orders_{$types}_{$minTier}_" . $versionParts['cache_key'];
+        $cacheDuration = config('erDev.cacheDuration');
+
+        $data = cache()->get($cacheKey);
+
+        // 캐시가 없거나 데이터가 비어있으면 새로 조회
+        if (empty($data) || empty($data['levels'])) {
+            $data = (new GameResultSkillOrderSummaryService())->getDetail($filters);
+
+            // 데이터가 있을 때만 캐싱
+            if (!empty($data['levels'])) {
                 cache()->put($cacheKey, $data, $cacheDuration);
             }
         }

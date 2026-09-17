@@ -38,7 +38,7 @@ class GameResultService
      * weapon_type을 결정하는 SQL CASE 문을 생성합니다.
      * @return string
      */
-    private function getWeaponTypeCaseStatement(string $grAlias = 'gr', string $eAlias = 'e'): string
+    public function getWeaponTypeCaseStatement(string $grAlias = 'gr', string $eAlias = 'e'): string
     {
         $weaponTypeMapping = config('erDev.characterWeaponTypeMapping', []);
 

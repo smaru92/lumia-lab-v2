@@ -140,6 +140,7 @@
     <div id="rank-patch-section">
         <div class="tabs">
             <button class="tab-link active" onclick="openRankSectionTab(event, 'rank-stats-content')">순위 통계</button>
+            <button class="tab-link" onclick="openRankSectionTab(event, 'skill-order-content')">스킬 순서</button>
             <button class="tab-link" onclick="openRankSectionTab(event, 'patch-history-content')">패치 히스토리</button>
         </div>
         <div id="rank-stats-content" class="tab-content active">
@@ -209,6 +210,11 @@
             @else
             <p style="text-align: center; color: #999;">데이터가 없습니다.</p>
             @endif
+        </div>
+        <div id="skill-order-content" class="tab-content" data-skill-order-loaded="false">
+            <div class="loading-placeholder" style="padding: 20px; text-align: center;">
+                <p>스킬 순서 탭을 클릭하면 로드됩니다.</p>
+            </div>
         </div>
         <div id="patch-history-content" class="tab-content" data-patch-history-loaded="false">
             <div class="loading-placeholder" style="padding: 20px; text-align: center;">
