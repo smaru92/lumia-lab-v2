@@ -445,6 +445,7 @@ class GameResultSkillOrderSummaryService
             && Schema::hasColumns('character_skills', ['character_id', 'slot']);
 
         if (!$this->hasSkillSlotColumns) {
+            $this->warnDefaultSlotKeys($characterId, 'character_skills 에 character_id/slot 컬럼이 없음 (migrate 필요)');
             return self::DEFAULT_SLOT_KEYS;
         }
 
@@ -460,6 +461,7 @@ class GameResultSkillOrderSummaryService
         ksort($names);
 
         if (count($names) < 5) {
+            $this->warnDefaultSlotKeys($characterId, '스킬 정보 ' . count($names) . '개 (fetch:character-skills 필요)');
             return self::DEFAULT_SLOT_KEYS;
         }
 
@@ -476,6 +478,17 @@ class GameResultSkillOrderSummaryService
         }
 
         return $map;
+    }
+
+    /**
+     * 기본 매핑으로 떨어졌다는 걸 남긴다.
+     * 띠아처럼 슬롯 구성이 다른 캐릭터는 기본 매핑이면 키가 어긋나므로(Q 가 E 로 보임) 놓치지 않도록 한다.
+     */
+    private function warnDefaultSlotKeys(int $characterId, string $reason): void
+    {
+        $message = "skill slot map fallback : character {$characterId} - {$reason}";
+        Log::channel($this->logChannel)->warning($message);
+        echo "[경고] {$message}\n";
     }
 
     /**
