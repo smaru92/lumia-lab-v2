@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 캐릭터별 스킬 순서 통계
  *
- * 스킬 순서는 skill_id 의 백의 자리 슬롯으로 표현한다. (1033200 -> 2 = Q)
- *   1:T(패시브) 2:Q 3:W 4:E 5:R, 6~9 는 일부 캐릭터의 변형 스킬(Q/W/E/R + 4)
+ * 스킬 순서는 skill_id 의 백의 자리 슬롯으로 저장한다. (1033200 -> 2)
+ * 대부분 1:T(패시브) 2:Q 3:W 4:E 5:R 이지만 캐릭터마다 다르다. (띠아는 1·4·5·6·7 이 T·Q·W·E·R)
+ * 그래서 집계할 때 slotKeyMap() 으로 캐릭터별 슬롯 -> 키(1:T 2:Q 3:W 4:E 5:R)를 바꿔 쓴다.
  * 같은 슬롯의 변형(1055220 등)은 같은 키로 본다.
  *
  * 1) skill_orders -> skill_builds : 게임 1건을 순서 문자열 1행으로 접는다 (새 행만 증분 반영)
@@ -35,8 +36,19 @@ class GameResultSkillOrderSummaryService
      */
     private const MASTER_LEVELS = [1 => 2, 2 => 5, 3 => 5, 4 => 5];
 
-    /** 로그 표시용 슬롯 이름 */
+    /** 로그 표시용 키 이름 */
     private const SLOT_KEYS = [1 => 'T', 2 => 'Q', 3 => 'W', 4 => 'E'];
+
+    /**
+     * 슬롯 -> 키 기본 매핑 (character_skills 정보가 없을 때). 6~9 는 Q/W/E/R 의 변형으로 본다.
+     * strtr() 로 순서 문자열을 한 번에 바꾸려고 문자 => 문자 형태로 둔다.
+     */
+    private const DEFAULT_SLOT_KEYS = [
+        '1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5',
+        '6' => '2', '7' => '3', '8' => '4', '9' => '5',
+    ];
+
+    private ?bool $hasSkillSlotColumns = null;
 
     /**
      * 만렙 게임의 기록상 스킬 포인트 수. 보통 20이고, 자동 습득 스킬이 있는 캐릭터는 19다.
@@ -287,9 +299,10 @@ class GameResultSkillOrderSummaryService
             $bySequence = [];
             $totals = [];
             $masteredMemo = [];
-            $masterLevels = $this->detectMasterLevels($rows);
+            $slotKeys = $this->slotKeyMap((int) $characterId);
+            $masterLevels = $this->detectMasterLevels($rows, $slotKeys);
             foreach ($rows as $row) {
-                $mastered = $masteredMemo[$row->skill_prefix] ??= $this->masteredSlots($row->skill_prefix, $masterLevels);
+                $mastered = $masteredMemo[$row->skill_prefix] ??= $this->masteredSlots(strtr($row->skill_prefix, $slotKeys), $masterLevels);
                 foreach (self::MASTER_COUNTS as $count) {
                     if (strlen($mastered) < $count) {
                         break;
@@ -367,20 +380,22 @@ class GameResultSkillOrderSummaryService
      * 게임이 충분히 모인 길이를 쓴다. 이상치를 피하려고 그 안에서 게임수 기준 최빈값을 쓴다.
      * 만렙 게임이 적으면(신규 캐릭터 등) 기본값을 쓴다.
      *
-     * @param iterable $rows skill_prefix(앞 20자리), game_count 를 가진 집계 행
-     * @return array<int,int> [슬롯 => 마스터 레벨]
+     * @param iterable $rows skill_prefix(앞 20자리, 원래 슬롯), game_count 를 가진 집계 행
+     * @param array<string,string> $slotKeys slotKeyMap() 결과
+     * @return array<int,int> [키 => 마스터 레벨]
      */
-    private function detectMasterLevels(iterable $rows): array
+    private function detectMasterLevels(iterable $rows, array $slotKeys): array
     {
-        // [길이][슬롯별 포인트 시그니처] => 게임수
+        // [길이][키별 포인트 시그니처] => 게임수
         $signatures = [];
         foreach ($rows as $row) {
+            // 만렙 판정은 순서에서 빠지는 별도 스킬까지 포함한 전체 포인트 수로 한다
             $length = strlen($row->skill_prefix);
             if (!in_array($length, self::MAX_LEVEL_POINTS, true)) {
                 continue;
             }
 
-            $points = $this->countPoints($row->skill_prefix);
+            $points = $this->countPoints(strtr($row->skill_prefix, $slotKeys));
             $signature = implode(',', array_map(fn ($slot) => $points[$slot] ?? 0, array_keys(self::MASTER_LEVELS)));
             $signatures[$length][$signature] = ($signatures[$length][$signature] ?? 0) + (int) $row->game_count;
         }
@@ -413,30 +428,80 @@ class GameResultSkillOrderSummaryService
     }
 
     /**
-     * 슬롯별 포인트 수. 변형 슬롯(6~9)은 원래 키(Q/W/E/R)에 합산한다.
+     * 캐릭터별 슬롯 -> 키 매핑 (strtr 용, 키: 1:T 2:Q 3:W 4:E 5:R, '' = 순서에서 뺌)
      *
+     * character_skills(공식 l10n 스킬 이름)에서 슬롯별 기본 스킬 이름을 보고 정한다.
+     *   - 슬롯 번호 순으로 첫 번째가 T, 이후 이름이 다른 스킬 4개가 차례로 Q/W/E/R
+     *     (띠아: 1·4·5·6·7 -> T·Q·W·E·R)
+     *   - 앞 슬롯과 이름이 같으면 그 스킬의 변형으로 보고 같은 키 (제니 6·7·8 = Q·W·E)
+     *   - 그 밖의 별도 스킬은 순서에서 뺀다 (블레어 시프트 러시, 실비아 바이크 스킬, 알렉스 변신 스킬)
+     * 정보가 없거나(신규 캐릭터, 동기화 전) 스킬이 5개 미만이면 기본 매핑을 쓴다.
+     *
+     * @return array<string,string>
+     */
+    private function slotKeyMap(int $characterId): array
+    {
+        $this->hasSkillSlotColumns ??= Schema::hasTable('character_skills')
+            && Schema::hasColumns('character_skills', ['character_id', 'slot']);
+
+        if (!$this->hasSkillSlotColumns) {
+            return self::DEFAULT_SLOT_KEYS;
+        }
+
+        // 슬롯마다 가장 작은 id(변형 번호 00)의 이름이 기본 스킬 이름이다
+        $names = DB::table('character_skills')
+            ->where('character_id', $characterId)
+            ->whereNotNull('slot')
+            ->orderBy('id')
+            ->get(['slot', 'name'])
+            ->unique('slot')
+            ->pluck('name', 'slot')
+            ->all();
+        ksort($names);
+
+        if (count($names) < 5) {
+            return self::DEFAULT_SLOT_KEYS;
+        }
+
+        $map = array_fill_keys(array_map('strval', range(1, 9)), '');
+        $keyByName = [];
+        $nextKey = 1;
+        foreach ($names as $slot => $name) {
+            $name = trim((string) $name);
+            if (isset($keyByName[$name])) {
+                $map[(string) $slot] = $keyByName[$name];
+            } elseif ($nextKey <= 5) {
+                $map[(string) $slot] = $keyByName[$name] = (string) $nextKey++;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * 키별 포인트 수
+     *
+     * @param string $build 키로 바꾼 순서 문자열
      * @return array<int,int>
      */
     private function countPoints(string $build): array
     {
         $points = [];
         foreach (str_split($build) as $char) {
-            $slot = (int) $char;
-            if ($slot >= 6) {
-                $slot -= 4;
-            }
-            $points[$slot] = ($points[$slot] ?? 0) + 1;
+            $key = (int) $char;
+            $points[$key] = ($points[$key] ?? 0) + 1;
         }
 
         return $points;
     }
 
     /**
-     * 레벨순 스킬 슬롯 문자열 -> 마스터한 순서대로의 슬롯 (예: "231" = Q -> W -> T 까지 마스터)
+     * 키 순서 문자열 -> 마스터한 순서대로의 키 (예: "231" = Q -> W -> T 까지 마스터)
      *
-     * R 은 레벨이 고정이라 무시한다. 변형 슬롯(6~9)은 원래 키(Q/W/E/R)에 합산한다.
+     * R 은 레벨이 고정이라 마스터 판정에 넣지 않는다 ($masterLevels 에 없음).
      *
-     * @param array<int,int> $masterLevels [슬롯 => 마스터 레벨] (detectMasterLevels 결과)
+     * @param string $build 키로 바꾼 순서 문자열 (slotKeyMap 적용 후)
+     * @param array<int,int> $masterLevels [키 => 마스터 레벨] (detectMasterLevels 결과)
      * @return string 마스터한 스킬이 없으면 ''
      */
     private function masteredSlots(string $build, array $masterLevels): string
@@ -445,17 +510,14 @@ class GameResultSkillOrderSummaryService
         $mastered = '';
 
         foreach (str_split($build) as $char) {
-            $slot = (int) $char;
-            if ($slot >= 6) {
-                $slot -= 4;
-            }
-            if (!isset($masterLevels[$slot])) {
+            $key = (int) $char;
+            if (!isset($masterLevels[$key])) {
                 continue;
             }
 
             // 마스터 레벨에 "도달하는 순간" 한 번만 기록한다 (변형 합산으로 넘어가도 중복 기록하지 않는다)
-            if (++$levels[$slot] === $masterLevels[$slot]) {
-                $mastered .= $slot;
+            if (++$levels[$key] === $masterLevels[$key]) {
+                $mastered .= $key;
             }
         }
 
