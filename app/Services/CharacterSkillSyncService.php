@@ -113,7 +113,9 @@ class CharacterSkillSyncService
             throw new \RuntimeException('l10n 파일 주소를 받지 못했습니다: ' . json_encode($meta));
         }
 
-        $text = $client->get($path, ['timeout' => 60])->getBody()->getContents();
+        // CloudFront 가 "Content-Encoding: UTF-8" 이라는 잘못된 헤더를 보낸다 (문자셋을 압축 방식 자리에 넣음).
+        // 압축 해제를 켜 두면 curl 이 모르는 인코딩이라며 실패하므로 끈다. 본문은 압축되지 않은 원문이다.
+        $text = $client->get($path, ['timeout' => 60, 'decode_content' => false])->getBody()->getContents();
 
         return explode("\n", $text);
     }
