@@ -1665,18 +1665,19 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     /**
-     * 스킬 순서 통계
+     * 스킬 마스터 순서 통계
      *
-     * 순서 문자열은 레벨별 스킬 슬롯 번호다. (1:T 2:Q 3:W 4:E 5:R)
-     * 6~9 는 일부 캐릭터의 변형 스킬로, 같은 키 색에 테두리만 두른다.
+     * 순서 문자열은 마스터한 순서대로의 스킬 슬롯 번호다. (1:T 2:Q 3:W 4:E, 예: 231 = Q W T)
+     * 마스터 = Q/W/E 5레벨, T 2레벨. R 은 레벨이 고정이라 뺀다.
      */
-    const SKILL_SLOT_KEYS = { 1: 'T', 2: 'Q', 3: 'W', 4: 'E', 5: 'R', 6: 'Q', 7: 'W', 8: 'E', 9: 'R' };
-    const SKILL_LEVEL_TABS = [
-        { cut: 9, label: '9레벨' },
-        { cut: 11, label: '11레벨' },
-        { cut: 14, label: '14레벨' },
+    const SKILL_SLOT_KEYS = { 1: 'T', 2: 'Q', 3: 'W', 4: 'E' };
+    const SKILL_MASTER_TABS = [
+        { count: 2, label: '2개 마스터' },
+        { count: 3, label: '3개 마스터' },
+        { count: 4, label: '4개 마스터' },
     ];
-    const SKILL_ORDER_VISIBLE_ROWS = 10;
+    /** 사용수 상위 몇 개만 보여줄지 (서버도 같은 개수만 준다) */
+    const SKILL_ORDER_MAX_ROWS = 10;
 
     async function loadSkillOrders(element) {
         showLoading(element);
@@ -1692,36 +1693,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderSkillOrderSequence(order) {
-        let html = '<div class="skill-seq">';
-        // 5레벨 단위로 끊어 R(6/11/16레벨) 위치가 눈에 들어오게 한다
-        for (let start = 0; start < order.length; start += 5) {
-            html += '<span class="skill-seq-group">';
-            order.slice(start, start + 5).split('').forEach((slot, offset) => {
-                const key = SKILL_SLOT_KEYS[slot] || '?';
-                const isAlt = Number(slot) >= 6;
-                const keyClass = key === '?' ? 'skill-key-unknown' : `skill-key-${key.toLowerCase()}`;
-                const title = `Lv.${start + offset + 1} ${key}${isAlt ? ' (변형)' : ''}`;
-                html += `<span class="skill-key ${keyClass}${isAlt ? ' skill-key-alt' : ''}" title="${title}">${key}</span>`;
-            });
-            html += '</span>';
-        }
-        return html + '</div>';
+        const keys = order.split('').map(slot => SKILL_SLOT_KEYS[slot] || '?');
+        const html = keys.map((key, index) => {
+            const keyClass = key === '?' ? 'skill-key-unknown' : `skill-key-${key.toLowerCase()}`;
+            return `<span class="skill-key ${keyClass}" title="${index + 1}번째 마스터: ${key}">${key}</span>`;
+        }).join('<span class="skill-master-arrow">›</span>');
+        return `<div class="skill-master-seq">${html}</div>`;
     }
 
-    function renderSkillOrderTable(level, cut) {
-        const rows = level.data || [];
+    function renderSkillOrderTable(data) {
+        // 서버가 사용수(game_count) 내림차순으로 준다
+        const rows = (data.data || []).slice(0, SKILL_ORDER_MAX_ROWS);
 
-        let html = `
-            <p class="skill-order-note">
-                ${cut}레벨까지 스킬을 찍은 ${formatNumber(level.total)}게임 기준
-                ${cut === 14 ? '<br>14레벨 전에 탈락한 게임은 빠지므로 다른 구간보다 성적이 조금 높게 나옵니다.' : ''}
-            </p>
-        `;
-        html += '<div class="table-wrapper"><table class="sortable-table skill-order-table">';
+        let html = '<div class="table-wrapper"><table class="sortable-table skill-order-table">';
         html += `
             <thead>
                 <tr>
-                    <th>스킬 순서</th>
+                    <th>마스터 순서</th>
                     <th>픽률</th>
                     <th>평균획득점수<span class="info-icon" data-tooltip="입장료를 차감하지 않고 게임 내에서 획득한 점수를 나타냅니다.">ⓘ</span></th>
                     <th>승률</th>
@@ -1736,10 +1724,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <tbody>
         `;
 
-        rows.forEach((item, index) => {
-            const extraClass = index >= SKILL_ORDER_VISIBLE_ROWS ? ' skill-order-extra filtered-hidden' : '';
+        rows.forEach(item => {
             html += `
-                <tr class="skill-order-row${extraClass}">
+                <tr class="skill-order-row">
                     <td>${renderSkillOrderSequence(String(item.skill_order))}</td>
                     <td class="number">
                         <div>${formatPercent(item.game_count_percent)}%</div>
@@ -1774,16 +1761,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += '</tbody></table></div>';
 
-        if (rows.length > SKILL_ORDER_VISIBLE_ROWS) {
-            html += `<button type="button" class="show-more-button skill-order-more">더보기 (${rows.length - SKILL_ORDER_VISIBLE_ROWS}개)</button>`;
-        }
-
         return html;
     }
 
     function renderSkillOrderSection(data, element) {
-        const levels = data.levels || {};
-        const tabs = SKILL_LEVEL_TABS.filter(tab => levels[tab.cut] && (levels[tab.cut].data || []).length > 0);
+        const masters = (data && data.masters) || {};
+        const tabs = SKILL_MASTER_TABS.filter(tab => masters[tab.count] && (masters[tab.count].data || []).length > 0);
 
         element.dataset.skillOrderLoaded = 'true';
 
@@ -1792,37 +1775,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        let html = '<div class="skill-level-switch">';
+        let html = '<div class="skill-master-switch">';
         tabs.forEach((tab, index) => {
-            html += `<button type="button" class="skill-level-button${index === 0 ? ' active' : ''}" data-cut="${tab.cut}">${tab.label}</button>`;
+            html += `<button type="button" class="skill-master-button${index === 0 ? ' active' : ''}" data-count="${tab.count}">${tab.label}</button>`;
         });
         html += '</div>';
 
         tabs.forEach((tab, index) => {
-            html += `<div class="skill-order-panel${index === 0 ? ' active' : ''}" data-cut="${tab.cut}">`;
-            html += renderSkillOrderTable(levels[tab.cut], tab.cut);
+            html += `<div class="skill-order-panel${index === 0 ? ' active' : ''}" data-count="${tab.count}">`;
+            html += renderSkillOrderTable(masters[tab.count]);
             html += '</div>';
         });
 
         element.innerHTML = html;
 
-        element.querySelectorAll('.skill-level-button').forEach(button => {
+        element.querySelectorAll('.skill-master-button').forEach(button => {
             button.addEventListener('click', function() {
-                const cut = this.dataset.cut;
-                element.querySelectorAll('.skill-level-button').forEach(b => b.classList.toggle('active', b === this));
+                const count = this.dataset.count;
+                element.querySelectorAll('.skill-master-button').forEach(b => b.classList.toggle('active', b === this));
                 element.querySelectorAll('.skill-order-panel').forEach(panel => {
-                    panel.classList.toggle('active', panel.dataset.cut === cut);
+                    panel.classList.toggle('active', panel.dataset.count === count);
                 });
-            });
-        });
-
-        element.querySelectorAll('.skill-order-more').forEach(button => {
-            button.addEventListener('click', function() {
-                const panel = this.closest('.skill-order-panel');
-                const extraRows = panel.querySelectorAll('.skill-order-extra');
-                const expand = extraRows.length > 0 && extraRows[0].classList.contains('filtered-hidden');
-                extraRows.forEach(row => row.classList.toggle('filtered-hidden', !expand));
-                this.textContent = expand ? '접기' : `더보기 (${extraRows.length}개)`;
             });
         });
     }

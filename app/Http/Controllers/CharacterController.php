@@ -624,7 +624,7 @@ class CharacterController extends Controller
     }
 
     /**
-     * 스킬 순서 통계 (9레벨 / 11레벨 / 14레벨)
+     * 스킬 마스터 순서 통계 (Q/W/E 5레벨, T 2레벨을 어떤 순서로 찍었는지)
      */
     public function getDetailSkillOrders(Request $request, $types)
     {
@@ -640,7 +640,7 @@ class CharacterController extends Controller
         $weaponType = empty($weaponType) ? 'All' : $weaponType;
 
         if (empty($characterName)) {
-            return response()->json(['levels' => []]);
+            return response()->json(['masters' => []]);
         }
 
         $filters = [
@@ -653,18 +653,18 @@ class CharacterController extends Controller
             'min_tier' => $minTier,
         ];
 
-        // v2: 레벨 구간을 9/13/20 -> 9/11/14 로 바꾸면서 이전 형태의 캐시를 버린다
-        $cacheKey = "game_detail_skill_orders_v2_{$types}_{$minTier}_" . $versionParts['cache_key'];
+        // v4: 응답이 2/3/4개 마스터 순서 묶음으로 바뀌어 이전 캐시를 버린다
+        $cacheKey = "game_detail_skill_orders_v4_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);
 
         // 캐시가 없거나 데이터가 비어있으면 새로 조회
-        if (empty($data) || empty($data['levels'])) {
+        if (empty($data) || empty($data['masters'])) {
             $data = (new GameResultSkillOrderSummaryService())->getDetail($filters);
 
             // 데이터가 있을 때만 캐싱
-            if (!empty($data['levels'])) {
+            if (!empty($data['masters'])) {
                 cache()->put($cacheKey, $data, $cacheDuration);
             }
         }

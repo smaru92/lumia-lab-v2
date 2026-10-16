@@ -16,20 +16,33 @@ use Illuminate\Support\Facades\Schema;
  * 같은 슬롯의 변형(1055220 등)은 같은 키로 본다.
  *
  * 1) skill_orders -> skill_builds : 게임 1건을 순서 문자열 1행으로 접는다 (새 행만 증분 반영)
- * 2) skill_builds -> summary      : 9/11/14레벨까지의 순서별로 티어마다 집계한다
+ * 2) skill_builds -> summary      : 게임별 "마스터 순서"로 티어마다 집계한다
+ *
+ * 레벨 단위 순서는 1레벨 차이로 갈라져 의미가 없어서, 어떤 순서로 스킬을 마스터했는지로 묶는다.
+ * 중간에 탈락한 게임도 살리려고 "2개 / 3개 / 4개를 마스터한 순서"를 따로 집계한다.
  */
 class GameResultSkillOrderSummaryService
 {
     use ErDevTrait;
 
-    /**
-     * 몇 레벨까지의 순서로 묶을지
-     * 만렙(20)까지 가는 게임은 약 15%라 생존 편향이 커서, 대부분의 게임이 도달하는 구간까지만 본다.
-     */
-    public const LEVEL_CUTS = [9, 11, 14];
+    /** 스킬별 마스터 레벨 (슬롯 => 레벨). R(5)은 6/11/16 고정이라 순서에서 뺀다 */
+    private const MASTER_LEVELS = [1 => 2, 2 => 5, 3 => 5, 4 => 5];
 
-    /** (캐릭터, 무기, 레벨, 티어)마다 저장할 순서 개수 - 상위 10개로 전체 게임의 75~88%가 덮인다 */
-    private const TOP_N = 30;
+    /**
+     * 몇 개를 마스터한 순서까지 볼지. 요약 테이블의 level_cut 에 이 값을 저장한다.
+     * 순서 문자열은 마스터한 순서대로의 슬롯 N자리 (예: 23 = Q -> W, 2314 = Q -> W -> T -> E)
+     * 4개 마스터는 Q/W/E/T 17포인트 + R 3포인트 = 만렙이라 표본이 크게 줄어든다. (랭크 표본 45명 중 4명)
+     */
+    public const MASTER_COUNTS = [2, 3, 4];
+
+    /** 판정에 쓰는 앞부분 길이 (스킬 포인트는 20레벨까지 20개) */
+    private const BUILD_PREFIX_LENGTH = 20;
+
+    /** 가장 빨리 2개가 마스터되는 경우: Q 5 + T 2 = 7 */
+    private const MIN_BUILD_LENGTH = 7;
+
+    /** (캐릭터, 무기, 마스터 개수, 티어)마다 저장할 순서 개수 */
+    private const TOP_N = 10;
 
     /** skill_orders 를 한 번에 읽을 id 구간 */
     private const SYNC_CHUNK = 500000;
@@ -168,7 +181,7 @@ class GameResultSkillOrderSummaryService
     }
 
     /**
-     * 게임별 순서를 레벨 구간 x 티어 단위로 집계한다.
+     * 게임별 마스터 순서를 티어 단위로 집계한다.
      *
      * 티어는 "mmr_before >= 최소점수" 누적 구간이라, 티어마다 다시 조회하지 않고
      * 점수 구간(band)별로 한 번 집계한 뒤 PHP 에서 위쪽 구간을 누적한다.
@@ -201,8 +214,7 @@ class GameResultSkillOrderSummaryService
         unset($tier);
 
         $weaponTypeCase = $this->gameResultService->getWeaponTypeCaseStatement();
-        $minCut = min(self::LEVEL_CUTS);
-        $maxCut = max(self::LEVEL_CUTS);
+        $prefixLength = self::BUILD_PREFIX_LENGTH;
 
         // (matching_mode, character_id) 인덱스만 훑는다
         $characterIds = DB::table($gameResultTable)->where('matching_mode', 3)->distinct()->pluck('character_id');
@@ -219,7 +231,7 @@ class GameResultSkillOrderSummaryService
                 ->join('equipments as e', 'gr.weapon_id', '=', 'e.id')
                 ->selectRaw("
                     {$weaponTypeCase} AS weapon_type,
-                    LEFT(b.skill_order, {$maxCut}) AS skill_prefix,
+                    LEFT(b.skill_order, {$prefixLength}) AS skill_prefix,
                     {$bandCase} AS band,
                     COUNT(*) AS game_count,
                     SUM(gr.mmr_gain) AS mmr_sum,
@@ -237,22 +249,24 @@ class GameResultSkillOrderSummaryService
                 ->where('gr.matching_mode', 3)
                 ->where('gr.character_id', $character->character_id)
                 ->whereNotNull('e.item_type2')
-                ->whereRaw('CHAR_LENGTH(b.skill_order) >= ?', [$minCut])
+                ->whereRaw('CHAR_LENGTH(b.skill_order) >= ?', [self::MIN_BUILD_LENGTH])
                 ->groupBy('weapon_type', 'skill_prefix', 'band')
                 ->get();
 
-            // [무기][레벨][순서][구간] 누적
+            // [무기][마스터 개수][순서][구간] 누적. N개를 마스터하기 전에 끝난 게임은 그 탭의 모수에서도 뺀다.
+            // 같은 문자열이 무기/구간별로 반복되므로 판정 결과를 재사용한다.
             $bySequence = [];
             $totals = [];
+            $masteredMemo = [];
             foreach ($rows as $row) {
-                $length = strlen($row->skill_prefix);
-                foreach (self::LEVEL_CUTS as $cut) {
-                    if ($length < $cut) {
-                        continue;
+                $mastered = $masteredMemo[$row->skill_prefix] ??= $this->masteredSlots($row->skill_prefix);
+                foreach (self::MASTER_COUNTS as $count) {
+                    if (strlen($mastered) < $count) {
+                        break;
                     }
-                    $sequence = substr($row->skill_prefix, 0, $cut);
-                    $this->addMetrics($bySequence[$row->weapon_type][$cut][$sequence][$row->band], $row);
-                    $totals[$row->weapon_type][$cut][$row->band] = ($totals[$row->weapon_type][$cut][$row->band] ?? 0) + $row->game_count;
+                    $sequence = substr($mastered, 0, $count);
+                    $this->addMetrics($bySequence[$row->weapon_type][$count][$sequence][$row->band], $row);
+                    $totals[$row->weapon_type][$count][$row->band] = ($totals[$row->weapon_type][$count][$row->band] ?? 0) + $row->game_count;
                 }
             }
             unset($rows);
@@ -260,15 +274,15 @@ class GameResultSkillOrderSummaryService
             $insertRows = [];
             $now = now();
             foreach ($tiers as $tier) {
-                foreach ($bySequence as $weaponType => $cuts) {
-                    foreach ($cuts as $cut => $sequences) {
-                        $levelGameCount = 0;
-                        foreach ($totals[$weaponType][$cut] as $band => $count) {
+                foreach ($bySequence as $weaponType => $counts) {
+                    foreach ($counts as $count => $sequences) {
+                        $masteredGameCount = 0;
+                        foreach ($totals[$weaponType][$count] as $band => $games) {
                             if ($band >= $tier['band_from']) {
-                                $levelGameCount += $count;
+                                $masteredGameCount += $games;
                             }
                         }
-                        if ($levelGameCount === 0) {
+                        if ($masteredGameCount === 0) {
                             continue;
                         }
 
@@ -288,7 +302,7 @@ class GameResultSkillOrderSummaryService
                         uasort($merged, fn ($a, $b) => $b['game_count'] <=> $a['game_count']);
 
                         foreach (array_slice($merged, 0, self::TOP_N, true) as $sequence => $m) {
-                            $insertRows[] = $this->buildSummaryRow($character, $weaponType, $cut, (string) $sequence, $tier, $levelGameCount, $m, $now);
+                            $insertRows[] = $this->buildSummaryRow($character, $weaponType, $count, (string) $sequence, $tier, $masteredGameCount, $m, $now);
                         }
                     }
                 }
@@ -312,6 +326,37 @@ class GameResultSkillOrderSummaryService
         DB::table($summaryTable)->whereNotIn('character_id', $processedCharacterIds)->delete();
 
         Log::channel($this->logChannel)->info("Inserted {$totalInserted} records into {$summaryTable}");
+    }
+
+    /**
+     * 레벨순 스킬 슬롯 문자열 -> 마스터한 순서대로의 슬롯 (예: "231" = Q -> W -> T 까지 마스터)
+     *
+     * 마스터 = Q/W/E 5레벨, T 2레벨. R 은 레벨이 고정이라 무시한다.
+     * 변형 슬롯(6~9)은 원래 키(Q/W/E/R)에 합산한다.
+     *
+     * @return string 마스터한 스킬이 없으면 ''
+     */
+    private function masteredSlots(string $build): string
+    {
+        $levels = array_fill_keys(array_keys(self::MASTER_LEVELS), 0);
+        $mastered = '';
+
+        foreach (str_split($build) as $char) {
+            $slot = (int) $char;
+            if ($slot >= 6) {
+                $slot -= 4;
+            }
+            if (!isset(self::MASTER_LEVELS[$slot])) {
+                continue;
+            }
+
+            // 마스터 레벨에 "도달하는 순간" 한 번만 기록한다 (변형 합산으로 넘어가도 중복 기록하지 않는다)
+            if (++$levels[$slot] === self::MASTER_LEVELS[$slot]) {
+                $mastered .= $slot;
+            }
+        }
+
+        return $mastered;
     }
 
     /**
@@ -367,9 +412,9 @@ class GameResultSkillOrderSummaryService
     }
 
     /**
-     * 캐릭터 상세 - 레벨 구간별 스킬 순서 통계
+     * 캐릭터 상세 - 스킬 마스터 순서 통계
      *
-     * @return array ['levels' => [9 => ['total' => 게임수, 'data' => [...]], 11 => ..., 14 => ...]]
+     * @return array ['masters' => [2 => ['total' => 2개 이상 마스터한 게임수, 'data' => [...]], 3 => ..., 4 => ...]]
      */
     public function getDetail(array $filters): array
     {
@@ -382,37 +427,89 @@ class GameResultSkillOrderSummaryService
         $tableName = VersionedGameTableManager::getTableName('game_results_skill_order_summary', $versionFilters);
 
         if (!Schema::hasTable($tableName)) {
-            return ['levels' => []];
+            return ['masters' => []];
         }
 
         $query = DB::table($tableName)
             ->where('character_name', $filters['character_name'])
-            ->where('min_tier', $filters['min_tier']);
+            ->where('min_tier', $filters['min_tier'])
+            ->whereIn('level_cut', self::MASTER_COUNTS);
 
         $weaponType = $this->replaceWeaponType($filters['weapon_type'] ?? 'All', 'en');
         if ($weaponType !== 'All') {
             $query->where('weapon_type', $weaponType);
         }
 
-        $rows = $query->whereIn('level_cut', self::LEVEL_CUTS)
-            ->orderBy('level_cut')->orderByDesc('game_count')->get();
+        $masters = [];
+        foreach ($query->get()->groupBy('level_cut') as $count => $rows) {
+            $masters[(int) $count] = $this->mergeDetailRows($rows);
+        }
+        ksort($masters);
 
-        $levels = [];
+        return ['masters' => $masters];
+    }
+
+    /**
+     * 무기 구분 없이 조회하면 같은 순서가 무기별로 따로 오므로 순서 단위로 합친다
+     *
+     * @return array ['total' => 모수, 'data' => 사용수 상위 TOP_N]
+     */
+    private function mergeDetailRows($rows): array
+    {
+        $total = 0;
+        $countedWeapons = [];
+        $merged = [];
         foreach ($rows as $row) {
-            $cut = (int) $row->level_cut;
-            $levels[$cut] ??= ['total' => 0, 'data' => [], 'weapons' => []];
-            // 무기 구분 없이 조회하면 무기별 모수를 한 번씩만 더한다
-            if (!isset($levels[$cut]['weapons'][$row->weapon_type])) {
-                $levels[$cut]['weapons'][$row->weapon_type] = true;
-                $levels[$cut]['total'] += (int) $row->level_game_count;
+            if (!isset($countedWeapons[$row->weapon_type])) {
+                $countedWeapons[$row->weapon_type] = true;
+                $total += (int) $row->level_game_count;
             }
-            $levels[$cut]['data'][] = $row;
-        }
-        foreach ($levels as &$level) {
-            unset($level['weapons']);
-        }
-        unset($level);
 
-        return ['levels' => $levels];
+            $m = &$merged[$row->skill_order];
+            $m ??= [
+                'game_count' => 0, 'positive_game_count' => 0, 'negative_game_count' => 0,
+                'top1_count' => 0, 'top2_count' => 0, 'top4_count' => 0,
+                'mmr_sum' => 0, 'pos_sum' => 0, 'neg_sum' => 0, 'tk_sum' => 0,
+            ];
+            $m['game_count'] += $row->game_count;
+            $m['positive_game_count'] += $row->positive_game_count;
+            $m['negative_game_count'] += $row->negative_game_count;
+            $m['top1_count'] += $row->top1_count;
+            $m['top2_count'] += $row->top2_count;
+            $m['top4_count'] += $row->top4_count;
+            $m['mmr_sum'] += $row->avg_mmr_gain * $row->game_count;
+            $m['pos_sum'] += $row->positive_avg_mmr_gain * $row->positive_game_count;
+            $m['neg_sum'] += $row->negative_avg_mmr_gain * $row->negative_game_count;
+            $m['tk_sum'] += ($row->avg_team_kill_score ?? 0) * $row->game_count;
+            unset($m);
+        }
+
+        $percent = fn ($count, $base) => $base ? round($count / $base * 100, 2) : 0;
+        $data = [];
+        foreach ($merged as $sequence => $m) {
+            $n = $m['game_count'];
+            $data[] = [
+                'skill_order' => (string) $sequence,
+                'game_count' => $n,
+                'game_count_percent' => $percent($n, $total),
+                'top1_count' => $m['top1_count'],
+                'top2_count' => $m['top2_count'],
+                'top4_count' => $m['top4_count'],
+                'top1_count_percent' => $percent($m['top1_count'], $n),
+                'top2_count_percent' => $percent($m['top2_count'], $n),
+                'top4_count_percent' => $percent($m['top4_count'], $n),
+                'endgame_win_percent' => $percent($m['top1_count'], $m['top2_count']),
+                'avg_mmr_gain' => $n ? round($m['mmr_sum'] / $n, 1) : 0,
+                'avg_team_kill_score' => $n ? round($m['tk_sum'] / $n, 2) : 0,
+                'positive_game_count_percent' => $percent($m['positive_game_count'], $n),
+                'negative_game_count_percent' => $percent($m['negative_game_count'], $n),
+                'positive_avg_mmr_gain' => $m['positive_game_count'] ? round($m['pos_sum'] / $m['positive_game_count'], 1) : 0,
+                'negative_avg_mmr_gain' => $m['negative_game_count'] ? round($m['neg_sum'] / $m['negative_game_count'], 1) : 0,
+            ];
+        }
+
+        usort($data, fn ($a, $b) => $b['game_count'] <=> $a['game_count']);
+
+        return ['total' => $total, 'data' => array_slice($data, 0, self::TOP_N)];
     }
 }

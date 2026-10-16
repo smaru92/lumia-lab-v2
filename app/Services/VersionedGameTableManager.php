@@ -414,11 +414,11 @@ class VersionedGameTableManager
                 $table->integer('character_id');
                 $table->string('character_name');
                 $table->string('weapon_type', 50);
-                $table->unsignedTinyInteger('level_cut')->comment('몇 레벨까지의 순서인지 (9 / 13 / 20)');
-                $table->string('skill_order', 30)->comment('레벨순 스킬 슬롯 (1:T 2:Q 3:W 4:E 5:R, 6~9:변형)');
+                $table->unsignedTinyInteger('level_cut')->comment('몇 개를 마스터한 순서인지 (2 / 3 / 4)');
+                $table->string('skill_order', 30)->comment('마스터한 순서대로의 슬롯 (1:T 2:Q 3:W 4:E, 예: 231)');
                 $table->string('min_tier', 50);
                 $table->integer('min_score');
-                $table->integer('level_game_count')->comment('해당 레벨까지 스킬을 찍은 전체 게임 수');
+                $table->integer('level_game_count')->comment('해당 개수 이상 마스터한 전체 게임 수');
                 $table->integer('game_count');
                 $table->integer('positive_game_count');
                 $table->integer('negative_game_count');

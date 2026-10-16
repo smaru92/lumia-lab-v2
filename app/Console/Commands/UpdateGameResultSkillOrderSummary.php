@@ -10,7 +10,7 @@ class UpdateGameResultSkillOrderSummary extends Command
     protected $signature = 'update:game-results-skill-order-summary {version_season?} {version_major?} {version_minor?} {version_hotfix?}
                             {--rebuild : 게임별 스킬 순서 테이블을 비우고 처음부터 다시 만든다}';
 
-    protected $description = '캐릭터별 스킬 순서(9/11/14레벨) 통계 데이터를 갱신합니다.';
+    protected $description = '캐릭터별 스킬 마스터 순서 통계 데이터를 갱신합니다.';
 
     public function handle(GameResultSkillOrderSummaryService $service)
     {

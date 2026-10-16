@@ -171,7 +171,7 @@
 | `update:game-results-trait-summary` | 2시간마다 | 짝수시 50분 | 캐릭터별/특성/순위별 데이터 |
 | `update:game-results-equipment-summary` | 2시간마다 | 홀수시 10분 | 캐릭터별/장비별 데이터 |
 | `update:game-result-trait-combination-summary` | 2시간마다 | 홀수시 30분 | 캐릭터별/특성조합별 데이터 |
-| `update:game-results-skill-order-summary` | 2시간마다 | 홀수시 40분 | 캐릭터별/스킬순서(9·11·14레벨)별 데이터 |
+| `update:game-results-skill-order-summary` | 2시간마다 | 홀수시 40분 | 캐릭터별/스킬 마스터 순서별 데이터 |
 | `fetch:character-skills` | 매일 | 04:35 | 캐릭터 스킬 이름/설명 (l10n) |
 
 **중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
@@ -317,9 +317,15 @@
 
 ## 최근 변경사항 (2026-09-11)
 
-### 1. 스킬 순서 통계
-- **화면**: 캐릭터 상세 → 순위 통계 탭 옆 "스킬 순서" 탭 (탭 클릭 시 로드). 9레벨 / 11레벨 / 14레벨 전환
-  - 처음엔 9/13/20 이었으나 20레벨(만렙)은 생존 편향이 커서 9/11/14 로 바꿨다 (2026-10-16)
+### 1. 스킬 순서 통계 (→ 2026-10-16 "마스터 순서"로 변경)
+- **화면**: 캐릭터 상세 → 순위 통계 탭 옆 "스킬 순서" 탭 (탭 클릭 시 로드).
+  "2개 마스터 / 3개 마스터 / 4개 마스터" 탭, 각 탭은 사용수 상위 10개 (예: Q › W › T)
+  - 처음엔 9/13/20레벨까지의 레벨 단위 순서였는데, 1레벨 차이로 갈라져 의미가 없어서 마스터 순서로 바꿨다
+- **마스터 판정** (`GameResultSkillOrderSummaryService::masteredSlots()`)
+  - 마스터 = Q/W/E 5레벨, T 2레벨. R 은 6/11/16 고정이라 제외. 변형 슬롯(6~9)은 원래 키에 합산
+  - N개 탭 = 실제로 N개 이상 마스터한 게임만, 앞의 N개 순서로 묶는다 (중간 탈락 게임도 2개 탭에는 남는다)
+  - 랭크 표본 45명 기준: 2개 44명 / 3개 32명 / 4개 4명. 4개는 Q/W/E/T 17포인트 + R 3 = 만렙이라 표본이 매우 적다
+  - 요약 테이블에는 `level_cut` = 마스터 개수(2/3/4), `skill_order` = 슬롯 N자리(`231` = Q W T)로 저장한다
 - **API**: `GET /api/detail/{types}/skill-orders`
 - **명령어**: `update:game-results-skill-order-summary {season?} {major?} {minor?} {hotfix?} [--rebuild]`
 - **서비스**: `GameResultSkillOrderSummaryService`
@@ -333,13 +339,14 @@
        매번 훑지 않도록 PK 구간으로 새 행만 읽고, `last_skill_order_id` 최댓값을 커서로 쓴다
      - 구간 경계에 걸친 게임은 나머지 행까지 끌어오고, 그래도 쪼개지면 `ON DUPLICATE KEY` 로 이어 붙인다
      - 스킬 행이 옮겨지거나 지워져 순서가 꼬였다면 `--rebuild` 로 다시 만든다
-  2. `game_results_skill_order_summary_v*` : 캐릭터 x 무기 x `level_cut`(9/11/14) x 티어, **상위 30개만** 저장
-     - 티어마다 다시 조회하지 않고 점수 구간(band)별로 캐릭터당 1번 조회 후 PHP 에서 누적
+  2. `game_results_skill_order_summary_v*` : 캐릭터 x 무기 x 마스터 개수(2/3/4) x 순서 x 티어, **사용수 상위 10개만** 저장 (화면도 10개만 표시, 더보기 없음)
+     - 티어마다 다시 조회하지 않고 점수 구간(band)별로 캐릭터당 1번 조회 후 PHP 에서 판정·누적
      - 캐릭터 단위로 삭제/삽입하므로 집계 중에도 화면이 비지 않는다
-- **집계 기준**: 해당 레벨까지 스킬을 찍은 게임만 포함 (`level_game_count` = 그 모수, 픽률의 분모)
-  - 14레벨도 그 전에 탈락한 게임이 빠져 약간의 생존 편향이 있다. 화면에 안내 문구 표시
-- **반응형**: PC 는 한 줄, 1024px 이하는 10레벨씩 두 줄(14레벨 = 10 + 4). 순서 칸은 `width` 고정
-  (max-width 로 두면 표가 칸을 최소폭으로 줄여 5레벨씩 네 줄이 된다)
+     - 무기 전체로 조회하면 같은 순서를 무기 간에 합쳐서(게임수 가중) 다시 상위 10개를 고른다
+- **집계 기준**: 탭마다 N개 이상 마스터한 게임만 포함 (`level_game_count` = 그 모수, 픽률의 분모)
+  - 개수가 늘수록 오래 생존한 게임만 남아 성적이 높게 나온다 (화면 안내 문구는 두지 않는다)
+- **반응형**: 최대 4칸 + 화살표라 모든 화면에서 한 줄. 1024px 이하 18px, 599px 이하 16px 칸.
+  모바일은 탭 3개를 가로 폭에 꽉 채운다
 
 ### 알려진 이슈
 - `InfoController::getTraits()` (`/api/trait`), `getItems()` (`/api/item`)가 `getCharacters()` 복사본 상태라 `v2/data/Character`를 호출해 `characters` 테이블에 upsert한다. `traits` 테이블은 갱신되지 않음
