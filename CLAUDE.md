@@ -33,7 +33,9 @@
 
 - **traits**: 특성 정보
 - **tactical_skills**: 전술 스킬 정보
-- **character_skills**: 캐릭터 스킬 정보
+- **character_skills**: 캐릭터 스킬 이름/설명 (id = 전적의 skill_id, `character_id`, `slot`)
+  - 공식 API 에 스킬 테이블이 없어 l10n 언어 데이터(`Skill/Group/Name|Desc/{skillId}`)에서 가져온다
+  - `php artisan fetch:character-skills` (매일 04:35 자동, `/api/skill` 도 같은 동작)
 
 #### 3. 통계/요약 테이블
 - **game_results_summary**: 게임 결과 요약
@@ -169,7 +171,8 @@
 | `update:game-results-trait-summary` | 2시간마다 | 짝수시 50분 | 캐릭터별/특성/순위별 데이터 |
 | `update:game-results-equipment-summary` | 2시간마다 | 홀수시 10분 | 캐릭터별/장비별 데이터 |
 | `update:game-result-trait-combination-summary` | 2시간마다 | 홀수시 30분 | 캐릭터별/특성조합별 데이터 |
-| `update:game-results-skill-order-summary` | 2시간마다 | 홀수시 40분 | 캐릭터별/스킬순서(9·13·20레벨)별 데이터 |
+| `update:game-results-skill-order-summary` | 2시간마다 | 홀수시 40분 | 캐릭터별/스킬순서(9·11·14레벨)별 데이터 |
+| `fetch:character-skills` | 매일 | 04:35 | 캐릭터 스킬 이름/설명 (l10n) |
 
 **중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
 
@@ -315,7 +318,8 @@
 ## 최근 변경사항 (2026-09-11)
 
 ### 1. 스킬 순서 통계
-- **화면**: 캐릭터 상세 → 순위 통계 탭 옆 "스킬 순서" 탭 (탭 클릭 시 로드). 9레벨 / 13레벨 / 전체(20레벨) 전환
+- **화면**: 캐릭터 상세 → 순위 통계 탭 옆 "스킬 순서" 탭 (탭 클릭 시 로드). 9레벨 / 11레벨 / 14레벨 전환
+  - 처음엔 9/13/20 이었으나 20레벨(만렙)은 생존 편향이 커서 9/11/14 로 바꿨다 (2026-10-16)
 - **API**: `GET /api/detail/{types}/skill-orders`
 - **명령어**: `update:game-results-skill-order-summary {season?} {major?} {minor?} {hotfix?} [--rebuild]`
 - **서비스**: `GameResultSkillOrderSummaryService`
@@ -329,13 +333,13 @@
        매번 훑지 않도록 PK 구간으로 새 행만 읽고, `last_skill_order_id` 최댓값을 커서로 쓴다
      - 구간 경계에 걸친 게임은 나머지 행까지 끌어오고, 그래도 쪼개지면 `ON DUPLICATE KEY` 로 이어 붙인다
      - 스킬 행이 옮겨지거나 지워져 순서가 꼬였다면 `--rebuild` 로 다시 만든다
-  2. `game_results_skill_order_summary_v*` : 캐릭터 x 무기 x `level_cut`(9/13/20) x 티어, **상위 30개만** 저장
+  2. `game_results_skill_order_summary_v*` : 캐릭터 x 무기 x `level_cut`(9/11/14) x 티어, **상위 30개만** 저장
      - 티어마다 다시 조회하지 않고 점수 구간(band)별로 캐릭터당 1번 조회 후 PHP 에서 누적
      - 캐릭터 단위로 삭제/삽입하므로 집계 중에도 화면이 비지 않는다
 - **집계 기준**: 해당 레벨까지 스킬을 찍은 게임만 포함 (`level_game_count` = 그 모수, 픽률의 분모)
-  - 전체(20레벨)는 만렙까지 간 게임(약 15%)만이라 생존 편향이 있다. 화면에 안내 문구 표시
-- **반응형**: PC 는 한 줄, 1024px 이하는 10레벨씩 두 줄. 순서 칸은 `width` 고정
+  - 14레벨도 그 전에 탈락한 게임이 빠져 약간의 생존 편향이 있다. 화면에 안내 문구 표시
+- **반응형**: PC 는 한 줄, 1024px 이하는 10레벨씩 두 줄(14레벨 = 10 + 4). 순서 칸은 `width` 고정
   (max-width 로 두면 표가 칸을 최소폭으로 줄여 5레벨씩 네 줄이 된다)
 
 ### 알려진 이슈
-- `InfoController::getTraits()` (`/api/trait`)가 `getCharacters()` 복사본 상태라 `v2/data/Character`를 호출해 `characters` 테이블에 upsert한다. `traits` 테이블은 갱신되지 않음
+- `InfoController::getTraits()` (`/api/trait`), `getItems()` (`/api/item`)가 `getCharacters()` 복사본 상태라 `v2/data/Character`를 호출해 `characters` 테이블에 upsert한다. `traits` 테이블은 갱신되지 않음

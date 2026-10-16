@@ -16,14 +16,17 @@ use Illuminate\Support\Facades\Schema;
  * 같은 슬롯의 변형(1055220 등)은 같은 키로 본다.
  *
  * 1) skill_orders -> skill_builds : 게임 1건을 순서 문자열 1행으로 접는다 (새 행만 증분 반영)
- * 2) skill_builds -> summary      : 9/13/20레벨까지의 순서별로 티어마다 집계한다
+ * 2) skill_builds -> summary      : 9/11/14레벨까지의 순서별로 티어마다 집계한다
  */
 class GameResultSkillOrderSummaryService
 {
     use ErDevTrait;
 
-    /** 몇 레벨까지의 순서로 묶을지. 20 = 만렙(전체) */
-    public const LEVEL_CUTS = [9, 13, 20];
+    /**
+     * 몇 레벨까지의 순서로 묶을지
+     * 만렙(20)까지 가는 게임은 약 15%라 생존 편향이 커서, 대부분의 게임이 도달하는 구간까지만 본다.
+     */
+    public const LEVEL_CUTS = [9, 11, 14];
 
     /** (캐릭터, 무기, 레벨, 티어)마다 저장할 순서 개수 - 상위 10개로 전체 게임의 75~88%가 덮인다 */
     private const TOP_N = 30;
@@ -366,7 +369,7 @@ class GameResultSkillOrderSummaryService
     /**
      * 캐릭터 상세 - 레벨 구간별 스킬 순서 통계
      *
-     * @return array ['levels' => [9 => ['total' => 게임수, 'data' => [...]], 13 => ..., 20 => ...]]
+     * @return array ['levels' => [9 => ['total' => 게임수, 'data' => [...]], 11 => ..., 14 => ...]]
      */
     public function getDetail(array $filters): array
     {
@@ -391,7 +394,8 @@ class GameResultSkillOrderSummaryService
             $query->where('weapon_type', $weaponType);
         }
 
-        $rows = $query->orderBy('level_cut')->orderByDesc('game_count')->get();
+        $rows = $query->whereIn('level_cut', self::LEVEL_CUTS)
+            ->orderBy('level_cut')->orderByDesc('game_count')->get();
 
         $levels = [];
         foreach ($rows as $row) {

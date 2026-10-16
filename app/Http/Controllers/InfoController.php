@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Character;
 use App\Models\Equipment;
+use App\Services\CharacterSkillSyncService;
 use App\Traits\ErDevTrait;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
@@ -246,40 +247,14 @@ class InfoController
 
         return response()->json(['msg' => '완료']);
     }
-    public function getSkills(Request $request)
+    /**
+     * 캐릭터 스킬 이름/설명 (공식 API 에 스킬 테이블이 없어 언어 데이터에서 가져온다)
+     */
+    public function getSkills(Request $request, CharacterSkillSyncService $service)
     {
-        $data = $this->fetchFromErApi('v2/data/Character');
-        $data = $data['data'];
+        $result = $service->sync();
 
-        $upsertData = [];
-        $columns = $this->getColumns('characters');
-
-        foreach ($data as $character) {
-            $row = [];
-            foreach($character as $key => $item) {
-                $column = Str::snake($key);
-                if ($column == 'code') {
-                    $column = 'id';
-                }
-                if (in_array($column, $columns)) {
-                    $row[$column] = $item;
-                }
-            }
-            $upsertData[] = $row;
-        }
-
-        // name 컬럼을 제외한 업데이트 컬럼 목록
-        $updateColumns = array_filter($columns, function($column) {
-            return $column !== 'name' && $column !== 'id';
-        });
-
-        Character::upsert(
-            $upsertData,
-            ['id'], // unique key
-            $updateColumns // name 제외한 업데이트 컬럼
-        );
-
-        return response()->json(['msg' => '완료']);
+        return response()->json(['msg' => '완료'] + $result);
     }
     public function getTraits(Request $request)
     {

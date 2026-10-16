@@ -624,7 +624,7 @@ class CharacterController extends Controller
     }
 
     /**
-     * 스킬 순서 통계 (9레벨 / 13레벨 / 전체(20레벨))
+     * 스킬 순서 통계 (9레벨 / 11레벨 / 14레벨)
      */
     public function getDetailSkillOrders(Request $request, $types)
     {
@@ -653,7 +653,8 @@ class CharacterController extends Controller
             'min_tier' => $minTier,
         ];
 
-        $cacheKey = "game_detail_skill_orders_{$types}_{$minTier}_" . $versionParts['cache_key'];
+        // v2: 레벨 구간을 9/13/20 -> 9/11/14 로 바꾸면서 이전 형태의 캐시를 버린다
+        $cacheKey = "game_detail_skill_orders_v2_{$types}_{$minTier}_" . $versionParts['cache_key'];
         $cacheDuration = config('erDev.cacheDuration');
 
         $data = cache()->get($cacheKey);

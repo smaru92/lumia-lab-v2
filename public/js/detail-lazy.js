@@ -1673,8 +1673,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const SKILL_SLOT_KEYS = { 1: 'T', 2: 'Q', 3: 'W', 4: 'E', 5: 'R', 6: 'Q', 7: 'W', 8: 'E', 9: 'R' };
     const SKILL_LEVEL_TABS = [
         { cut: 9, label: '9레벨' },
-        { cut: 13, label: '13레벨' },
-        { cut: 20, label: '전체(20레벨)' },
+        { cut: 11, label: '11레벨' },
+        { cut: 14, label: '14레벨' },
     ];
     const SKILL_ORDER_VISIBLE_ROWS = 10;
 
@@ -1713,8 +1713,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = `
             <p class="skill-order-note">
-                ${cut === 20 ? '20레벨(만렙)' : cut + '레벨'}까지 스킬을 찍은 ${formatNumber(level.total)}게임 기준
-                ${cut === 20 ? '<br>끝까지 생존한 게임 위주라 다른 구간보다 성적이 높게 나옵니다.' : ''}
+                ${cut}레벨까지 스킬을 찍은 ${formatNumber(level.total)}게임 기준
+                ${cut === 14 ? '<br>14레벨 전에 탈락한 게임은 빠지므로 다른 구간보다 성적이 조금 높게 나옵니다.' : ''}
             </p>
         `;
         html += '<div class="table-wrapper"><table class="sortable-table skill-order-table">';

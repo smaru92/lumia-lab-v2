@@ -46,6 +46,9 @@ class Kernel extends ConsoleKernel
             }
         })->dailyAt('04:05')->name('snapshot-summary-daily')->withoutOverlapping(60);
 
+        // 캐릭터 스킬 이름/설명 (l10n 파일 1개 다운로드라 가볍다. 신규 캐릭터/스킬 변경 반영용)
+        $schedule->command('fetch:character-skills')->dailyAt('04:35')->withoutOverlapping(10)->runInBackground();
+
         // 나머지 명령어들 - 2시간마다, 서로 최소 10분 이상 간격으로 분산
         // 전술스킬 데이터 - 짝수 시간 10분
         $schedule->command('update:game-results-tactical-skill-summary')->cron('10 */2 * * *')->withoutOverlapping(10)->runInBackground();
@@ -63,6 +66,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('update:game-results-synergy-summary')->cron('20 1-23/2 * * *')->withoutOverlapping(30)->runInBackground();
         // 캐릭터별/특성조합별 데이터 - 홀수 시간 30분
         $schedule->command('update:game-result-trait-combination-summary')->cron('30 1-23/2 * * *')->withoutOverlapping(30)->runInBackground();
+        // 캐릭터별/스킬순서(9·11·14레벨)별 데이터 - 홀수 시간 40분
+        // 소요 시간 실측 전이라 만료를 넉넉히 잡았다. 실측 후 다른 명령처럼 x3 기준으로 조정할 것.
+        // (중복 실행되면 skill_builds 의 ON DUPLICATE 이어붙이기가 같은 구간을 두 번 붙일 수 있다)
+        $schedule->command('update:game-results-skill-order-summary')->cron('40 1-23/2 * * *')->withoutOverlapping(90)->runInBackground();
         // 특성 메인 데이터 - 홀수 시간 50분
         $schedule->command('update:game-results-trait-main-summary')->cron('50 1-23/2 * * *')->withoutOverlapping(20)->runInBackground();
     }
