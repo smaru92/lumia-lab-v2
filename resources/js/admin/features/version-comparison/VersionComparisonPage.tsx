@@ -21,6 +21,7 @@ interface Metrics {
     meta_score: number;
     meta_tier: string | null;
     top1_count_percent: number;
+    top2_count_percent: number;
     top4_count_percent: number;
     avg_mmr_gain: number;
     avg_team_kill_score: number;
@@ -93,6 +94,7 @@ const COLUMNS: { key: MetricKey; label: string; digits: number; suffix?: string 
     { key: 'meta_score', label: '메타점수', digits: 2 },
     { key: 'game_count_percent', label: '픽률', digits: 2, suffix: '%' },
     { key: 'top1_count_percent', label: '승률', digits: 2, suffix: '%' },
+    { key: 'top2_count_percent', label: 'TOP2율', digits: 2, suffix: '%' },
     { key: 'top4_count_percent', label: 'TOP4율', digits: 2, suffix: '%' },
     { key: 'avg_mmr_gain', label: '평균획득', digits: 2 },
     { key: 'avg_team_kill_score', label: '평균TK', digits: 2 },
@@ -447,7 +449,7 @@ export default function VersionComparisonPage() {
             )}
 
             <div className="overflow-x-auto rounded-md border border-[hsl(var(--border))]">
-                <table className="w-full min-w-[1200px] text-sm">
+                <table className="w-full min-w-[1360px] text-sm">
                     <thead>
                         <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
                             <th rowSpan={2} className="px-3 py-2 text-left">캐릭터</th>

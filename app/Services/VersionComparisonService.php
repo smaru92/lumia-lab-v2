@@ -52,6 +52,7 @@ class VersionComparisonService
     private const WEIGHTED_METRICS = [
         'meta_score',
         'top1_count_percent',
+        'top2_count_percent',
         'top4_count_percent',
         'avg_mmr_gain',
         'avg_team_kill_score',
@@ -70,7 +71,8 @@ class VersionComparisonService
     public function compare(array $filters): array
     {
         // 관리자 전용이라 호출이 드물다. 요약 테이블 자체가 2시간 주기라 짧게 잡아도 충분하다.
-        $cacheKey = 'version_comparison_' . md5(json_encode($filters));
+        // 응답 항목이 바뀌면 접두어를 올려 이전 형태의 캐시를 버린다 (v2: TOP2율 추가)
+        $cacheKey = 'version_comparison_v2_' . md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 600, fn () => $this->queryCompare($filters));
     }
@@ -191,7 +193,7 @@ class VersionComparisonService
         $select = [];
         foreach ([
             'character_id', 'character_name', 'weapon_type', 'meta_score', 'meta_tier',
-            'game_count', 'game_count_percent', 'top1_count_percent', 'top4_count_percent',
+            'game_count', 'game_count_percent', 'top1_count_percent', 'top2_count_percent', 'top4_count_percent',
             'avg_mmr_gain', 'avg_team_kill_score',
         ] as $column) {
             $select[] = in_array($column, $columns, true)
@@ -220,7 +222,7 @@ class VersionComparisonService
      * 집계 단위로 묶기
      *
      * 캐릭터 합산 모드에서는 게임수 가중평균을 쓴다.
-     * (승률/TOP4율/평균획득은 가중평균이 곧 전체 합산값과 같다. meta_score 만 근사치)
+     * (승률/TOP2율/TOP4율/평균획득은 가중평균이 곧 전체 합산값과 같다. meta_score 만 근사치)
      */
     private function groupRows($rows, string $groupBy): array
     {
@@ -306,6 +308,7 @@ class VersionComparisonService
             'meta_score' => round($group['meta_score'], 2),
             'meta_tier' => $group['meta_tier'],
             'top1_count_percent' => round($group['top1_count_percent'], 2),
+            'top2_count_percent' => round($group['top2_count_percent'], 2),
             'top4_count_percent' => round($group['top4_count_percent'], 2),
             'avg_mmr_gain' => round($group['avg_mmr_gain'], 2),
             'avg_team_kill_score' => round($group['avg_team_kill_score'], 2),
