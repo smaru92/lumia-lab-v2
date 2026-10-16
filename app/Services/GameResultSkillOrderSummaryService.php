@@ -25,8 +25,37 @@ class GameResultSkillOrderSummaryService
 {
     use ErDevTrait;
 
-    /** 스킬별 마스터 레벨 (슬롯 => 레벨). R(5)은 6/11/16 고정이라 순서에서 뺀다 */
+    /**
+     * 기본 마스터 레벨 (슬롯 => 기록상 포인트 수). R(5)은 6/11/16 고정이라 순서에서 뺀다.
+     *
+     * 캐릭터마다 다를 수 있어서 실제 집계에는 detectMasterLevels() 결과를 쓴다.
+     * 시작할 때 자동으로 찍히는 스킬(Character.strUsePointLearnStartSkill, 예: 아드리아나 E)은
+     * 그 1포인트가 전적의 스킬 순서와 최종 스킬 레벨 양쪽에서 빠져 있어 기록상 4가 최대다.
+     * (자히르 W, 리오·칼라 Q, 아드리아나·제니·데비&마를렌·유민 E. 셀린은 Q 4 / T 1)
+     */
     private const MASTER_LEVELS = [1 => 2, 2 => 5, 3 => 5, 4 => 5];
+
+    /** 로그 표시용 슬롯 이름 */
+    private const SLOT_KEYS = [1 => 'T', 2 => 'Q', 3 => 'W', 4 => 'E'];
+
+    /**
+     * 만렙 게임의 기록상 스킬 포인트 수. 보통 20이고, 자동 습득 스킬이 있는 캐릭터는 19다.
+     * 이 범위에서 긴 쪽부터 만렙 게임이 충분한 길이를 찾는다.
+     */
+    private const MAX_LEVEL_POINTS = [20, 19, 18];
+
+    /** 캐릭터별 마스터 레벨을 정할 때 필요한 최소 만렙 게임 수 (미달이면 기본값) */
+    private const MIN_MAX_LEVEL_GAMES = 10;
+
+    /** 진짜 만렙 길이라면 슬롯별 포인트 조합이 사실상 하나로 모인다 */
+    private const MIN_SIGNATURE_SHARE = 0.8;
+
+    /**
+     * 더 긴 길이의 게임이 이 비율보다 많으면 그 길이는 만렙이 아니다.
+     * 일반 캐릭터는 만렙 직전(19포인트)에 모자란 스킬이 대체로 같아서 조합만으로는 구분이 안 되므로,
+     * "20포인트 게임이 거의 없을 때만" 19를 만렙으로 본다. (아드리아나 등은 20포인트 게임이 아예 없다)
+     */
+    private const MAX_LONGER_RATIO = 0.05;
 
     /**
      * 몇 개를 마스터한 순서까지 볼지. 요약 테이블의 level_cut 에 이 값을 저장한다.
@@ -258,8 +287,9 @@ class GameResultSkillOrderSummaryService
             $bySequence = [];
             $totals = [];
             $masteredMemo = [];
+            $masterLevels = $this->detectMasterLevels($rows);
             foreach ($rows as $row) {
-                $mastered = $masteredMemo[$row->skill_prefix] ??= $this->masteredSlots($row->skill_prefix);
+                $mastered = $masteredMemo[$row->skill_prefix] ??= $this->masteredSlots($row->skill_prefix, $masterLevels);
                 foreach (self::MASTER_COUNTS as $count) {
                     if (strlen($mastered) < $count) {
                         break;
@@ -319,7 +349,8 @@ class GameResultSkillOrderSummaryService
 
             $processedCharacterIds[] = $character->character_id;
             $totalInserted += count($insertRows);
-            echo "skill order summary : {$character->name} " . count($insertRows) . " rows\n";
+            $levelsText = implode(' ', array_map(fn ($slot, $level) => self::SLOT_KEYS[$slot] . $level, array_keys($masterLevels), $masterLevels));
+            echo "skill order summary : {$character->name} [{$levelsText}] " . count($insertRows) . " rows\n";
         }
 
         // 이번 버전에서 사라진 캐릭터 정리
@@ -329,16 +360,88 @@ class GameResultSkillOrderSummaryService
     }
 
     /**
+     * 캐릭터의 슬롯별 마스터 레벨(기록상 포인트 수)을 만렙 게임에서 찾는다.
+     *
+     * 만렙까지 찍은 게임은 모든 스킬이 최대치이므로, 그 게임의 슬롯별 포인트 수가 곧 마스터 레벨이다.
+     * 만렙의 기록상 길이가 캐릭터마다 달라서(자동 습득 스킬이 있으면 19) 긴 길이부터 내려가며
+     * 게임이 충분히 모인 길이를 쓴다. 이상치를 피하려고 그 안에서 게임수 기준 최빈값을 쓴다.
+     * 만렙 게임이 적으면(신규 캐릭터 등) 기본값을 쓴다.
+     *
+     * @param iterable $rows skill_prefix(앞 20자리), game_count 를 가진 집계 행
+     * @return array<int,int> [슬롯 => 마스터 레벨]
+     */
+    private function detectMasterLevels(iterable $rows): array
+    {
+        // [길이][슬롯별 포인트 시그니처] => 게임수
+        $signatures = [];
+        foreach ($rows as $row) {
+            $length = strlen($row->skill_prefix);
+            if (!in_array($length, self::MAX_LEVEL_POINTS, true)) {
+                continue;
+            }
+
+            $points = $this->countPoints($row->skill_prefix);
+            $signature = implode(',', array_map(fn ($slot) => $points[$slot] ?? 0, array_keys(self::MASTER_LEVELS)));
+            $signatures[$length][$signature] = ($signatures[$length][$signature] ?? 0) + (int) $row->game_count;
+        }
+
+        $longerGames = 0;
+        foreach (self::MAX_LEVEL_POINTS as $length) {
+            $games = array_sum($signatures[$length] ?? []);
+            $hasLonger = $longerGames > $games * self::MAX_LONGER_RATIO;
+            $longerGames += $games;
+
+            if ($games < self::MIN_MAX_LEVEL_GAMES || $hasLonger) {
+                continue;
+            }
+
+            arsort($signatures[$length]);
+            if (reset($signatures[$length]) / $games < self::MIN_SIGNATURE_SHARE) {
+                continue;
+            }
+
+            $levels = array_combine(
+                array_keys(self::MASTER_LEVELS),
+                array_map('intval', explode(',', (string) array_key_first($signatures[$length])))
+            );
+
+            // 만렙인데 한 번도 안 찍는 슬롯은 마스터 판정에서 뺀다 (0 이면 영원히 도달하지 않음)
+            return array_filter($levels, fn ($level) => $level > 0);
+        }
+
+        return self::MASTER_LEVELS;
+    }
+
+    /**
+     * 슬롯별 포인트 수. 변형 슬롯(6~9)은 원래 키(Q/W/E/R)에 합산한다.
+     *
+     * @return array<int,int>
+     */
+    private function countPoints(string $build): array
+    {
+        $points = [];
+        foreach (str_split($build) as $char) {
+            $slot = (int) $char;
+            if ($slot >= 6) {
+                $slot -= 4;
+            }
+            $points[$slot] = ($points[$slot] ?? 0) + 1;
+        }
+
+        return $points;
+    }
+
+    /**
      * 레벨순 스킬 슬롯 문자열 -> 마스터한 순서대로의 슬롯 (예: "231" = Q -> W -> T 까지 마스터)
      *
-     * 마스터 = Q/W/E 5레벨, T 2레벨. R 은 레벨이 고정이라 무시한다.
-     * 변형 슬롯(6~9)은 원래 키(Q/W/E/R)에 합산한다.
+     * R 은 레벨이 고정이라 무시한다. 변형 슬롯(6~9)은 원래 키(Q/W/E/R)에 합산한다.
      *
+     * @param array<int,int> $masterLevels [슬롯 => 마스터 레벨] (detectMasterLevels 결과)
      * @return string 마스터한 스킬이 없으면 ''
      */
-    private function masteredSlots(string $build): string
+    private function masteredSlots(string $build, array $masterLevels): string
     {
-        $levels = array_fill_keys(array_keys(self::MASTER_LEVELS), 0);
+        $levels = array_fill_keys(array_keys($masterLevels), 0);
         $mastered = '';
 
         foreach (str_split($build) as $char) {
@@ -346,12 +449,12 @@ class GameResultSkillOrderSummaryService
             if ($slot >= 6) {
                 $slot -= 4;
             }
-            if (!isset(self::MASTER_LEVELS[$slot])) {
+            if (!isset($masterLevels[$slot])) {
                 continue;
             }
 
             // 마스터 레벨에 "도달하는 순간" 한 번만 기록한다 (변형 합산으로 넘어가도 중복 기록하지 않는다)
-            if (++$levels[$slot] === self::MASTER_LEVELS[$slot]) {
+            if (++$levels[$slot] === $masterLevels[$slot]) {
                 $mastered .= $slot;
             }
         }
