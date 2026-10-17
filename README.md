@@ -101,7 +101,7 @@ lumia-lab-v2/
 ### 게임 결과 상세 테이블
 | 테이블 | 설명 |
 |--------|------|
-| `game_result_skill_orders` | 스킬 선택 순서 |
+| `game_result_skill_builds` | 스킬 선택 순서 (게임별 1행) |
 | `game_result_trait_orders` | 특성 선택 정보 |
 | `game_result_equipment_orders` | 장비 아이템 순서 |
 | `game_result_first_equipment_orders` | 초반 장비 정보 |

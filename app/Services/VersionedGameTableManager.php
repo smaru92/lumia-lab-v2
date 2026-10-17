@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
@@ -94,42 +95,45 @@ class VersionedGameTableManager
                 // (버전 간 데이터 이동 시 INSERT ... SELECT 컬럼 순서가 어긋나지 않도록)
                 $table->string('trait_slot', 10)->nullable()->comment('특성 슬롯(main/sub1/sub2)');
 
+                // (game_result_id, trait_id) 단독 인덱스는 이 인덱스의 앞부분과 같아서 두지 않는다
                 $table->index(['game_result_id', 'trait_id', 'is_main'], 'idx_grt_game_result_id_trait_main');
-                $table->index(['game_result_id', 'trait_id'], 'idx_grt_game_result_trait');
             });
         }
     }
 
-    public function ensureGameResultSkillOrderTableExists(string $tableName): void
-    {
-        if (!Schema::hasTable($tableName)) {
-            Schema::create($tableName, function (Blueprint $table) {
-                $table->id();
-                $table->integer('game_result_id')->comment('게임 결과 id');
-                $table->integer('skill_id')->comment('스킬 id');
-                $table->integer('order_level')->comment('스킬 찍은 순서');
-                $table->timestamp('created_at')->nullable();
-            });
-        }
-    }
+    /** 이번 프로세스에서 구조를 확인한 skill_builds 테이블 (수집이 게임마다 호출하므로 1번만 확인한다) */
+    private static array $checkedSkillBuildTables = [];
 
     /**
-     * 게임별 스킬 순서 (스킬 순서 통계용 중간 테이블)
+     * 게임별 스킬 순서 (게임 1건 = 1행)
      *
-     * skill_orders 는 게임당 20행 가까이 쌓이고 game_result_id 인덱스도 없어서
-     * 집계할 때마다 전부 훑을 수 없다. 게임 1건 = 1행으로 접어 두고 새 행만 이어 붙인다.
+     * 예전에는 레벨마다 1행씩 game_result_skill_orders 에 쌓고(게임당 ~16행, 버전당 2.3G)
+     * 집계 때 여기로 접었는데, 지금은 수집할 때 바로 1행으로 저장한다.
+     * 원래 skill_id 도 skill_ids 에 남겨서 슬롯 판정 규칙이 바뀌어도 다시 만들 수 있게 한다.
      */
     public function ensureGameResultSkillBuildTableExists(string $tableName): void
     {
+        if (isset(self::$checkedSkillBuildTables[$tableName])) {
+            return;
+        }
+
         if (!Schema::hasTable($tableName)) {
             Schema::create($tableName, function (Blueprint $table) {
                 $table->unsignedInteger('game_result_id')->primary()->comment('게임 결과 id');
                 $table->string('skill_order', 40)->comment('레벨순 스킬 슬롯 (1:T 2:Q 3:W 4:E 5:R, 6~9:변형)');
-                $table->unsignedBigInteger('last_skill_order_id')->comment('반영한 skill_orders 마지막 id (증분 동기화 기준)');
-
-                $table->index('last_skill_order_id', 'idx_grsb_last_skill_order_id');
+                $table->string('skill_ids', 255)->nullable()->comment('레벨순 원래 skill_id (콤마 구분)');
             });
+        } else {
+            // skill_orders 에서 접던 시절의 테이블: 증분 커서를 없애고 원래 id 컬럼을 붙인다
+            if (!Schema::hasColumn($tableName, 'skill_ids')) {
+                DB::statement("ALTER TABLE `{$tableName}` ADD COLUMN `skill_ids` VARCHAR(255) NULL COMMENT '레벨순 원래 skill_id (콤마 구분)'");
+            }
+            if (Schema::hasColumn($tableName, 'last_skill_order_id')) {
+                DB::statement("ALTER TABLE `{$tableName}` DROP INDEX `idx_grsb_last_skill_order_id`, DROP COLUMN `last_skill_order_id`");
+            }
         }
+
+        self::$checkedSkillBuildTables[$tableName] = true;
     }
 
     public function ensureGameResultEquipmentOrderTableExists(string $tableName): void

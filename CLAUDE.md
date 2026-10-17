@@ -15,7 +15,7 @@
   - 킬/데스/어시스트 점수
   - 게임 시작 시간, 버전 정보
 
-- **game_result_skill_orders**: 스킬 찍은 순서 (→ `game_result_skill_builds` 로 게임별 1행 요약)
+- **game_result_skill_builds**: 스킬 찍은 순서 (게임별 1행. 예전 `game_result_skill_orders` 는 레벨마다 1행이라 폐지)
 - **game_result_trait_orders**: 특성 정보 (메인/서브)
 - **game_result_equipment_orders**: 장비 아이템 순서
 - **game_result_first_equipment_orders**: 첫 장비 아이템 정보
@@ -242,6 +242,7 @@
   - `trait_orders_game_result_id_idx` (game_result_id)
   - `trait_orders_game_result_trait_idx` (game_result_id, trait_id)
 - 버전별 테이블에도 동일 인덱스 적용 (`idx_grt_game_result_trait`)
+  - → 2026-10-18 삭제. `idx_grt_game_result_id_trait_main (game_result_id, trait_id, is_main)` 의 앞부분과 같아 중복 (버전당 약 0.4G)
 
 ### 5. 버그 수정
 - 특성 조합 통계 `positive_avg_mmr_gain`, `negative_avg_mmr_gain` 0으로 저장되는 버그
@@ -333,7 +334,7 @@
   - 랭크 표본 45명 기준: 2개 44명 / 3개 32명 / 4개 4명. 4개는 Q/W/E/T 17포인트 + R 3 = 만렙이라 표본이 매우 적다
   - 요약 테이블에는 `level_cut` = 마스터 개수(2/3/4), `skill_order` = 슬롯 N자리(`231` = Q W T)로 저장한다
 - **API**: `GET /api/detail/{types}/skill-orders`
-- **명령어**: `update:game-results-skill-order-summary {season?} {major?} {minor?} {hotfix?} [--rebuild]`
+- **명령어**: `update:game-results-skill-order-summary {season?} {major?} {minor?} {hotfix?}`
 - **서비스**: `GameResultSkillOrderSummaryService`
 - **슬롯 표기**: `skill_id` 백의 자리가 슬롯이다 (`1033200` → 2). `skill_builds` 에는 이 원래 슬롯 숫자를 저장한다
   - 대부분 `1:T(패시브) 2:Q 3:W 4:E 5:R` 이지만 **캐릭터마다 다르다** → 집계 시 `slotKeyMap()` 으로 키로 바꾼다
@@ -345,11 +346,12 @@
   - 같은 슬롯의 변형 id(`1055220` 등)는 같은 키로 묶는다
   - 숫자로 저장하는 이유: 대소문자 구분 없는 콜레이션에서 유니크 키 충돌을 피하기 위해
 - **2단계 구조**
-  1. `game_result_skill_builds_v*` : 게임 1건 = 1행 (순서 문자열). **증분 동기화**
-     - `game_result_skill_orders` 는 게임당 ~20행(12.3.0 기준 2,460만 행)인데 `game_result_id` 인덱스가 없다.
-       매번 훑지 않도록 PK 구간으로 새 행만 읽고, `last_skill_order_id` 최댓값을 커서로 쓴다
-     - 구간 경계에 걸친 게임은 나머지 행까지 끌어오고, 그래도 쪼개지면 `ON DUPLICATE KEY` 로 이어 붙인다
-     - 스킬 행이 옮겨지거나 지워져 순서가 꼬였다면 `--rebuild` 로 다시 만든다
+  1. `game_result_skill_builds_v*` : 게임 1건 = 1행. **수집할 때 바로 저장** (2026-10-18 변경)
+     - `skill_order` = 슬롯 숫자 문자열, `skill_ids` = 원래 skill_id 콤마 목록 (슬롯 규칙이 바뀌면 여기서 다시 만든다)
+     - 예전에는 `game_result_skill_orders_v*` 에 레벨마다 1행(게임당 ~16행, 버전당 2.3G)을 쌓고
+       집계 때 접었는데, 디스크가 가득 차 DB 가 죽은 뒤(2026-10-18) 원본 저장을 없앴다
+     - 남아 있는 skill_orders 는 `php artisan skill-builds:migrate-orders [버전...] [--drop]` 으로 옮긴다
+       (덮어쓰기라 반복 실행 안전, 게임 수가 맞을 때만 `--drop` 이 테이블을 지운다)
   2. `game_results_skill_order_summary_v*` : 캐릭터 x 무기 x 마스터 개수(2/3/4) x 순서 x 티어, **사용수 상위 10개만** 저장 (화면도 10개만 표시, 더보기 없음)
      - 티어마다 다시 조회하지 않고 점수 구간(band)별로 캐릭터당 1번 조회 후 PHP 에서 판정·누적
      - 캐릭터 단위로 삭제/삽입하므로 집계 중에도 화면이 비지 않는다

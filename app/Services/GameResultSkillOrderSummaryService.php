@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Schema;
  * 그래서 집계할 때 slotKeyMap() 으로 캐릭터별 슬롯 -> 키(1:T 2:Q 3:W 4:E 5:R)를 바꿔 쓴다.
  * 같은 슬롯의 변형(1055220 등)은 같은 키로 본다.
  *
- * 1) skill_orders -> skill_builds : 게임 1건을 순서 문자열 1행으로 접는다 (새 행만 증분 반영)
- * 2) skill_builds -> summary      : 게임별 "마스터 순서"로 티어마다 집계한다
+ * 1) 수집 시 skill_builds 에 게임 1건 = 순서 문자열 1행으로 저장한다 (makeSkillBuild)
+ * 2) skill_builds -> summary : 게임별 "마스터 순서"로 티어마다 집계한다
  *
  * 레벨 단위 순서는 1레벨 차이로 갈라져 의미가 없어서, 어떤 순서로 스킬을 마스터했는지로 묶는다.
  * 중간에 탈락한 게임도 살리려고 "2개 / 3개 / 4개를 마스터한 순서"를 따로 집계한다.
@@ -85,11 +85,11 @@ class GameResultSkillOrderSummaryService
     /** (캐릭터, 무기, 마스터 개수, 티어)마다 저장할 순서 개수 */
     private const TOP_N = 10;
 
-    /** skill_orders 를 한 번에 읽을 id 구간 */
-    private const SYNC_CHUNK = 500000;
+    /** skill_builds.skill_order 길이 */
+    public const SKILL_ORDER_MAX_LENGTH = 40;
 
-    /** 구간 경계에 걸친 게임의 나머지 행을 찾을 범위 (게임 1건 = 최대 8명 x 20여 행) */
-    private const TAIL_WINDOW = 5000;
+    /** skill_builds.skill_ids 길이 (7자리 id + 콤마 = 8자, 실측 최대 23개 184자) */
+    public const SKILL_IDS_MAX_LENGTH = 255;
 
     protected RankRangeService $rankRangeService;
     protected GameResultService $gameResultService;
@@ -104,11 +104,33 @@ class GameResultSkillOrderSummaryService
     }
 
     /**
-     * 스킬 순서 통계 갱신
+     * 수집한 스킬 id 목록(레벨순)을 skill_builds 1행의 값으로 만든다.
+     * 슬롯은 skill_id 의 백의 자리다. (1033200 -> 2)
      *
-     * @param bool $rebuild 게임별 순서 테이블을 비우고 처음부터 다시 만든다
+     * @param int[] $skillIds 무기 스킬(3000000 이상)을 뺀 레벨순 id
+     * @return array{skill_order: string, skill_ids: string}
      */
-    public function updateGameResultSkillOrderSummary($versionSeason = null, $versionMajor = null, $versionMinor = null, $versionHotfix = null, bool $rebuild = false)
+    public static function makeSkillBuild(array $skillIds): array
+    {
+        $skillOrder = '';
+        $idList = '';
+        foreach ($skillIds as $skillId) {
+            $skillId = (int) $skillId;
+            $next = $idList === '' ? (string) $skillId : $idList . ',' . $skillId;
+            if (strlen($next) > self::SKILL_IDS_MAX_LENGTH || strlen($skillOrder) >= self::SKILL_ORDER_MAX_LENGTH) {
+                break;
+            }
+            $idList = $next;
+            $skillOrder .= intdiv($skillId, 100) % 10;
+        }
+
+        return ['skill_order' => $skillOrder, 'skill_ids' => $idList];
+    }
+
+    /**
+     * 스킬 순서 통계 갱신
+     */
+    public function updateGameResultSkillOrderSummary($versionSeason = null, $versionMajor = null, $versionMinor = null, $versionHotfix = null)
     {
         DB::disableQueryLog();
         Log::channel($this->logChannel)->info('S: game result skill order summary');
@@ -131,18 +153,16 @@ class GameResultSkillOrderSummaryService
         ];
 
         $gameResultTable = VersionedGameTableManager::getTableName('game_results', $versionFilters);
-        $skillOrderTable = VersionedGameTableManager::getTableName('game_result_skill_orders', $versionFilters);
         $buildTable = VersionedGameTableManager::getTableName('game_result_skill_builds', $versionFilters);
         $summaryTable = VersionedGameTableManager::getTableName('game_results_skill_order_summary', $versionFilters);
 
-        if (!Schema::hasTable($gameResultTable) || !Schema::hasTable($skillOrderTable)) {
-            Log::channel($this->logChannel)->info("Skip: {$gameResultTable} / {$skillOrderTable} not found");
-            echo "skip : {$gameResultTable} 테이블이 없습니다.\n";
+        if (!Schema::hasTable($gameResultTable) || !Schema::hasTable($buildTable)) {
+            Log::channel($this->logChannel)->info("Skip: {$gameResultTable} / {$buildTable} not found");
+            echo "skip : {$gameResultTable} / {$buildTable} 테이블이 없습니다.\n";
             return;
         }
 
         try {
-            $this->syncSkillBuilds($skillOrderTable, $buildTable, $rebuild);
             $this->aggregate($gameResultTable, $buildTable, $summaryTable, $versionFilters);
 
             Log::channel($this->logChannel)->info('E: game result skill order summary');
@@ -153,72 +173,6 @@ class GameResultSkillOrderSummaryService
         } finally {
             gc_collect_cycles();
         }
-    }
-
-    /**
-     * skill_orders 의 새 행을 게임별 순서 문자열로 접어 skill_builds 에 반영한다.
-     *
-     * skill_orders 에는 game_result_id 인덱스가 없으므로 PK 구간으로만 읽는다.
-     * 수집기는 게임 1건의 스킬 행을 한 트랜잭션에서 한 번에 넣으므로
-     * id 순서 = 게임 안의 레벨 순서이고, 커밋된 마지막 게임은 항상 완결 상태다.
-     */
-    public function syncSkillBuilds(string $skillOrderTable, string $buildTable, bool $rebuild = false): void
-    {
-        $this->versionedTableManager->ensureGameResultSkillBuildTableExists($buildTable);
-
-        if ($rebuild) {
-            DB::table($buildTable)->truncate();
-            Log::channel($this->logChannel)->info("Truncated {$buildTable} (rebuild)");
-        }
-
-        $cursor = (int) DB::table($buildTable)->max('last_skill_order_id');
-        $maxId = (int) DB::table($skillOrderTable)->max('id');
-
-        Log::channel($this->logChannel)->info("Sync {$skillOrderTable} -> {$buildTable} : ({$cursor}, {$maxId}]");
-        echo "skill build sync : {$cursor} -> {$maxId}\n";
-
-        $synced = 0;
-        while ($cursor < $maxId) {
-            $end = min($cursor + self::SYNC_CHUNK, $maxId);
-
-            // 구간 끝에 걸친 게임은 다음 구간으로 쪼개지지 않도록 나머지 행까지 끌어온다.
-            if ($end < $maxId) {
-                $lastGameResultId = DB::table($skillOrderTable)
-                    ->where('id', '<=', $end)
-                    ->orderByDesc('id')
-                    ->value('game_result_id');
-
-                $tailEnd = DB::table($skillOrderTable)
-                    ->where('id', '>', $end)
-                    ->where('id', '<=', $end + self::TAIL_WINDOW)
-                    ->where('game_result_id', $lastGameResultId)
-                    ->max('id');
-
-                if ($tailEnd) {
-                    $end = (int) $tailEnd;
-                }
-            }
-
-            // 그래도 쪼개진 게임이 있으면 이어 붙인다 (id 순서 = 레벨 순서)
-            $synced += DB::affectingStatement(
-                "INSERT INTO `{$buildTable}` (game_result_id, skill_order, last_skill_order_id)
-                 SELECT game_result_id,
-                        GROUP_CONCAT((skill_id DIV 100) % 10 ORDER BY order_level SEPARATOR ''),
-                        MAX(id)
-                 FROM `{$skillOrderTable}`
-                 WHERE id > ? AND id <= ?
-                 GROUP BY game_result_id
-                 ON DUPLICATE KEY UPDATE
-                    skill_order = LEFT(CONCAT(skill_order, VALUES(skill_order)), 40),
-                    last_skill_order_id = VALUES(last_skill_order_id)",
-                [$cursor, $end]
-            );
-
-            echo "  synced ~{$end}\n";
-            $cursor = $end;
-        }
-
-        Log::channel($this->logChannel)->info("Synced rows affected: {$synced}");
     }
 
     /**

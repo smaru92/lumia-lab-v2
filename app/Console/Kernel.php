@@ -68,7 +68,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('update:game-result-trait-combination-summary')->cron('30 1-23/2 * * *')->withoutOverlapping(30)->runInBackground();
         // 캐릭터별/스킬 마스터 순서별 데이터 - 홀수 시간 40분
         // 소요 시간 실측 전이라 만료를 넉넉히 잡았다. 실측 후 다른 명령처럼 x3 기준으로 조정할 것.
-        // (중복 실행되면 skill_builds 의 ON DUPLICATE 이어붙이기가 같은 구간을 두 번 붙일 수 있다)
         $schedule->command('update:game-results-skill-order-summary')->cron('40 1-23/2 * * *')->withoutOverlapping(90)->runInBackground();
         // 특성 메인 데이터 - 홀수 시간 50분
         $schedule->command('update:game-results-trait-main-summary')->cron('50 1-23/2 * * *')->withoutOverlapping(20)->runInBackground();

@@ -341,7 +341,7 @@ class GameResultService
                         ),
                     ];
                     $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
-                    $gameResultSkillOrderTableName = VersionedGameTableManager::getTableName('game_result_skill_orders', $filters);
+                    $gameResultSkillBuildTableName = VersionedGameTableManager::getTableName('game_result_skill_builds', $filters);
                     $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
                     $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
                     $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
@@ -349,7 +349,7 @@ class GameResultService
                     try {
                         // 테이블 존재 확인
                         $versionedGameTableManager->ensureGameResultTableExists($gameResultTableName);
-                        $versionedGameTableManager->ensureGameResultSkillOrderTableExists($gameResultSkillOrderTableName);
+                        $versionedGameTableManager->ensureGameResultSkillBuildTableExists($gameResultSkillBuildTableName);
                         $versionedGameTableManager->ensureGameResultEquipmentOrderTableExists($gameResultEquipmentOrderTableName);
                         $versionedGameTableManager->ensureGameResultFirstEquipmentOrderTableExists($gameResultFirstEquipmentOrderTableName);
                         $versionedGameTableManager->ensureGameResultTraitOrderTableExists($gameResultTraitOrderTableName);
@@ -366,7 +366,7 @@ class GameResultService
 
                         // Bulk Insert를 위한 데이터 배열 준비
                         $gameResults = [];
-                        $skillOrders = [];
+                        $skillBuilds = [];
                         $equipmentOrders = [];
                         $firstEquipmentOrders = [];
                         $traitOrders = [];
@@ -424,19 +424,14 @@ class GameResultService
                                 continue;
                             }
 
-                            // 스킬 찍은순서 기록
-                            $orderLevel = 1;
-                            foreach ($item['skillOrderInfo'] as $skillId) {
-                                // 3000000이상 값은 무기스킬
-                                if ($skillId < 3000000) {
-                                    $skillOrders[] = [
-                                        'game_result_id' => $gameResultId,
-                                        'skill_id' => $skillId ?? null,
-                                        'order_level' => $orderLevel,
-                                        'created_at' => now(),
-                                    ];
-                                    $orderLevel++;
-                                }
+                            // 스킬 찍은순서 기록 (게임 1건 = 1행). 3000000이상 값은 무기스킬
+                            $skillIds = array_values(array_filter(
+                                $item['skillOrderInfo'] ?? [],
+                                fn ($skillId) => $skillId !== null && $skillId < 3000000
+                            ));
+                            if (!empty($skillIds)) {
+                                $skillBuilds[] = ['game_result_id' => $gameResultId]
+                                    + GameResultSkillOrderSummaryService::makeSkillBuild($skillIds);
                             }
 
                             // 최종 아이템
@@ -491,8 +486,8 @@ class GameResultService
                         }
 
                         // 모든 관련 데이터를 Bulk Insert
-                        if (!empty($skillOrders)) {
-                            DB::table($gameResultSkillOrderTableName)->insert($skillOrders);
+                        if (!empty($skillBuilds)) {
+                            DB::table($gameResultSkillBuildTableName)->insert($skillBuilds);
                         }
                         if (!empty($equipmentOrders)) {
                             DB::table($gameResultEquipmentOrderTableName)->insert($equipmentOrders);
@@ -1599,7 +1594,7 @@ class GameResultService
                 ];
 
                 $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
-                $gameResultSkillOrderTableName = VersionedGameTableManager::getTableName('game_result_skill_orders', $filters);
+                $gameResultSkillBuildTableName = VersionedGameTableManager::getTableName('game_result_skill_builds', $filters);
                 $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);
                 $gameResultFirstEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_first_equipment_orders', $filters);
                 $gameResultTraitOrderTableName = VersionedGameTableManager::getTableName('game_result_trait_orders', $filters);
@@ -1622,8 +1617,8 @@ class GameResultService
                         }
 
                         // 관련 테이블 먼저 삭제
-                        if (DB::getSchemaBuilder()->hasTable($gameResultSkillOrderTableName)) {
-                            DB::table($gameResultSkillOrderTableName)
+                        if (DB::getSchemaBuilder()->hasTable($gameResultSkillBuildTableName)) {
+                            DB::table($gameResultSkillBuildTableName)
                                 ->whereIn('game_result_id', $gameResultIds)
                                 ->delete();
                         }

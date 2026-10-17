@@ -26,7 +26,7 @@ class SplitHotfixVersionData extends Command
 
     /** 전적 본체와 함께 옮겨야 하는 하위 테이블 (game_result_id 로 연결) */
     private const ORDER_TABLES = [
-        'game_result_skill_orders' => 'ensureGameResultSkillOrderTableExists',
+        'game_result_skill_builds' => 'ensureGameResultSkillBuildTableExists',
         'game_result_equipment_orders' => 'ensureGameResultEquipmentOrderTableExists',
         'game_result_first_equipment_orders' => 'ensureGameResultFirstEquipmentOrderTableExists',
         'game_result_trait_orders' => 'ensureGameResultTraitOrderTableExists',

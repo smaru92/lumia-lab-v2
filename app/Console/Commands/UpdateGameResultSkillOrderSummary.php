@@ -7,8 +7,7 @@ use Illuminate\Console\Command;
 
 class UpdateGameResultSkillOrderSummary extends Command
 {
-    protected $signature = 'update:game-results-skill-order-summary {version_season?} {version_major?} {version_minor?} {version_hotfix?}
-                            {--rebuild : 게임별 스킬 순서 테이블을 비우고 처음부터 다시 만든다}';
+    protected $signature = 'update:game-results-skill-order-summary {version_season?} {version_major?} {version_minor?} {version_hotfix?}';
 
     protected $description = '캐릭터별 스킬 마스터 순서 통계 데이터를 갱신합니다.';
 
@@ -26,8 +25,7 @@ class UpdateGameResultSkillOrderSummary extends Command
                 $versionSeason,
                 $versionMajor,
                 $versionMinor,
-                $versionHotfix,
-                (bool) $this->option('rebuild')
+                $versionHotfix
             );
 
             $this->info('스킬 순서 통계 갱신이 완료되었습니다.');
