@@ -154,6 +154,51 @@ class GameResultService
         return $hotfix ?: null;
     }
 
+    /**
+     * 수집한 게임의 버전 행을 찾아 end_date 를 늘리고, 없으면 새로 만든다.
+     *
+     * 예전에는 "created_at 기준 최신 행"과 major/minor 만 비교해서, 구버전 행을 나중에
+     * 등록하면 그 행이 최신으로 잡혀 현재 버전 행이 또 생겼다(중복).
+     * 게임 자신의 버전(시즌 포함, 핫픽스는 시작 시각으로 판정한 값)으로 직접 찾는다.
+     */
+    private function touchVersionHistory(array $filters, $startDtm): void
+    {
+        if ($filters['version_major'] === null || $filters['version_minor'] === null) {
+            return;
+        }
+
+        $gameStartAt = Carbon::parse($startDtm)->format('Y-m-d H:i:s');
+
+        $version = VersionHistory::query()
+            ->where('version_season', $filters['version_season'])
+            ->where('version_major', $filters['version_major'])
+            ->where('version_minor', $filters['version_minor'])
+            ->when(
+                $filters['version_hotfix'],
+                fn ($q) => $q->where('version_hotfix', $filters['version_hotfix']),
+                fn ($q) => $q->whereNull('version_hotfix')
+            )
+            ->first();
+
+        if (!$version) {
+            VersionHistory::create([
+                'version_season' => $filters['version_season'],
+                'version_major' => $filters['version_major'],
+                'version_minor' => $filters['version_minor'],
+                'start_date' => $gameStartAt,
+                'end_date' => $gameStartAt,
+            ]);
+            // 새 행이 생겼으니 핫픽스 판정 캐시도 다시 읽게 한다
+            unset($this->versionHotfixCache["{$filters['version_season']}.{$filters['version_major']}.{$filters['version_minor']}"]);
+            return;
+        }
+
+        // 게임이 시간 순서대로 들어온다는 보장이 없으니 늘어날 때만 갱신한다
+        if (!$version->end_date || $version->end_date->lt(Carbon::parse($gameStartAt))) {
+            VersionHistory::where('id', $version->id)->update(['end_date' => $gameStartAt]);
+        }
+    }
+
     public function storeGameResult($gameId)
     {
         $resultGameId = $gameId;
@@ -307,25 +352,6 @@ class GameResultService
                     // 첫 번째 플레이어 데이터로 버전 정보 확인 (모든 플레이어가 같은 버전)
                     $firstPlayer = $data['userGames'][0];
 
-                    // 버전 히스토리 데이터 저장
-                    $latestVersion = VersionHistory::active()->latest('created_at')->first();
-                    $newEndDate = Carbon::parse($firstPlayer['startDtm'])->format('Y-m-d H:i:s');
-                    if (!$latestVersion
-                        || $latestVersion->version_major !== ($firstPlayer['versionMajor'] ?? null)
-                        || $latestVersion->version_minor !== ($firstPlayer['versionMinor'] ?? null)
-                    ) {
-                        // 버전 히스토리 기록
-                        VersionHistory::create([
-                            'version_season' => $firstPlayer['versionSeason'] ?? null,
-                            'version_major' => $firstPlayer['versionMajor'] ?? null,
-                            'version_minor' => $firstPlayer['versionMinor'] ?? null,
-                            'start_date' => $newEndDate,
-                            'end_date' => $newEndDate,
-                        ]);
-                    } else {
-                        VersionHistory::where('id', $latestVersion->id)->update(['end_date' => $newEndDate]);
-                    }
-
                     $versionedGameTableManager = new VersionedGameTableManager();
                     // ER API 는 핫픽스를 내려주지 않으므로, 게임 시작 시각을 version_histories 의
                     // 기간과 대조해서 판정한다. 핫픽스가 붙으면 별도 테이블로 통계가 분리된다.
@@ -340,6 +366,9 @@ class GameResultService
                             $firstPlayer['startDtm'] ?? null
                         ),
                     ];
+
+                    // 버전 히스토리 데이터 저장
+                    $this->touchVersionHistory($filters, $firstPlayer['startDtm']);
                     $gameResultTableName = VersionedGameTableManager::getTableName('game_results', $filters);
                     $gameResultSkillBuildTableName = VersionedGameTableManager::getTableName('game_result_skill_builds', $filters);
                     $gameResultEquipmentOrderTableName = VersionedGameTableManager::getTableName('game_result_equipment_orders', $filters);

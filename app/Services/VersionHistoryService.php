@@ -8,7 +8,7 @@ class VersionHistoryService
 {
     public function getLatestVersion()
     {
-        return VersionHistory::active()->orderBy('created_at', 'desc')->first();
+        return VersionHistory::active()->newestVersionFirst()->first();
     }
 
     /**
@@ -18,6 +18,6 @@ class VersionHistoryService
      */
     public function getLatestVersionList()
     {
-        return VersionHistory::active()->orderBy('created_at', 'desc')->limit(3)->get();
+        return VersionHistory::active()->newestVersionFirst()->limit(3)->get();
     }
 }

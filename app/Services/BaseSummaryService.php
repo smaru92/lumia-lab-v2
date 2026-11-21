@@ -37,7 +37,7 @@ abstract class BaseSummaryService
         // 버전 인자가 하나도 없으면 최신 버전(핫픽스 포함)을 대상으로 집계한다.
         // 일부만 넘어온 경우 핫픽스를 임의로 채우면 다른 버전을 덮어쓰므로 넘어온 값만 쓴다.
         $versionGiven = $versionSeason !== null || $versionMajor !== null || $versionMinor !== null;
-        $latestVersion = VersionHistory::active()->latest('created_at')->first();
+        $latestVersion = VersionHistory::active()->newestVersionFirst()->first();
         $versionSeason = $versionSeason ?? $latestVersion->version_season;
         $versionMajor = $versionMajor ?? $latestVersion->version_major;
         $versionMinor = $versionMinor ?? $latestVersion->version_minor;

@@ -37,7 +37,7 @@ class Kernel extends ConsoleKernel
         // 캐릭터 지표 추이용 일자별 스냅샷 (하루 1건, 집계가 한 바퀴 돈 뒤인 새벽에)
         // 누적·일일 지표를 함께 남긴다 (요약 테이블에는 일일 지표가 없어 원본에서 다시 집계)
         $schedule->call(function () {
-            $version = \App\Models\VersionHistory::active()->latest('created_at')->first();
+            $version = \App\Models\VersionHistory::active()->newestVersionFirst()->first();
             if ($version) {
                 \Illuminate\Support\Facades\Artisan::call('snapshot:backfill-daily', [
                     'version' => $version->version_key,

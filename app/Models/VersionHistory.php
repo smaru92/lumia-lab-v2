@@ -20,6 +20,9 @@ class VersionHistory extends Model
     ];
 
     protected $casts = [
+        'version_season' => 'integer',
+        'version_major' => 'integer',
+        'version_minor' => 'integer',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
     ];
@@ -30,6 +33,21 @@ class VersionHistory extends Model
     public function scopeActive($query)
     {
         return $query->where('start_date', '<=', now());
+    }
+
+    /**
+     * 버전 번호 기준 최신순 (12.2.0b > 12.2.0 > 12.1.0)
+     *
+     * created_at 으로 최신을 고르면 구버전을 나중에 등록했을 때 그 구버전이 "최신"이 되어
+     * 수집기가 현재 버전 행을 또 만들고(중복), 집계 명령어도 엉뚱한 버전을 돌린다.
+     * MySQL 은 DESC 정렬에서 NULL 이 맨 뒤라 핫픽스 행이 같은 버전의 기본 행보다 앞에 온다.
+     */
+    public function scopeNewestVersionFirst($query)
+    {
+        return $query->orderByDesc('version_season')
+            ->orderByDesc('version_major')
+            ->orderByDesc('version_minor')
+            ->orderByDesc('version_hotfix');
     }
 
     /**
