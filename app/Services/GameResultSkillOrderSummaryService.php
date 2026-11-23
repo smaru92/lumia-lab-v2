@@ -254,6 +254,17 @@ class GameResultSkillOrderSummaryService
             $totals = [];
             $masteredMemo = [];
             $slotKeys = $this->slotKeyMap((int) $characterId);
+            if ($slotKeys === null) {
+                // 스킬 정보가 없으면 기본 매핑을 쓴다. 단, 6~9번 슬롯을 쓰는 캐릭터는 기본 매핑이면 키가 어긋나므로
+                // (띠아: Q 가 E 로, R 이 W 로 보인다) 틀린 값을 남기지 않도록 건너뛴다.
+                // 처리 목록에 넣지 않으므로 아래 정리 단계에서 이 캐릭터의 기존 행도 지워진다.
+                if ($rows->contains(fn ($row) => strpbrk((string) $row->skill_prefix, '6789') !== false)) {
+                    $this->warnSlotKeys((int) $characterId, $characterName, '슬롯 구성이 달라 집계에서 제외');
+                    continue;
+                }
+                $this->warnSlotKeys((int) $characterId, $characterName, '기본 매핑으로 집계');
+                $slotKeys = self::DEFAULT_SLOT_KEYS;
+            }
             $masterLevels = $this->detectMasterLevels($rows, $slotKeys);
             foreach ($rows as $row) {
                 $mastered = $masteredMemo[$row->skill_prefix] ??= $this->masteredSlots(strtr($row->skill_prefix, $slotKeys), $masterLevels);
@@ -389,18 +400,16 @@ class GameResultSkillOrderSummaryService
      *     (띠아: 1·4·5·6·7 -> T·Q·W·E·R)
      *   - 앞 슬롯과 이름이 같으면 그 스킬의 변형으로 보고 같은 키 (제니 6·7·8 = Q·W·E)
      *   - 그 밖의 별도 스킬은 순서에서 뺀다 (블레어 시프트 러시, 실비아 바이크 스킬, 알렉스 변신 스킬)
-     * 정보가 없거나(신규 캐릭터, 동기화 전) 스킬이 5개 미만이면 기본 매핑을 쓴다.
      *
-     * @return array<string,string>
+     * @return array<string,string>|null 정보가 없거나(신규 캐릭터, migrate/fetch:character-skills 전) 스킬이 5개 미만이면 null
      */
-    private function slotKeyMap(int $characterId): array
+    private function slotKeyMap(int $characterId): ?array
     {
         $this->hasSkillSlotColumns ??= Schema::hasTable('character_skills')
             && Schema::hasColumns('character_skills', ['character_id', 'slot']);
 
         if (!$this->hasSkillSlotColumns) {
-            $this->warnDefaultSlotKeys($characterId, 'character_skills 에 character_id/slot 컬럼이 없음 (migrate 필요)');
-            return self::DEFAULT_SLOT_KEYS;
+            return null;
         }
 
         // 슬롯마다 가장 작은 id(변형 번호 00)의 이름이 기본 스킬 이름이다
@@ -415,8 +424,7 @@ class GameResultSkillOrderSummaryService
         ksort($names);
 
         if (count($names) < 5) {
-            $this->warnDefaultSlotKeys($characterId, '스킬 정보 ' . count($names) . '개 (fetch:character-skills 필요)');
-            return self::DEFAULT_SLOT_KEYS;
+            return null;
         }
 
         $map = array_fill_keys(array_map('strval', range(1, 9)), '');
@@ -435,12 +443,11 @@ class GameResultSkillOrderSummaryService
     }
 
     /**
-     * 기본 매핑으로 떨어졌다는 걸 남긴다.
-     * 띠아처럼 슬롯 구성이 다른 캐릭터는 기본 매핑이면 키가 어긋나므로(Q 가 E 로 보임) 놓치지 않도록 한다.
+     * 캐릭터 스킬 정보가 없어 슬롯 매핑을 만들지 못했다는 걸 남긴다. (migrate / fetch:character-skills 필요)
      */
-    private function warnDefaultSlotKeys(int $characterId, string $reason): void
+    private function warnSlotKeys(int $characterId, string $characterName, string $action): void
     {
-        $message = "skill slot map fallback : character {$characterId} - {$reason}";
+        $message = "skill slot map fallback : {$characterName}({$characterId}) 스킬 정보 없음 -> {$action}";
         Log::channel($this->logChannel)->warning($message);
         echo "[경고] {$message}\n";
     }
