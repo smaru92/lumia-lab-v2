@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -74,6 +74,35 @@ const TIER_LABELS: Record<string, string> = {
     Top: '최상위큐',
 };
 
+/** 정렬 기준. 'top.xxx' / 'all.xxx' 는 해당 구간 지표, 그 외는 행의 값 */
+type SortKey =
+    | 'item_name'
+    | 'top_rate'
+    | `${'top' | 'all'}.${keyof Metrics}`;
+
+interface SortState {
+    key: SortKey;
+    dir: 'asc' | 'desc';
+}
+
+/** 서버 기본 정렬과 같다 (TOP4 게임수 많은 순) */
+const DEFAULT_SORT: SortState = { key: 'top.game_count', dir: 'desc' };
+
+const sortValue = (row: StatRow, key: SortKey): number | string => {
+    if (key === 'item_name') return row.item_name;
+    if (key === 'top_rate') return row.top_rate;
+    const [range, metric] = key.split('.') as ['top' | 'all', keyof Metrics];
+    return row[range][metric];
+};
+
+const compareRows = (a: StatRow, b: StatRow, sort: SortState) => {
+    const va = sortValue(a, sort.key);
+    const vb = sortValue(b, sort.key);
+    const diff = typeof va === 'string' ? va.localeCompare(vb as string, 'ko') : va - (vb as number);
+    // 값이 같으면 TOP4 게임수 많은 순으로 고정한다
+    return (sort.dir === 'asc' ? diff : -diff) || b.top.game_count - a.top.game_count;
+};
+
 /** 주 사용 캐릭터를 접었을 때 보여주는 수 */
 const COLLAPSED_CHARACTERS = 3;
 
@@ -96,6 +125,20 @@ export default function TopRankStatsPage() {
     const [minGameCount, setMinGameCount] = useState('10');
     const [minCharacterGameCount, setMinCharacterGameCount] = useState('10');
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+    const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+
+    // 같은 열을 다시 누르면 방향만 바꾼다. 새 열은 큰 값부터(이름은 가나다순부터)
+    const changeSort = (key: SortKey) =>
+        setSort((prev) =>
+            prev.key === key
+                ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+                : { key, dir: key === 'item_name' ? 'asc' : 'desc' }
+        );
+    const sortHeader = (key: SortKey, label: ReactNode, className = '') => (
+        <SortableTh sortKey={key} sort={sort} onSort={changeSort} className={className}>
+            {label}
+        </SortableTh>
+    );
 
     const { data: options } = useQuery<Options>({
         queryKey: ['top-rank-stats', 'options'],
@@ -156,6 +199,10 @@ export default function TopRankStatsPage() {
     const groupKeys = Object.keys(grouped).sort(
         (a, b) => (groupOrder.indexOf(a) + 1 || 99) - (groupOrder.indexOf(b) + 1 || 99)
     );
+    // 그룹(부위/메인·서브) 순서는 유지하고, 그룹 안에서만 정렬한다
+    for (const key of groupKeys) {
+        grouped[key].sort((a, b) => compareRows(a, b, sort));
+    }
 
     return (
         <div className="space-y-6">
@@ -311,7 +358,7 @@ export default function TopRankStatsPage() {
                 <table className={`w-full text-sm ${perCharacter ? 'min-w-[1100px]' : 'min-w-[1400px]'}`}>
                     <thead>
                         <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
-                            <th rowSpan={2} className="px-3 py-2 text-left">이름</th>
+                            {sortHeader('item_name', '이름', 'px-3 py-2 text-left')}
                             {perCharacter ? (
                                 <>
                                     <th rowSpan={2} className="px-3 py-2 text-left">캐릭터</th>
@@ -326,19 +373,18 @@ export default function TopRankStatsPage() {
                             <th colSpan={5} className="border-l border-[hsl(var(--border))] px-3 py-2 text-center text-[hsl(var(--muted-foreground))]">
                                 전체 (1~8위)
                             </th>
-                            <th rowSpan={2} className="border-l border-[hsl(var(--border))] px-3 py-2 text-right">TOP4율</th>
+                            {sortHeader('top_rate', 'TOP4율', 'border-l border-[hsl(var(--border))] px-3 py-2 text-right')}
                         </tr>
                         <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))] text-xs">
-                            <th className="border-l border-[hsl(var(--border))] px-3 py-1 text-right">게임수</th>
-                            <th className="px-3 py-1 text-right">평균획득</th>
-                            <th className="px-3 py-1 text-right">평균TK</th>
-                            <th className="px-3 py-1 text-right">이득률/점수</th>
-                            <th className="px-3 py-1 text-right">손실률/점수</th>
-                            <th className="border-l border-[hsl(var(--border))] px-3 py-1 text-right">게임수</th>
-                            <th className="px-3 py-1 text-right">평균획득</th>
-                            <th className="px-3 py-1 text-right">평균TK</th>
-                            <th className="px-3 py-1 text-right">이득률/점수</th>
-                            <th className="px-3 py-1 text-right">손실률/점수</th>
+                            {(['top', 'all'] as const).map((range) => (
+                                <Fragment key={range}>
+                                    {sortHeader(`${range}.game_count`, '게임수', 'border-l border-[hsl(var(--border))] px-3 py-1 text-right')}
+                                    {sortHeader(`${range}.avg_mmr_gain`, '평균획득', 'px-3 py-1 text-right')}
+                                    {sortHeader(`${range}.avg_team_kill`, '평균TK', 'px-3 py-1 text-right')}
+                                    {sortHeader(`${range}.positive_percent`, '이득률/점수', 'px-3 py-1 text-right')}
+                                    {sortHeader(`${range}.negative_percent`, '손실률/점수', 'px-3 py-1 text-right')}
+                                </Fragment>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
@@ -497,5 +543,37 @@ function TopCharacterList({
                 </button>
             )}
         </div>
+    );
+}
+
+/** 눌러서 정렬하는 열 머리글. 이름/TOP4율은 2줄짜리 머리글이라 rowSpan 을 준다 */
+function SortableTh({
+    sortKey,
+    sort,
+    onSort,
+    className,
+    children,
+}: {
+    sortKey: SortKey;
+    sort: SortState;
+    onSort: (key: SortKey) => void;
+    className: string;
+    children: ReactNode;
+}) {
+    const active = sort.key === sortKey;
+    const spansTwoRows = sortKey === 'item_name' || sortKey === 'top_rate';
+
+    return (
+        <th
+            rowSpan={spansTwoRows ? 2 : undefined}
+            className={`${className} cursor-pointer select-none whitespace-nowrap hover:text-[hsl(var(--foreground))]`}
+            onClick={() => onSort(sortKey)}
+            aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+        >
+            {children}
+            <span className={`ml-1 inline-block w-2 ${active ? '' : 'opacity-30'}`}>
+                {active ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}
+            </span>
+        </th>
     );
 }
