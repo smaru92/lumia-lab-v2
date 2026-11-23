@@ -316,6 +316,19 @@
   - 관리자 전용이라 10분 캐시
 - **서비스**: `VersionComparisonService`
 
+### 5. 장비 지표 (관리자 전용, 2026-11-23)
+
+- **화면**: 관리자 → 장비 지표 (`/admin/equipment-stats`)
+- **API**: `GET /api/admin/equipment-stats`, `/options`
+- TOP4 지표와 같은 구성(TOP4 / 전체)이지만 **아이템 1개 = 1행** (캐릭터·무기를 합산)
+- **주 사용 캐릭터**: 게임수가 아니라 **캐릭터 사용률** 순
+  - 사용률 = 그 캐릭터·무기가 이 아이템을 든 게임수 / 그 캐릭터·무기의 전체 게임수
+  - 분모는 같은 버전·티어의 `game_results_rank_summary` 합계
+  - 표본이 적으면 튀므로 캐릭터별 최소 게임수 필터(기본 10). 상위 10명을 내려주고 화면은 3명 + 더보기
+- 지표 SELECT 절은 `TopRankStatService::metricSelects()` / `formatMetrics()` 를 공용으로 쓴다
+- 집계 테이블 없음, 10분 캐시 (콜드 약 1.5초)
+- **서비스**: `EquipmentStatService`
+
 ## 최근 변경사항 (2026-09-11)
 
 ### 1. 스킬 순서 통계 (→ 2026-10-16 "마스터 순서"로 변경)

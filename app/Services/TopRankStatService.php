@@ -121,27 +121,7 @@ class TopRankStatService
             DB::raw('c.name as character_name'),
             DB::raw('s.weapon_type'),
 
-            // 전체(1~8위)
-            DB::raw('SUM(s.game_rank_count) as all_game_count'),
-            DB::raw('SUM(s.avg_mmr_gain * s.game_rank_count) / NULLIF(SUM(s.game_rank_count), 0) as all_avg_mmr_gain'),
-            DB::raw('SUM(s.avg_team_kill_score * s.game_rank_count) / NULLIF(SUM(s.game_rank_count), 0) as all_avg_team_kill'),
-            DB::raw('SUM(s.positive_count) as all_positive_count'),
-            DB::raw('SUM(s.positive_avg_mmr_gain * s.positive_count) / NULLIF(SUM(s.positive_count), 0) as all_positive_avg'),
-            DB::raw('SUM(s.negative_count) as all_negative_count'),
-            DB::raw('SUM(s.negative_avg_mmr_gain * s.negative_count) / NULLIF(SUM(s.negative_count), 0) as all_negative_avg'),
-
-            // TOP4(1~4위)
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) as top_game_count"),
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.avg_mmr_gain * s.game_rank_count ELSE 0 END)
-                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END), 0) as top_avg_mmr_gain"),
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.avg_team_kill_score * s.game_rank_count ELSE 0 END)
-                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END), 0) as top_avg_team_kill"),
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.positive_count ELSE 0 END) as top_positive_count"),
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.positive_avg_mmr_gain * s.positive_count ELSE 0 END)
-                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.positive_count ELSE 0 END), 0) as top_positive_avg"),
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.negative_count ELSE 0 END) as top_negative_count"),
-            DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.negative_avg_mmr_gain * s.negative_count ELSE 0 END)
-                     / NULLIF(SUM(CASE WHEN s.game_rank <= {$top} THEN s.negative_count ELSE 0 END), 0) as top_negative_avg"),
+            ...self::metricSelects('s'),
         ]);
 
         if (!empty($filters['character_id'])) {
@@ -188,9 +168,6 @@ class TopRankStatService
      */
     private function formatRow(object $row, string $type, array $config): array
     {
-        $allCount = (int) $row->all_game_count;
-        $topCount = (int) $row->top_game_count;
-
         return [
             'item_id' => $row->item_id,
             'item_name' => $row->item_name ?? ('#' . $row->item_id),
@@ -203,32 +180,75 @@ class TopRankStatService
             'character_name' => $row->character_name,
             'weapon_type' => $row->weapon_type,
 
+            ...self::formatMetrics($row),
+        ];
+    }
+
+    /**
+     * TOP4(1~4위) / 전체(1~8위) 지표를 한 번에 계산하는 SELECT 절
+     * 요약 테이블(순위별 행)을 GROUP BY 로 접을 때 쓴다. 장비 지표 페이지와 공용.
+     */
+    public static function metricSelects(string $alias): array
+    {
+        $s = $alias;
+        $top = self::TOP_RANK;
+
+        return [
+            // 전체(1~8위)
+            DB::raw("SUM({$s}.game_rank_count) as all_game_count"),
+            DB::raw("SUM({$s}.avg_mmr_gain * {$s}.game_rank_count) / NULLIF(SUM({$s}.game_rank_count), 0) as all_avg_mmr_gain"),
+            DB::raw("SUM({$s}.avg_team_kill_score * {$s}.game_rank_count) / NULLIF(SUM({$s}.game_rank_count), 0) as all_avg_team_kill"),
+            DB::raw("SUM({$s}.positive_count) as all_positive_count"),
+            DB::raw("SUM({$s}.positive_avg_mmr_gain * {$s}.positive_count) / NULLIF(SUM({$s}.positive_count), 0) as all_positive_avg"),
+            DB::raw("SUM({$s}.negative_count) as all_negative_count"),
+            DB::raw("SUM({$s}.negative_avg_mmr_gain * {$s}.negative_count) / NULLIF(SUM({$s}.negative_count), 0) as all_negative_avg"),
+
+            // TOP4(1~4위)
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.game_rank_count ELSE 0 END) as top_game_count"),
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.avg_mmr_gain * {$s}.game_rank_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.game_rank_count ELSE 0 END), 0) as top_avg_mmr_gain"),
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.avg_team_kill_score * {$s}.game_rank_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.game_rank_count ELSE 0 END), 0) as top_avg_team_kill"),
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.positive_count ELSE 0 END) as top_positive_count"),
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.positive_avg_mmr_gain * {$s}.positive_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.positive_count ELSE 0 END), 0) as top_positive_avg"),
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.negative_count ELSE 0 END) as top_negative_count"),
+            DB::raw("SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.negative_avg_mmr_gain * {$s}.negative_count ELSE 0 END)
+                     / NULLIF(SUM(CASE WHEN {$s}.game_rank <= {$top} THEN {$s}.negative_count ELSE 0 END), 0) as top_negative_avg"),
+        ];
+    }
+
+    /**
+     * metricSelects() 결과 행을 화면용 top / all / top_rate 구조로 정리
+     */
+    public static function formatMetrics(object $row): array
+    {
+        $allCount = (int) $row->all_game_count;
+        $topCount = (int) $row->top_game_count;
+        $round = fn ($value, int $precision = 1) => round((float) ($value ?? 0), $precision);
+
+        return [
             'top' => [
                 'game_count' => $topCount,
-                'avg_mmr_gain' => $this->round($row->top_avg_mmr_gain),
-                'avg_team_kill' => $this->round($row->top_avg_team_kill, 2),
+                'avg_mmr_gain' => $round($row->top_avg_mmr_gain),
+                'avg_team_kill' => $round($row->top_avg_team_kill, 2),
                 'positive_percent' => $topCount ? round((int) $row->top_positive_count / $topCount * 100, 2) : 0,
-                'positive_avg' => $this->round($row->top_positive_avg),
+                'positive_avg' => $round($row->top_positive_avg),
                 'negative_percent' => $topCount ? round((int) $row->top_negative_count / $topCount * 100, 2) : 0,
-                'negative_avg' => $this->round($row->top_negative_avg),
+                'negative_avg' => $round($row->top_negative_avg),
             ],
             'all' => [
                 'game_count' => $allCount,
-                'avg_mmr_gain' => $this->round($row->all_avg_mmr_gain),
-                'avg_team_kill' => $this->round($row->all_avg_team_kill, 2),
+                'avg_mmr_gain' => $round($row->all_avg_mmr_gain),
+                'avg_team_kill' => $round($row->all_avg_team_kill, 2),
                 'positive_percent' => $allCount ? round((int) $row->all_positive_count / $allCount * 100, 2) : 0,
-                'positive_avg' => $this->round($row->all_positive_avg),
+                'positive_avg' => $round($row->all_positive_avg),
                 'negative_percent' => $allCount ? round((int) $row->all_negative_count / $allCount * 100, 2) : 0,
-                'negative_avg' => $this->round($row->all_negative_avg),
+                'negative_avg' => $round($row->all_negative_avg),
             ],
             // TOP4 진입 비율 (참고용)
             'top_rate' => $allCount ? round($topCount / $allCount * 100, 2) : 0,
         ];
-    }
-
-    private function round($value, int $precision = 1): float
-    {
-        return round((float) ($value ?? 0), $precision);
     }
 
     /**

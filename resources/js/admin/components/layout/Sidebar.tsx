@@ -12,6 +12,7 @@ import {
     BarChart3,
     TrendingUp,
     ArrowLeftRight,
+    Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const navigation = [
     { name: '전술스킬', href: '/tactical-skills', icon: Zap },
     { name: '버전 히스토리', href: '/version-histories', icon: History },
     { name: 'TOP4 지표', href: '/top-rank-stats', icon: BarChart3 },
+    { name: '장비 지표', href: '/equipment-stats', icon: Shield },
     { name: '지표 추이', href: '/summary-trend', icon: TrendingUp },
     { name: '전체 지표 변동', href: '/version-comparison', icon: ArrowLeftRight },
     { name: '사이트 설정', href: '/settings', icon: Settings },
