@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\TraitController as AdminTraitController;
 use App\Http\Controllers\Admin\TacticalSkillController as AdminTacticalSkillController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SummaryTrendController;
-use App\Http\Controllers\Admin\EquipmentStatController;
 use App\Http\Controllers\Admin\TopRankStatController;
 use App\Http\Controllers\Admin\VersionComparisonController;
 use App\Http\Controllers\InfoController;
@@ -70,10 +69,6 @@ Route::prefix('admin')->group(function () {
         // TOP4 상세 지표 (관리자 전용)
         Route::get('/top-rank-stats', [TopRankStatController::class, 'index']);
         Route::get('/top-rank-stats/options', [TopRankStatController::class, 'options']);
-
-        // 장비별 지표 + 사용률 상위 캐릭터 (관리자 전용)
-        Route::get('/equipment-stats', [EquipmentStatController::class, 'index']);
-        Route::get('/equipment-stats/options', [EquipmentStatController::class, 'options']);
 
         // 버전 간 전체 캐릭터 지표 변동 (관리자 전용)
         Route::get('/version-comparison', [VersionComparisonController::class, 'index']);

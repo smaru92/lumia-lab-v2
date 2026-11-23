@@ -28,6 +28,8 @@ class TopRankStatController extends Controller
             'sub_group' => ['nullable', 'string', 'max:30'],
             'search' => ['nullable', 'string', 'max:50'],
             'min_game_count' => ['nullable', 'integer', 'min:0'],
+            // 주 사용 캐릭터 표본 하한 (캐릭터·무기별 이 항목 사용 게임수)
+            'min_character_game_count' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $result = $this->topRankStatService->getStats($validated);
@@ -38,6 +40,8 @@ class TopRankStatController extends Controller
                 'table' => $result['table'],
                 'exists' => $result['exists'],
                 'count' => count($result['data']),
+                // false 면 캐릭터를 합친 항목 단위 (캐릭터/무기 열이 없다)
+                'per_character' => $result['per_character'] ?? false,
                 'weapon_types' => $result['weapon_types'] ?? [],
             ],
         ]);

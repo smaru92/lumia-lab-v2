@@ -12,8 +12,9 @@ use Illuminate\Support\Facades\Schema;
  * TOP4 상세 지표 조회 (관리자 전용)
  *
  * 기존 버전별 요약 테이블은 순위(game_rank 1~8)별로 행이 나뉘어 있다.
- * 여기서는 그 행들을 항목 x 캐릭터 x 무기 단위로 합치되,
+ * 여기서는 그 행들을 항목 단위(캐릭터를 고르면 항목 x 무기)로 합치되,
  * TOP4(1~4위)와 전체(1~8위)를 한 번의 조회로 나란히 계산한다.
+ * 항목 단위일 때는 사용률 순 주 사용 캐릭터를 함께 붙인다.
  *
  * 별도 집계 테이블을 만들지 않으므로 스케줄러에 영향이 없다.
  */
@@ -58,6 +59,9 @@ class TopRankStatService
 
     /** TOP4 기준 순위 */
     private const TOP_RANK = 4;
+
+    /** 항목마다 내려보내는 주 사용 캐릭터 수 (화면은 3명만 먼저 보여주고 펼치면 전부) */
+    private const TOP_CHARACTER_LIMIT = 10;
 
     /**
      * 지표 조회
@@ -105,25 +109,66 @@ class TopRankStatService
             default => "''",
         };
 
+        // 캐릭터를 고르지 않으면 항목 단위로 전 캐릭터를 합친 평균 지표를 보여준다.
+        // 캐릭터를 고르면 그 캐릭터의 무기별로 나눈다. (무기군만 고르면 그 무기군 전체 합산)
+        $perCharacter = !empty($filters['character_id']);
+
+        $groupBy = ['s.' . $idColumn, 'n.name', DB::raw($groupSelect), DB::raw($subGroupSelect)];
+        if ($perCharacter) {
+            array_push($groupBy, 's.character_id', 's.weapon_type', 'c.name');
+        }
+
         $query = DB::table($tableName . ' as s')
             ->join('characters as c', 'c.id', '=', 's.character_id')
             ->leftJoin($config['name_table'] . ' as n', 'n.id', '=', 's.' . $idColumn)
             ->where('s.min_tier', $filters['min_tier'] ?? 'Diamond')
-            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type', 'n.name', 'c.name',
-                DB::raw($groupSelect), DB::raw($subGroupSelect));
+            ->groupBy($groupBy);
 
         $query->select([
             DB::raw("s.`{$idColumn}` as item_id"),
             DB::raw('n.name as item_name'),
             DB::raw($groupSelect . ' as group_code'),
             DB::raw($subGroupSelect . ' as sub_group_code'),
-            DB::raw('s.character_id'),
-            DB::raw('c.name as character_name'),
-            DB::raw('s.weapon_type'),
+            DB::raw($perCharacter ? 's.character_id' : 'NULL as character_id'),
+            DB::raw($perCharacter ? 'c.name as character_name' : 'NULL as character_name'),
+            DB::raw($perCharacter ? 's.weapon_type' : 'NULL as weapon_type'),
 
             ...self::metricSelects('s'),
         ]);
 
+        $this->applyFilters($query, $filters, $groupSelect, $subGroupSelect);
+
+        $minGameCount = (int) ($filters['min_game_count'] ?? 0);
+        if ($minGameCount > 0) {
+            $query->havingRaw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) >= ?", [$minGameCount]);
+        }
+
+        $rows = $query->orderByRaw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) DESC")
+            ->limit(500)
+            ->get();
+
+        // 전 캐릭터 합산일 때만 "주 사용 캐릭터"를 붙인다 (캐릭터를 고르면 그 캐릭터만 나오므로 의미가 없다)
+        $topCharacters = (!$perCharacter && $rows->isNotEmpty())
+            ? $this->topCharacters($tableName, $versionParts, $idColumn, $config['name_table'], $filters,
+                $groupSelect, $subGroupSelect, $rows->pluck('item_id')->all())
+            : [];
+
+        return [
+            'data' => $rows->map(fn ($row) => [
+                ...$this->formatRow($row, $type, $config),
+                'top_characters' => $topCharacters[$row->item_id] ?? [],
+            ])->all(),
+            'table' => $tableName,
+            'exists' => true,
+            'per_character' => $perCharacter,
+            // 무기군은 캐릭터마다 다르고(알렉스는 합계 'All', 에키온은 전용 3종)
+            // 버전에 따라서도 달라지므로, 지금 조건에서 실제로 존재하는 값만 내려준다.
+            'weapon_types' => $this->availableWeaponTypes($tableName, $filters),
+        ];
+    }
+
+    private function applyFilters($query, array $filters, string $groupSelect, string $subGroupSelect): void
+    {
         if (!empty($filters['character_id'])) {
             $query->where('s.character_id', $filters['character_id']);
         }
@@ -143,24 +188,96 @@ class TopRankStatService
         if (!empty($filters['search'])) {
             $query->where('n.name', 'like', '%' . $filters['search'] . '%');
         }
+    }
 
-        $minGameCount = (int) ($filters['min_game_count'] ?? 0);
-        if ($minGameCount > 0) {
-            $query->havingRaw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) >= ?", [$minGameCount]);
+    /**
+     * 항목별 주 사용 캐릭터·무기 (사용률 순)
+     *
+     * 단순 게임수로 정렬하면 픽률 높은 캐릭터만 올라와서, 실제로 "이 항목을 주로 쓰는" 캐릭터가 안 보인다.
+     *   사용률 = (그 캐릭터·무기가 이 항목을 쓴 게임수) / (그 캐릭터·무기의 전체 게임수)
+     * 분모는 같은 버전·티어의 game_results_rank_summary 합계다.
+     * 아이템(부위별 최종 장비)·특성·전술스킬 모두 한 게임에 같은 항목은 1번만 잡히므로 100% 를 넘지 않는다.
+     *
+     * @return array<int, array> [item_id => [ {character_id, character_name, weapon_type, weapon_label,
+     *                                          game_count, total_count, usage_rate, avg_mmr_gain, top_rate}, ... ]]
+     */
+    private function topCharacters(
+        string $tableName,
+        array $versionParts,
+        string $idColumn,
+        string $nameTable,
+        array $filters,
+        string $groupSelect,
+        string $subGroupSelect,
+        array $itemIds
+    ): array {
+        $minTier = $filters['min_tier'] ?? 'Diamond';
+        $top = self::TOP_RANK;
+
+        $query = DB::table($tableName . ' as s')
+            ->leftJoin($nameTable . ' as n', 'n.id', '=', 's.' . $idColumn)
+            ->where('s.min_tier', $minTier)
+            ->whereIn('s.' . $idColumn, $itemIds)
+            ->groupBy('s.' . $idColumn, 's.character_id', 's.weapon_type')
+            ->select([
+                DB::raw("s.`{$idColumn}` as item_id"),
+                's.character_id',
+                's.weapon_type',
+                DB::raw('SUM(s.game_rank_count) as game_count'),
+                DB::raw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) as top_count"),
+                DB::raw('SUM(s.avg_mmr_gain * s.game_rank_count) / NULLIF(SUM(s.game_rank_count), 0) as avg_mmr_gain'),
+            ]);
+        $this->applyFilters($query, $filters, $groupSelect, $subGroupSelect);
+
+        // 표본이 너무 적은 캐릭터는 사용률이 튄다 (2게임 중 2게임 = 100%)
+        $minCharacterGames = max(1, (int) ($filters['min_character_game_count'] ?? 10));
+        $query->havingRaw('SUM(s.game_rank_count) >= ?', [$minCharacterGames]);
+
+        $usages = $query->get();
+
+        // 분모: 캐릭터·무기별 전체 게임수
+        $rankTableName = VersionedGameTableManager::getTableName('game_results_rank_summary', $versionParts);
+        if (!Schema::hasTable($rankTableName)) {
+            return [];
         }
 
-        $rows = $query->orderByRaw("SUM(CASE WHEN s.game_rank <= {$top} THEN s.game_rank_count ELSE 0 END) DESC")
-            ->limit(500)
-            ->get();
+        $totals = DB::table($rankTableName)
+            ->where('min_tier', $minTier)
+            ->groupBy('character_id', 'weapon_type')
+            ->select('character_id', 'weapon_type', DB::raw('SUM(game_rank_count) as total'))
+            ->get()
+            ->mapWithKeys(fn ($r) => [$r->character_id . '|' . $r->weapon_type => (int) $r->total])
+            ->all();
 
-        return [
-            'data' => $rows->map(fn ($row) => $this->formatRow($row, $type, $config))->all(),
-            'table' => $tableName,
-            'exists' => true,
-            // 무기군은 캐릭터마다 다르고(알렉스는 합계 'All', 에키온은 전용 3종)
-            // 버전에 따라서도 달라지므로, 지금 조건에서 실제로 존재하는 값만 내려준다.
-            'weapon_types' => $this->availableWeaponTypes($tableName, $filters),
-        ];
+        $characterNames = DB::table('characters')->pluck('name', 'id')->all();
+
+        $result = [];
+        foreach ($usages as $u) {
+            $total = $totals[$u->character_id . '|' . $u->weapon_type] ?? 0;
+            if ($total <= 0) {
+                continue;
+            }
+            $gameCount = (int) $u->game_count;
+
+            $result[$u->item_id][] = [
+                'character_id' => $u->character_id,
+                'character_name' => $characterNames[$u->character_id] ?? ('#' . $u->character_id),
+                'weapon_type' => $u->weapon_type,
+                'weapon_label' => $this->replaceWeaponType($u->weapon_type, 'ko'),
+                'game_count' => $gameCount,
+                'total_count' => $total,
+                'usage_rate' => round(min($gameCount / $total, 1) * 100, 2),
+                'avg_mmr_gain' => round((float) ($u->avg_mmr_gain ?? 0), 1),
+                'top_rate' => $gameCount ? round((int) $u->top_count / $gameCount * 100, 2) : 0,
+            ];
+        }
+
+        foreach ($result as $itemId => $list) {
+            usort($list, fn ($a, $b) => [$b['usage_rate'], $b['game_count']] <=> [$a['usage_rate'], $a['game_count']]);
+            $result[$itemId] = array_slice($list, 0, self::TOP_CHARACTER_LIMIT);
+        }
+
+        return $result;
     }
 
     /**
@@ -186,9 +303,9 @@ class TopRankStatService
 
     /**
      * TOP4(1~4위) / 전체(1~8위) 지표를 한 번에 계산하는 SELECT 절
-     * 요약 테이블(순위별 행)을 GROUP BY 로 접을 때 쓴다. 장비 지표 페이지와 공용.
+     * 요약 테이블(순위별 행)을 GROUP BY 로 접을 때 쓴다.
      */
-    public static function metricSelects(string $alias): array
+    private static function metricSelects(string $alias): array
     {
         $s = $alias;
         $top = self::TOP_RANK;
@@ -221,7 +338,7 @@ class TopRankStatService
     /**
      * metricSelects() 결과 행을 화면용 top / all / top_rate 구조로 정리
      */
-    public static function formatMetrics(object $row): array
+    private static function formatMetrics(object $row): array
     {
         $allCount = (int) $row->all_game_count;
         $topCount = (int) $row->top_game_count;

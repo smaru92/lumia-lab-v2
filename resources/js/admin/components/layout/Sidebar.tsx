@@ -12,7 +12,7 @@ import {
     BarChart3,
     TrendingUp,
     ArrowLeftRight,
-    Shield,
+    type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,20 +22,45 @@ interface SidebarProps {
     onClose: () => void;
 }
 
-const navigation = [
-    { name: '대시보드', href: '/', icon: LayoutDashboard },
-    { name: '캐릭터', href: '/characters', icon: Users },
-    { name: '장비', href: '/equipment', icon: Package },
-    { name: '장비 스킬', href: '/equipment-skills', icon: Sparkles },
-    { name: '특성', href: '/traits', icon: Swords },
-    { name: '전술스킬', href: '/tactical-skills', icon: Zap },
-    { name: '버전 히스토리', href: '/version-histories', icon: History },
-    { name: 'TOP4 지표', href: '/top-rank-stats', icon: BarChart3 },
-    { name: '장비 지표', href: '/equipment-stats', icon: Shield },
-    { name: '지표 추이', href: '/summary-trend', icon: TrendingUp },
-    { name: '전체 지표 변동', href: '/version-comparison', icon: ArrowLeftRight },
-    { name: '사이트 설정', href: '/settings', icon: Settings },
+interface NavItem {
+    name: string;
+    href: string;
+    icon: LucideIcon;
+}
+
+/** 메뉴 그룹 (title 이 없으면 제목 없이 맨 위에 둔다). 그룹 사이에 구분선이 들어간다 */
+const navigationGroups: { title?: string; items: NavItem[] }[] = [
+    {
+        items: [{ name: '대시보드', href: '/', icon: LayoutDashboard }],
+    },
+    {
+        title: '게임 정보',
+        items: [
+            { name: '캐릭터', href: '/characters', icon: Users },
+            { name: '장비', href: '/equipment', icon: Package },
+            { name: '장비 스킬', href: '/equipment-skills', icon: Sparkles },
+            { name: '특성', href: '/traits', icon: Swords },
+            { name: '전술스킬', href: '/tactical-skills', icon: Zap },
+            { name: '버전 히스토리', href: '/version-histories', icon: History },
+        ],
+    },
+    {
+        title: '지표 분석',
+        items: [
+            { name: 'TOP4 지표', href: '/top-rank-stats', icon: BarChart3 },
+            { name: '지표 추이', href: '/summary-trend', icon: TrendingUp },
+            { name: '전체 지표 변동', href: '/version-comparison', icon: ArrowLeftRight },
+        ],
+    },
+    {
+        title: '설정',
+        items: [{ name: '사이트 설정', href: '/settings', icon: Settings }],
+    },
 ];
+
+/** '/equipment' 가 '/equipment-skills' 까지 잡지 않도록 경로 단위로 비교한다 */
+const isActivePath = (pathname: string, href: string) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
     const location = useLocation();
@@ -70,30 +95,42 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                         </Button>
                     </div>
 
-                    <nav className="flex-1 space-y-1 p-4">
-                        {navigation.map((item) => {
-                            const isActive =
-                                item.href === '/'
-                                    ? location.pathname === '/'
-                                    : location.pathname.startsWith(item.href);
+                    <nav className="flex-1 overflow-y-auto p-4">
+                        {navigationGroups.map((group, index) => (
+                            <div
+                                key={group.title ?? index}
+                                className={cn(
+                                    'space-y-1',
+                                    index > 0 && 'mt-3 border-t border-[hsl(var(--border))] pt-3'
+                                )}
+                            >
+                                {group.title && (
+                                    <div className="px-3 pb-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                                        {group.title}
+                                    </div>
+                                )}
+                                {group.items.map((item) => {
+                                    const isActive = isActivePath(location.pathname, item.href);
 
-                            return (
-                                <Link
-                                    key={item.name}
-                                    to={item.href}
-                                    onClick={onClose}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                                        isActive
-                                            ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
-                                            : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]'
-                                    )}
-                                >
-                                    <item.icon className="h-5 w-5" />
-                                    {item.name}
-                                </Link>
-                            );
-                        })}
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            to={item.href}
+                                            onClick={onClose}
+                                            className={cn(
+                                                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                                isActive
+                                                    ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
+                                                    : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]'
+                                            )}
+                                        >
+                                            <item.icon className="h-5 w-5" />
+                                            {item.name}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        ))}
                     </nav>
                 </div>
             </aside>

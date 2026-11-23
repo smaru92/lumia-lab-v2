@@ -21,7 +21,6 @@ import VersionHistoryCreatePage from '@/features/version-histories/VersionHistor
 import VersionHistoryEditPage from '@/features/version-histories/VersionHistoryEditPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import TopRankStatsPage from '@/features/top-rank-stats/TopRankStatsPage';
-import EquipmentStatsPage from '@/features/equipment-stats/EquipmentStatsPage';
 import SummaryTrendPage from '@/features/summary-trend/SummaryTrendPage';
 import VersionComparisonPage from '@/features/version-comparison/VersionComparisonPage';
 
@@ -71,7 +70,6 @@ export default function App() {
                                 <Route path="/version-histories/create" element={<VersionHistoryCreatePage />} />
                                 <Route path="/version-histories/:id/edit" element={<VersionHistoryEditPage />} />
                                 <Route path="/top-rank-stats" element={<TopRankStatsPage />} />
-                                <Route path="/equipment-stats" element={<EquipmentStatsPage />} />
                                 <Route path="/summary-trend" element={<SummaryTrendPage />} />
                                 <Route path="/version-comparison" element={<VersionComparisonPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />

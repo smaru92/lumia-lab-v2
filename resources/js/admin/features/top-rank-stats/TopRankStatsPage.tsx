@@ -31,11 +31,25 @@ interface StatRow {
     group_label: string;
     sub_group_code: string;
     sub_group_label: string;
+    character_id: number | null;
+    character_name: string | null;
+    weapon_type: string | null;
+    top: Metrics;
+    all: Metrics;
+    top_rate: number;
+    /** 전 캐릭터 합산일 때만 채워진다 (사용률 순) */
+    top_characters: TopCharacter[];
+}
+
+interface TopCharacter {
     character_id: number;
     character_name: string;
     weapon_type: string;
-    top: Metrics;
-    all: Metrics;
+    weapon_label: string;
+    game_count: number;
+    total_count: number;
+    usage_rate: number;
+    avg_mmr_gain: number;
     top_rate: number;
 }
 
@@ -60,6 +74,9 @@ const TIER_LABELS: Record<string, string> = {
     Top: '최상위큐',
 };
 
+/** 주 사용 캐릭터를 접었을 때 보여주는 수 */
+const COLLAPSED_CHARACTERS = 3;
+
 const num = (v: number, digits = 1) =>
     v.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
@@ -77,6 +94,8 @@ export default function TopRankStatsPage() {
     const [weaponType, setWeaponType] = useState('');
     const [search, setSearch] = useState('');
     const [minGameCount, setMinGameCount] = useState('10');
+    const [minCharacterGameCount, setMinCharacterGameCount] = useState('10');
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
     const { data: options } = useQuery<Options>({
         queryKey: ['top-rank-stats', 'options'],
@@ -93,11 +112,18 @@ export default function TopRankStatsPage() {
         weapon_type: weaponType || undefined,
         search: search || undefined,
         min_game_count: minGameCount || undefined,
+        min_character_game_count: minCharacterGameCount || undefined,
     };
 
     const { data, isFetching } = useQuery<{
         data: StatRow[];
-        meta: { count: number; exists: boolean; table: string; weapon_types: { value: string; label: string }[] };
+        meta: {
+            count: number;
+            exists: boolean;
+            table: string;
+            per_character: boolean;
+            weapon_types: { value: string; label: string }[];
+        };
     }>({
         queryKey: ['top-rank-stats', params],
         queryFn: async () => (await api.get('/top-rank-stats', { params })).data,
@@ -109,8 +135,15 @@ export default function TopRankStatsPage() {
     // 무기군은 캐릭터마다 구성이 달라(알렉스는 합계 'All', 에키온은 전용 3종)
     // 서버가 현재 조건에서 실제 존재하는 값만 내려준다.
     const weaponOptions = data?.meta?.weapon_types ?? [];
-    const weaponLabel = (code: string) =>
-        weaponOptions.find((w) => w.value === code)?.label ?? code;
+    const weaponLabel = (code: string | null) =>
+        weaponOptions.find((w) => w.value === code)?.label ?? code ?? '';
+
+    // 캐릭터를 고르지 않으면 서버가 전 캐릭터를 합친 항목 단위로 내려준다.
+    // 그때는 캐릭터/무기 열 대신 "주 사용 캐릭터" 열을 보여준다.
+    const perCharacter = data?.meta?.per_character ?? !!characterId;
+    const columnCount = perCharacter ? 14 : 13;
+    // 종류마다 id 체계가 달라서(특성/아이템/전술스킬) 종류를 붙여 키로 쓴다
+    const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
     // 캐릭터 상세처럼 그룹 단위로 묶어서 보여준다 (그룹 없는 종류는 한 덩어리)
     const rows = data?.data ?? [];
@@ -128,7 +161,7 @@ export default function TopRankStatsPage() {
         <div className="space-y-6">
             <PageHeader
                 title="TOP4 상세 지표"
-                description="캐릭터·무기별로 각 특성/아이템/전술스킬이 TOP4를 기록한 게임만 따로 집계합니다."
+                description="각 특성/아이템/전술스킬이 TOP4를 기록한 게임만 따로 집계합니다. 캐릭터를 고르지 않으면 전 캐릭터 합산, 고르면 그 캐릭터의 무기별로 보여줍니다."
             />
 
             <Card>
@@ -245,6 +278,19 @@ export default function TopRankStatsPage() {
                             onChange={(e) => setMinGameCount(e.target.value)}
                         />
                     </div>
+
+                    {!characterId && (
+                        <div className="space-y-2">
+                            <Label htmlFor="minCharacterGameCount">주 사용 캐릭터 최소 게임수</Label>
+                            <Input
+                                id="minCharacterGameCount"
+                                type="number"
+                                min={1}
+                                value={minCharacterGameCount}
+                                onChange={(e) => setMinCharacterGameCount(e.target.value)}
+                            />
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -252,17 +298,28 @@ export default function TopRankStatsPage() {
                 <span>
                     {isFetching ? '조회 중...' : `${rows.length.toLocaleString()}건`}
                     {data?.meta?.exists === false && ' — 해당 버전의 집계 테이블이 아직 없습니다'}
+                    {!perCharacter && (
+                        <span className="ml-2 text-xs">
+                            주 사용 캐릭터 사용률 = 그 캐릭터·무기의 전체 게임 중 이 항목을 쓴 비율
+                        </span>
+                    )}
                 </span>
                 {data?.meta?.table && <span className="font-mono text-xs">{data.meta.table}</span>}
             </div>
 
             <div className="overflow-x-auto rounded-md border border-[hsl(var(--border))]">
-                <table className="w-full min-w-[1100px] text-sm">
+                <table className={`w-full text-sm ${perCharacter ? 'min-w-[1100px]' : 'min-w-[1400px]'}`}>
                     <thead>
                         <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
                             <th rowSpan={2} className="px-3 py-2 text-left">이름</th>
-                            <th rowSpan={2} className="px-3 py-2 text-left">캐릭터</th>
-                            <th rowSpan={2} className="px-3 py-2 text-left">무기</th>
+                            {perCharacter ? (
+                                <>
+                                    <th rowSpan={2} className="px-3 py-2 text-left">캐릭터</th>
+                                    <th rowSpan={2} className="px-3 py-2 text-left">무기</th>
+                                </>
+                            ) : (
+                                <th rowSpan={2} className="px-3 py-2 text-left">주 사용 캐릭터 (사용률순)</th>
+                            )}
                             <th colSpan={5} className="border-l border-[hsl(var(--border))] px-3 py-2 text-center font-bold">
                                 TOP4 (1~4위)
                             </th>
@@ -289,7 +346,7 @@ export default function TopRankStatsPage() {
                             <Fragment key={key || 'ungrouped'}>
                                 {key && (
                                     <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--accent))]">
-                                        <td colSpan={14} className="px-3 py-1.5 text-xs font-bold">
+                                        <td colSpan={columnCount} className="px-3 py-1.5 text-xs font-bold">
                                             {grouped[key][0].group_label || key}
                                             <span className="ml-2 font-normal text-[hsl(var(--muted-foreground))]">
                                                 {grouped[key].length}건
@@ -299,8 +356,8 @@ export default function TopRankStatsPage() {
                                 )}
                                 {grouped[key].map((r) => (
                             <tr
-                                key={`${r.item_id}-${r.character_id}-${r.weapon_type}`}
-                                className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                                key={`${r.item_id}-${r.character_id ?? 'all'}-${r.weapon_type ?? 'all'}`}
+                                className="border-b border-[hsl(var(--border))] align-top hover:bg-[hsl(var(--muted))]"
                             >
                                 <td className="px-3 py-2">
                                     <div className="flex items-center gap-2">
@@ -321,10 +378,22 @@ export default function TopRankStatsPage() {
                                         </span>
                                     </div>
                                 </td>
-                                <td className="px-3 py-2">{r.character_name}</td>
-                                <td className="px-3 py-2 text-[hsl(var(--muted-foreground))]">
-                                    {weaponLabel(r.weapon_type)}
-                                </td>
+                                {perCharacter ? (
+                                    <>
+                                        <td className="px-3 py-2">{r.character_name}</td>
+                                        <td className="px-3 py-2 text-[hsl(var(--muted-foreground))]">
+                                            {weaponLabel(r.weapon_type)}
+                                        </td>
+                                    </>
+                                ) : (
+                                    <td className="min-w-[280px] px-3 py-2">
+                                        <TopCharacterList
+                                            characters={r.top_characters ?? []}
+                                            expanded={!!expanded[`${type}-${r.item_id}`]}
+                                            onToggle={() => toggle(`${type}-${r.item_id}`)}
+                                        />
+                                    </td>
+                                )}
 
                                 <td className="border-l border-[hsl(var(--border))] px-3 py-2 text-right font-medium">
                                     {r.top.game_count.toLocaleString()}
@@ -367,7 +436,7 @@ export default function TopRankStatsPage() {
                         ))}
                         {rows.length === 0 && !isFetching && (
                             <tr>
-                                <td colSpan={14} className="px-3 py-10 text-center text-[hsl(var(--muted-foreground))]">
+                                <td colSpan={columnCount} className="px-3 py-10 text-center text-[hsl(var(--muted-foreground))]">
                                     조건에 해당하는 데이터가 없습니다.
                                 </td>
                             </tr>
@@ -375,6 +444,58 @@ export default function TopRankStatsPage() {
                     </tbody>
                 </table>
             </div>
+        </div>
+    );
+}
+
+/** 주 사용 캐릭터 목록 (기본 3명, 더보기로 서버가 준 만큼 전부) */
+function TopCharacterList({
+    characters,
+    expanded,
+    onToggle,
+}: {
+    characters: TopCharacter[];
+    expanded: boolean;
+    onToggle: () => void;
+}) {
+    if (characters.length === 0) {
+        return <span className="text-xs text-[hsl(var(--muted-foreground))]">-</span>;
+    }
+
+    const visible = expanded ? characters : characters.slice(0, COLLAPSED_CHARACTERS);
+    const hidden = characters.length - COLLAPSED_CHARACTERS;
+
+    return (
+        <div className="space-y-1">
+            {visible.map((c, i) => (
+                <div
+                    key={`${c.character_id}-${c.weapon_type}`}
+                    className="flex items-center gap-2 text-xs"
+                    title={`${c.game_count.toLocaleString()} / ${c.total_count.toLocaleString()}게임 · 평균획득 ${num(c.avg_mmr_gain)} · TOP4율 ${num(c.top_rate)}%`}
+                >
+                    <span className="w-4 text-right text-[hsl(var(--muted-foreground))]">{i + 1}</span>
+                    <span className="whitespace-nowrap font-medium">
+                        {c.character_name}
+                        <span className="ml-1 font-normal text-[hsl(var(--muted-foreground))]">{c.weapon_label}</span>
+                    </span>
+                    <span className="ml-auto whitespace-nowrap font-medium">{num(c.usage_rate)}%</span>
+                    <span className="w-14 whitespace-nowrap text-right text-[hsl(var(--muted-foreground))]">
+                        {c.game_count.toLocaleString()}판
+                    </span>
+                    <span className={`w-12 whitespace-nowrap text-right ${signClass(c.avg_mmr_gain)}`}>
+                        {num(c.avg_mmr_gain)}
+                    </span>
+                </div>
+            ))}
+            {hidden > 0 && (
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="text-xs text-[hsl(var(--primary))] hover:underline"
+                >
+                    {expanded ? '접기' : `+${hidden}명 더보기`}
+                </button>
+            )}
         </div>
     );
 }
