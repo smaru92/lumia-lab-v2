@@ -174,6 +174,10 @@
 | `update:game-results-skill-order-summary` | 2시간마다 | 홀수시 40분 | 캐릭터별/스킬 마스터 순서별 데이터 |
 | `fetch:character-skills` | 매일 | 04:35 | 캐릭터 스킬 이름/설명 (l10n) |
 
+**수집이 멈췄을 때**: `fetch:game-results` 는 빈 게임 번호를 만나면 `ER_SEARCH_GAME_NUMBER`(기본 5)개까지만 더 찾고 멈춘다.
+그보다 긴 구간이 비면 `php artisan fetch:find-next-game` 으로 데이터가 있는 다음 번호를 찾아 `job_status` 위치를 옮긴다
+(`--from`, `--max=3000`, `--apply` 는 확인 없이 적용. 200/404 외 응답은 재시도 후 중단해 게임을 건너뛰지 않는다)
+
 **중요**: 모든 명령어는 최소 10분 이상 간격을 두고 실행되도록 설정. `withoutOverlapping()` 및 `runInBackground()` 옵션 사용.
 
 집계 명령어는 인자 없이 실행하면 **최신 버전(핫픽스 포함)** 을 대상으로 한다.
